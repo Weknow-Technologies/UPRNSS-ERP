@@ -1,6 +1,7 @@
 <?php
 	date_default_timezone_set("Asia/Kolkata");
-	$db = mysqli_connect("p:localhost", "root", "mysql", "cloudice_uprnss");
+//	$db = mysqli_connect("p:localhost", "root", "mysql", "cloudice_uprnss");
+    $db = mysqli_connect("p:localhost", "cloudice_uprnss", "kRmV#zGz1h.0", "cloudice_demo_uprnss");
 	if(!$db){
 		die("Error 1 : Contact Administrator.");
 	}
