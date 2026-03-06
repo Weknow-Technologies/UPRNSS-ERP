@@ -1,0 +1,4 @@
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home3/cloudice/demouprnss.cloudice.in/
+    - /bin/cp -R * $DEPLOYPATH
