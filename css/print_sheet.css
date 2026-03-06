@@ -1,0 +1,15 @@
+@charset "utf-8";
+/* CSS Document */
+
+*{
+	font-family: 'Nirmal, Calibri';
+}
+
+.navbar, .sidebar, .no-print, .footer {display: none;}
+
+td, th {border: 1px solid;}
+
+table { page-break-inside:auto }
+tr    { page-break-inside:avoid;}
+thead { display:table-header-group }
+tfoot { display:table-footer-group }

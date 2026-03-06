@@ -1,0 +1,16 @@
+payroll_old/
+project_file_upload/
+*.zip
+*.log
+*.mp4
+*.jpg
+*.sql
+.env
+error_log
+user_data
+uploads
+Cr-file
+payroll_24_01_2024
+tender_upload
+project_file_upload
+file_upload

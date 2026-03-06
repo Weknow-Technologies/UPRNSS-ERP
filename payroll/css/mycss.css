@@ -1,0 +1,39 @@
+body{
+	font-size:14px; 
+	font-family:"Calibri", Tahoma, Arial, Verdana, sans-serif;
+}
+.contaner{
+	background: linear-gradient(to bottom, #66aaaa 0%, #ff99cc 100%); 
+	background-repeat:no-repeat;
+}
+.panel{
+		border:0px solid;
+		border-color: #ff99cc;
+}
+.panel-heading{
+	background-color: #66aaaa;
+	color: #ffffff;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+#submit{
+	background-color:#66aaaa;
+	color:white;
+	font-size:16px;
+}
+a{
+	color: #0d52c1;
+}
+
+td{
+	border: 0.5px solid #FFF;
+}
+
+table{
+	border-radius: 5px;
+	border: 1px solid;
+}
+#error{
+	color: red;
+}

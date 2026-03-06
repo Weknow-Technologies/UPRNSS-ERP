@@ -1,0 +1,22 @@
+body{
+	
+	background-repeat:no-repeat;
+}
+.contaner{
+	background: linear-gradient(to bottom, #66aaaa 0%, #ff99cc 100%); 
+	background-repeat:no-repeat;
+}
+.panel{
+		
+		 border-color: ;
+		 border:2px solid #66aaaa;
+			
+}
+#submit{
+	background-color:#66aaaa;
+	color:white;
+	font-size:16px;
+}
+a{
+	color: #0d52c1;
+}
