@@ -2,6 +2,7 @@
 date_default_timezone_set('Asia/Calcutta');
 $time = mktime(true);
 include("settings.php");
+include("billit_settings.php");
 
 $q = htmlspecialchars(urldecode(strtoupper($_REQUEST["term"])), ENT_QUOTES);
 if (!$q)
@@ -13,6 +14,12 @@ if (isset($_REQUEST['id'])) {
 	$id = '';
 }
 $data = array();
+
+if ($id == 'get_ledger'){
+    $sno = $_POST['sno'];
+    echo get_ledger($sno);
+    exit;
+}
 
 if ($id == 'villages') {
 	$sql = 'select * from location_village where parent=' . $q;

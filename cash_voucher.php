@@ -1,167 +1,257 @@
 <?php
-include("scripts/settings.php");$msg='';
+include("scripts/settings.php");
 include("scripts/billit_settings.php");
-include("scripts/alerts.php");
-$msg='';
-$response=0;
-$finalmsg='';
-$tab=1;
+$msg = '';
+$response = 0;
+$finalmsg = '';
+$tab = 1;
 date_default_timezone_set('Asia/Calcutta');
 //print_r($_POST);
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+	session_start();
 }
 if (!isset($_SESSION['username'])) {
-    $_SESSION['username'] = 'system'; // or redirect to login page
+	$_SESSION['username'] = 'system'; // or redirect to login page
 }
 
 
-if(isset($_POST['sale_date'])){
-	foreach($_POST as $k => $v){
+if (isset($_POST['sale_date'])) {
+	foreach ($_POST as $k => $v) {
 		$_POST[$k] = strtoupper($v);
 	}
 	$time = $_POST['sale_date'];
-	if($msg==''){
-		if(isset($_POST['treat_as_final'])){
+	if ($msg == '') {
+		if (isset($_POST['treat_as_final'])) {
 			$status = 1;
-		}
-		else{
+		} else {
 			$status = 0;
 		}
-		$first_by='';
-		$first_to='';
-		$count=0;
-		
-		
-		for($i=1; $i<=$_POST['id']; $i++){
-			if($_POST['account_'.$i.'_sno']!=''){
+		$first_by = '';
+		$first_to = '';
+		$count = 0;
+
+
+		for ($i = 1; $i <= $_POST['id']; $i++) {
+			if ($_POST['account_' . $i . '_sno'] != '') {
 				$count++;
 			}
 			//$msg .= '<h1>'.$_POST['voucher_type_'.$i].'</h1>';
-		 if ($_POST['voucher_type_'.$i] == 'BY' && $first_by == '') {
-                $first_by = $_POST['account_'.$i.'_sno'];
-            }
+			if ($_POST['voucher_type_' . $i] == 'BY' && $first_by == '') {
+				$first_by = $_POST['account_' . $i . '_sno'];
+			}
 
-            if ($_POST['voucher_type_'.$i] == 'TO' && $first_to == '') {
-                $first_to = $_POST['account_'.$i.'_sno'];
-            }
+			if ($_POST['voucher_type_' . $i] == 'TO' && $first_to == '') {
+				$first_to = $_POST['account_' . $i . '_sno'];
+			}
 		}
 	}
-		 $sql = 'INSERT INTO billit_invoice_cash_voucher 
+	$sql = 'INSERT INTO billit_invoice_cash_voucher 
         (timestamp, first_by, first_to, tot_debit, tot_credit, row_count, voucher_no, unit_id, created_by, creation_time)
         VALUES (
-            "'.$_POST['sale_date'].'",
-            "'.$first_by.'",
-            "'.$first_to.'",
-            "'.$_POST['total_damt_hidden'].'",
-            "'.$_POST['total_camt_hidden'].'",
-            "'.$count.'",
-            "'.$_POST['challan_no'].'",
-            "'.$_POST['unit_id'].'",
-            "'.$_SESSION['username'].'",
-            "'.date("Y-m-d H:i:s").'"
+            "' . $_POST['sale_date'] . '",
+            "' . $first_by . '",
+            "' . $first_to . '",
+            "' . $_POST['total_damt_hidden'] . '",
+            "' . $_POST['total_camt_hidden'] . '",
+            "' . $count . '",
+            "' . $_POST['challan_no'] . '",
+            "' . $_POST['unit_id'] . '",
+            "' . $_SESSION['username'] . '",
+            "' . date("Y-m-d H:i:s") . '"
         )';
 
-        execute_query($sql);
-  $id = mysqli_insert_id($db);
+	execute_query($sql);
+	$id = mysqli_insert_id($db);
 
-// Get vendor information
-$vendor_name = '';
-if(isset($_POST['vendor_1']) && $_POST['vendor_1'] != '') {
-    $vendor_sql = "SELECT firm_name FROM vendor WHERE sno = '".$_POST['vendor_1']."'";
-    $vendor_result = mysqli_query($db, $vendor_sql);
-    if($vendor_row = mysqli_fetch_assoc($vendor_result)) {
-        $vendor_name = htmlspecialchars($vendor_row['firm_name']);
-    }
-}
-
-if(mysqli_error($db)){
-    $msg .= 'Error # 1.369 >> '.$sql;
-} else {
-    for($i=1; $i<=$_POST['id']; $i++){
-        
-        if(isset($_POST['account_'.$i.'_sno']) && $_POST['account_'.$i.'_sno'] != '') {
-
-            $description = isset($_POST['description_'.$i]) ? $_POST['description_'.$i] : '';
-            $remark = isset($_POST['remark_1']) ? $_POST['remark_1'] : '';
-
-            if(isset($_POST['voucher_type_'.$i]) && $_POST['voucher_type_'.$i] == 'BY') {
-                $sql = 'INSERT INTO billit_cash_voucher_journal 
-                (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
-                VALUES (
-                    "'.$id.'", 
-                    "'.$_POST['account_'.$i.'_sno'].'", 
-                    "", 
-                    "'.(isset($_POST['debit_'.$i]) ? $_POST['debit_'.$i] : 0).'", 
-                    "'.$_POST['sale_date'].'", 
-                    "'.$description.'", 
-                    "'.$vendor_name.'", 
-                    "'.$_POST['challan_no'].'", 
-                    "'.$_POST['unit_id'].'", 
-                    "'.$status.'"
-                )';
-            } else {
-                $sql = 'INSERT INTO billit_cash_voucher_journal 
-                (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
-                VALUES (
-                    "'.$id.'", 
-                    "", 
-                    "'.$_POST['account_'.$i.'_sno'].'", 
-                    "'.(isset($_POST['credit_'.$i]) ? $_POST['credit_'.$i] : 0).'", 
-                    "'.$_POST['sale_date'].'", 
-                    "'.$description.'", 
-                    "'.$vendor_name.'", 
-                    "'.$_POST['challan_no'].'", 
-                    "'.$_POST['unit_id'].'", 
-                    "'.$status.'"
-                )';
-            }
-
-            // Execute query
-            execute_query($sql);
-
-            // Check for MySQL errors
-            if(mysqli_error($db)){
-                $msg .= 'Error # 1.025 at Line : '.$i.' >> '.mysqli_error($db).' >> '.$sql;
-            }
-        }
-    }
-
-    if($msg == ''){
-        $msg .= 'Cash Voucher Data Saved.';
-        // Redirect to same page to show success message
-        echo "<script>window.location.href='cash_voucher.php?success=1';</script>";
-        exit();
-    }
-}
-
-$response = 1;
+	// Get vendor information
+	$vendor_name = '';
+	if (isset($_POST['vendor_1']) && $_POST['vendor_1'] != '') {
+		$vendor_sql = "SELECT firm_name FROM vendor WHERE sno = '" . $_POST['vendor_1'] . "'";
+		$vendor_result = mysqli_query($db, $vendor_sql);
+		if ($vendor_row = mysqli_fetch_assoc($vendor_result)) {
+			$vendor_name = htmlspecialchars($vendor_row['firm_name']);
+		}
 	}
-else {
+
+	if (mysqli_error($db)) {
+		$msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
+	} else {
+		for ($i = 1; $i <= $_POST['id']; $i++) {
+
+			if (isset($_POST['account_' . $i . '_sno']) && $_POST['account_' . $i . '_sno'] != '') {
+
+				$description = isset($_POST['description_' . $i]) ? $_POST['description_' . $i] : '';
+				$remark = isset($_POST['remark_1']) ? $_POST['remark_1'] : '';
+
+				if (isset($_POST['voucher_type_' . $i]) && $_POST['voucher_type_' . $i] == 'BY') {
+					$sql = 'INSERT INTO billit_cash_voucher_journal 
+                (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
+                VALUES (
+                    "' . $id . '", 
+                    "' . $_POST['account_' . $i . '_sno'] . '", 
+                    "", 
+                    "' . (isset($_POST['debit_' . $i]) ? $_POST['debit_' . $i] : 0) . '", 
+                    "' . $_POST['sale_date'] . '", 
+                    "' . $description . '", 
+                    "' . $vendor_name . '", 
+                    "' . $_POST['challan_no'] . '", 
+                    "' . $_POST['unit_id'] . '", 
+                    "' . $status . '"
+                )';
+				} else {
+					$sql = 'INSERT INTO billit_cash_voucher_journal 
+                (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
+                VALUES (
+                    "' . $id . '", 
+                    "", 
+                    "' . $_POST['account_' . $i . '_sno'] . '", 
+                    "' . (isset($_POST['credit_' . $i]) ? $_POST['credit_' . $i] : 0) . '", 
+                    "' . $_POST['sale_date'] . '", 
+                    "' . $description . '", 
+                    "' . $vendor_name . '", 
+                    "' . $_POST['challan_no'] . '", 
+                    "' . $_POST['unit_id'] . '", 
+                    "' . $status . '"
+                )';
+				}
+
+				// Execute query
+				execute_query($sql);
+
+				// Check for MySQL errors
+				if (mysqli_error($db)) {
+					$msg .= '<div class="alert alert-danger">Error # 1.025 at Line : ' . $i . ' >> ' . mysqli_error($db) . ' >> ' . $sql . '</div>';
+				}
+			}
+		}
+
+		if ($msg == '') {
+			$msg .= '<div class="alert alert-success">Cash Voucher Data Saved</div>';
+			// Redirect to same page to show success message
+			echo "<script>window.location.href='cash_voucher.php?success=1';</script>";
+			exit();
+		}
+	}
+
+	$response = 1;
+} else {
 	$sql = 'select * from billit_invoice_cash_voucher order by sno desc limit 1';
 	$date = execute_query($sql);
-	if(mysqli_num_rows($date)==0){
+	if (mysqli_num_rows($date) == 0) {
 		$_POST['sale_date'] = date("Y-m-d");
-	}
-	else{
+	} else {
 		$date = mysqli_fetch_array($date);
 		$date = $date['timestamp'];
 		$_POST['sale_date'] = $date;
 	}
-	$response=1;
+	$response = 1;
 }
 
 if(isset($_GET['id'])){
-	$sql = 'select * from billit_invoice_cash_voucher where sno="'.$_GET['id'].'"';
+	$sql = 'SELECT * FROM `billit_invoice_cash_voucher` AS `bicv` JOIN `billit_cash_voucher_journal` AS `bcvj` ON `bicv`.`sno` = `bcvj`.`journal_id` WHERE `bicv`.`sno` ="'.$_GET['id'].'"';
 	$old_data = mysqli_fetch_assoc(execute_query($sql));
+	$sqlJournal = 'select * from billit_cash_voucher_journal where journal_id="'.$_GET['id'].'"';
+	$result = execute_query($sqlJournal);
+	$old_Journal = [];
+    while($row = mysqli_fetch_assoc($result)){
+        $old_Journal[] = $row;
+    }
 }
+
+if(isset($_POST['sale_date']) && isset($_POST['edit_sno']) && $_POST['edit_sno']!=''){
+	$id = $_POST['edit_sno'];
+	if(isset($_POST['treat_as_final'])){
+		$status = 1;
+	}else{
+		$status = 0;
+	}
+	$first_by='';
+	$first_to='';
+	$count=0;
+	for($i=1; $i<=$_POST['id']; $i++){
+		if($_POST['account_'.$i.'_sno']!=''){
+			$count++;
+		}
+		if ($_POST['voucher_type_'.$i] == 'BY' && $first_by == '') {
+			$first_by = $_POST['account_'.$i.'_sno'];
+		}
+		if ($_POST['voucher_type_'.$i] == 'TO' && $first_to == '') {
+			$first_to = $_POST['account_'.$i.'_sno'];
+		}
+	}
+
+	$sql = 'UPDATE billit_invoice_cash_voucher SET
+		timestamp = "'.$_POST['sale_date'].'",
+		first_by = "'.$first_by.'",
+		first_to = "'.$first_to.'",
+		tot_debit = "'.$_POST['total_damt_hidden'].'",
+		tot_credit = "'.$_POST['total_camt_hidden'].'",
+		row_count = "'.$count.'",
+		voucher_no = "'.$_POST['challan_no'].'",
+		unit_id = "'.$_POST['unit_id'].'"
+		WHERE sno="'.$id.'"';
+//	execute_query($sql);
+	$del = "DELETE FROM billit_cash_voucher_journal WHERE journal_id='".$id."'";
+//	execute_query($del);
+	$vendor_name = '';
+	if(isset($_POST['vendor_1']) && $_POST['vendor_1']!=''){
+		$vendor_sql = "SELECT firm_name FROM vendor WHERE sno='".$_POST['vendor_1']."'";
+		$vendor_result = mysqli_query($db,$vendor_sql);
+		if($vendor_row = mysqli_fetch_assoc($vendor_result)){
+			$vendor_name = htmlspecialchars($vendor_row['firm_name']);
+		}
+	}
+	for($i=1; $i<=$_POST['id']; $i++){
+		if(isset($_POST['account_'.$i.'_sno']) && $_POST['account_'.$i.'_sno']!=''){
+			$description = isset($_POST['description_'.$i]) ? $_POST['description_'.$i] : '';
+			if($_POST['voucher_type_'.$i]=='BY'){
+				$sql = 'INSERT INTO billit_cash_voucher_journal
+				(journal_id, `by`, `to`, amount, timestamp, remarks, vendor, challan_no, unit_id, status)
+				VALUES(
+				"'.$id.'",
+				"'.$_POST['account_'.$i.'_sno'].'",
+				"",
+				"'.$_POST['debit_'.$i].'",
+				"'.$_POST['sale_date'].'",
+				"'.$description.'",
+				"'.$vendor_name.'",
+				"'.$_POST['challan_no'].'",
+				"'.$_POST['unit_id'].'",
+				"'.$status.'"
+				)';
+			}else{
+				$sql = 'INSERT INTO billit_cash_voucher_journal
+				(journal_id, `by`, `to`, amount, timestamp, remarks, vendor, challan_no, unit_id, status)
+				VALUES(
+				"'.$id.'",
+				"",
+				"'.$_POST['account_'.$i.'_sno'].'",
+				"'.$_POST['credit_'.$i].'",
+				"'.$_POST['sale_date'].'",
+				"'.$description.'",
+				"'.$vendor_name.'",
+				"'.$_POST['challan_no'].'",
+				"'.$_POST['unit_id'].'",
+				"'.$status.'"
+				)';
+			}
+//			execute_query($sql);
+		}
+	}
+
+	if($msg==''){
+		$msg='Cash Voucher Updated Successfully';
+	}
+}
+
 if(isset($_GET['del'])){
-	$sql = 'delete from billit_invoice_cash_voucher where sno="'.$_GET['del'].'"';
-	execute_query($sql);
-	$msg .= 'Deleted';
+    $id = (int)$_GET['del'];
+    execute_query("DELETE FROM billit_cash_voucher_journal WHERE journal_id = '$id'");
+    execute_query("DELETE FROM billit_invoice_cash_voucher WHERE sno = '$id'");
+    $msg .= 'Deleted';
 }
-if(isset($_GET['view'])){
-	$response=2;
+if (isset($_GET['view'])) {
+	$response = 2;
 }
 if(isset($_GET['success']) && $_GET['success'] == 1){
 	$msg = 'Cash Voucher Data Saved Successfully!';
@@ -171,16 +261,16 @@ page_header_start();
 
 ?>
 <script type="text/javascript" language="javascript">
-function trim(stringToTrim) {
-	return stringToTrim.replace(/^\s+|\s+$/g,"");
-}
+	function trim(stringToTrim) {
+		return stringToTrim.replace(/^\s+|\s+$/g, "");
+	}
 
-function getCurrent(id){
-	document.getElementById('current').value = id;
-}
-function printinvoice() {
-	window.open("printing.php");
-}
+	function getCurrent(id) {
+		document.getElementById('current').value = id;
+	}
+	function printinvoice() {
+		window.open("printing.php");
+	}
 </script>
 
 
@@ -188,10 +278,12 @@ function printinvoice() {
 page_header_end();
 page_sidebar();
 ?>
-<?php if(isset($msg) && $msg != ''): ?>
-    <?php echo alert($msg); ?>
+<?php if (isset($msg) && $msg != ''): ?>
+	<?php echo $msg; ?>
 <?php endif; ?>
-<form id="purchase_form" name="purchase_form" autocomplete="off" enctype="multipart/form-data" method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>"  onSubmit="return check_prev_date($('[name=&#34;sale_date&#34;]').val());">
+<form id="purchase_form" name="purchase_form" autocomplete="off" enctype="multipart/form-data" method="post"
+	action="<?php echo $_SERVER['PHP_SELF']; ?>"
+	onSubmit="return check_prev_date($('[name=&#34;sale_date&#34;]').val());">
 	<input type="hidden" name="parent_id" id="parent_hidden" value="6">
 
 	<div class="row">
@@ -234,7 +326,7 @@ page_sidebar();
 								
 							</td>
               
-							<td>Treat as Final : <input type="checkbox" name="treat_as_final" <?php if(isset($_GET['id'])){if($old_data['status']==1){echo "checked='checked'";}}else{ echo 'checked="checked"';}?>></td>
+							<td>Treat as Final : <input type="checkbox" name="treat_as_final" <?php if(isset($_GET['id'])){if(isset($old_data['status']) && $old_data['status']==1){echo "checked='checked'";}}else{ echo 'checked="checked"';}?>></td>
 							<td class="text-right">
 								<a href="cash_voucher.php?view=view"><button type="button" class="btn btn-warning">View Cash Vouchers</button></a>
 							</td>
@@ -245,7 +337,7 @@ page_sidebar();
 							document.writeln(DateInput('sale_date', 'purchase_form', false, 'YYYY-MM-DD', '<?php if(isset($_GET['id'])){echo $old_data['timestamp'];}else{ echo $_POST['sale_date'];} ?>', <?php echo $tab++; $tab+=3; ?>));
 							</script></td>
 							<td>Voucher No.</td>
-							<td><input id="challan_no" name="challan_no" class="field text" size="12" maxlength="18" tabindex="<?php echo $tab++; ?>" type="text" value="<?php if(isset($_GET['id'])){echo $old_data['challan_no'];}?>"></td>
+							<td><input id="challan_no" name="challan_no" class="field text" size="12" maxlength="18" tabindex="<?php echo $tab++; ?>" type="text" value="<?php if(isset($_GET['id'])){echo $old_data['voucher_no'];}?>"></td>
 						</tr>
 					</table>
 				</div>
@@ -256,17 +348,16 @@ page_sidebar();
 						<div class="alert alert-primary">Cash Voucher Particulars</div>
 					</div>
 				</div>
-				
-				
 
-							<div class="legend" id="legend_container">
+
+
+						<div class="legend" id="legend_container">
 						<div class="row" id="row_1">
 							<div class="col-md-3 mb-2">
 								<label for="vendor_1" class="form-label">Vendor</label>
 								<select name="vendor_1" id="vendor_1" class="form-control" onFocus="set_current(1)">
 									<option value="">-- Select Vendor --</option>
-
-									<?php   
+									<?php
 									// Fetch vendors from vendor table
 									$sql = "
 										SELECT sno, firm_name 
@@ -282,7 +373,11 @@ page_sidebar();
 										while ($row = mysqli_fetch_assoc($result)) {
 											$id   = htmlspecialchars($row['sno']);
 											$name = htmlspecialchars(trim($row['firm_name']));
-											echo "<option value=\"$id\">$name</option>";
+                                            $selected = "";
+                                            if(isset($_GET['id']) && $old_data['vendor'] == $name){
+                                                $selected = "selected";
+                                            }
+                                            echo "<option value='".$id."' $selected>".$name."</option>";
 										}
 									} else {
 										echo "<option value=''>No Vendors Found</option>";
@@ -301,8 +396,9 @@ page_sidebar();
 							<!-- On Account Of -->
 							<div class="col-md-3 mb-2">
 								<label for="description_1" class="form-label">On account of</label>
-								<input type="text" name="description_1" id="description_1" class="form-control"
-									placeholder="Enter Description" onBlur="insert_row(1);" onFocus="set_current(1)">
+								<input type="text" name="description" id="description_1" class="form-control"
+									placeholder="Enter Description" onBlur="insert_row(1);" onFocus="set_current(1)"
+									value="<?php if(isset($_GET['id'])){ echo $old_data['remarks']; } ?>">
 							</div>
 							<div class="col-md-3 mb-2">
 								<label>&nbsp;</label>
@@ -336,7 +432,7 @@ page_sidebar();
 								<input type="text" name="description_1" id="description_1" class="form-control" placeholder="Description" onFocus="set_current(1)">
 							</div>
 						</div>
-					</div>
+					    </div>
 				<div class="row mt-3">
 					<div class="col-12">
 						<button type="button" class="btn btn-success" onclick="add_new_row()">Add Row</button>
@@ -359,16 +455,16 @@ page_sidebar();
 						</div>
 					</div>
 				</div>
-			<div class="row">
-				<div class="col-12 text-left">
-					<input id="saveForm" name="saveForm" class="btn btn-primary" type="submit" value="Submit" tabindex="<?php echo $tab;?>" >
-				</div>
-			</div>
-            <input type="hidden" name="edit_sno" value="<?php if(isset($_GET['id'])){echo $_GET['id'];}?>" />
-			<input type="hidden" name="id" id="id" value="1">
-			<input type="hidden" name="current" id="current" value="1">
-			<input type="hidden" name="total_camt_hidden" id="total_camt_hidden" value="">
-			<input type="hidden" name="total_damt_hidden" id="total_damt_hidden" value="">
+			    <div class="row">
+                    <div class="col-12 text-left">
+                        <input id="saveForm" name="saveForm" class="btn btn-primary" type="submit" value="Submit" tabindex="<?php echo $tab;?>" >
+                    </div>
+                </div>
+                <input type="hidden" name="edit_sno" value="<?php if(isset($_GET['id'])){echo $_GET['id'];}?>" />
+                <input type="hidden" name="id" id="id" value="1">
+                <input type="hidden" name="current" id="current" value="1">
+                <input type="hidden" name="total_camt_hidden" id="total_camt_hidden" value="">
+                <input type="hidden" name="total_damt_hidden" id="total_damt_hidden" value="">
 			</div>
             
         </table>
@@ -429,7 +525,7 @@ page_sidebar();
                                   <div class="dropdown-menu dropdown-menu-right">
                                     <a class="dropdown-item" href="' . $_SERVER['PHP_SELF'] . '?id=' . $row['sno'] . '">✏️ Edit</a>
                                     <a class="dropdown-item" target="_blank" href="cash_voucher_print.php?id=' . $row['sno'] . '">👁️ View Details</a>
-                                    <a class="dropdown-item" target="_blank" href="billit_recive_print.php?voucher=' . $row['sno'] . '">🧾 Voucher</a>
+                                    <a class="dropdown-item" target="_blank" href="cash_voucher_print.php?id=' . $row['sno'] . '">🧾 Voucher</a>
                                   <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="' . $_SERVER['PHP_SELF'] . '?del=' . $row['sno'] . '" onclick="return confirm(\'Delete this entry?\')">🗑️ Delete</a>
                                   </div>
@@ -785,14 +881,17 @@ function update_parent(parent_id) {
 
 </script>
 <!-- FIRST load jQuery only ONCE -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script src="js/jquery.3.2.1.min.js"></script>
 
 <!-- Then load jQuery UI -->
-<!--<script src="http://localhost/ERP-UPRNSS/jquery_ui/jquery-ui.js"></script>-->
-
+<!-- <script src="http://localhost/ERP-UPRNSS/jquery_ui/jquery-ui.js"></script> -->
+<script src="js/jquery-ui.js"></script>
 <!-- Bootstrap -->
-<!--<script src="http://localhost/ERP-UPRNSS/bootstrap/js/bootstrap-switch.js"></script>-->
-<script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
+<!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+<script src="js/core/bootstrap.min.js"></script>
+<!-- <script src="http://localhost/ERP-UPRNSS/bootstrap/js/bootstrap-switch.js"></script> -->
+<script src="js/plugins/bootstrap-switch.js"></script>
 
 <!-- Then your custom scripts / handlers -->
 <script>
@@ -806,7 +905,59 @@ $("#create_form").on("submit", function(e){
     console.log("Form submit executed!");
     create_new();
 });
+var journalData = <?php echo json_encode($old_Journal ?? []); ?>;
+document.addEventListener("DOMContentLoaded", function(){
+    if(!journalData || journalData.length === 0) return;
+    let totalDebit = 0;
+    let totalCredit = 0;
+    journalData.forEach(function(row, index){
+        let i = index + 1;
+        if(i > 1){
+            add_new_row();
+        }
+        set_current(i);
+        if(document.getElementsByName("description_"+i)[0]){
+            document.getElementsByName("description_"+i)[0].value = row.remarks;
+        }
+        if(row.by && row.by !== ""){
+            $("#voucher_type_"+i).val("by");
+            update_voucher(i);
+            $("#debit_"+i).val(row.amount);
+            getLedgerName(row.by, function(name){
+                $("#account_"+i).val(name);
+            });
+            totalDebit += parseFloat(row.amount || 0);
+        }
+        if(row.to && row.to !== ""){
+            $("#voucher_type_"+i).val("to");
+            update_voucher(i);
+            $("#credit_"+i).val(row.amount);
+            getLedgerName(row.to, function(name){
+                $("#account_"+i).val(name);
+            });
+            totalCredit += parseFloat(row.amount || 0);
+        }
 
+    });
+    $("#total_damt").text(totalDebit);
+    $("#total_camt").text(totalCredit);
+    $("#total_damt_hidden").val(totalDebit);
+    $("#total_camt_hidden").val(totalCredit);
+});
+function getLedgerName(sno, callback){
+    $.ajax({
+        url: "scripts/ajax.php",
+        type: "POST",
+        data: {
+            "term": "b",
+            "id": "get_ledger",
+            "sno" : sno
+        },
+        success: function(response){
+            callback(response);
+        }
+    });
+}
 </script>
 
 <?php

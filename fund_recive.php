@@ -577,6 +577,10 @@ if (isset($_GET['edit_sno']) && $_GET['edit_sno'] != '') {
     $_POST['remark'] = $data['remark'];
     $_POST['edit_sno'] = $data['sno'];
 
+    // Load unit_id from billit_invoice_erp_receipt
+    $jr = mysqli_fetch_assoc(execute_query('SELECT unit_id FROM billit_invoice_erp_receipt WHERE table_name="invoice_fund_receive" AND table_id="' . $editId . '" LIMIT 1'));
+    $_POST['unit_id'] = $jr ? $jr['unit_id'] : '';
+
     // Load details
     $details = [];
     $res = execute_query('SELECT * FROM transaction_fund_receive WHERE invoice_id="' . $editId . '" ORDER BY sno ASC');
@@ -649,14 +653,20 @@ if (isset($_GET['delid'])) {
 
     function fund_receive_to() {
         var type = document.getElementById("fund_receive_to");
-        if (type.value == "Unit") {
-            document.getElementById("unit").style.display = "flex";
-            document.getElementById("bank_unit").style.display = "flex";
+        var val = type ? type.value : "HO";
+
+        if (val == "Unit") {
+            document.getElementById("unit").style.display = "block";
+            document.getElementById("bank_unit").style.display = "block";
             document.getElementById("bank_ho").style.display = "none";
+            document.getElementById("bank_name_unit").disabled = false;
+            document.getElementById("bank_name").disabled = true;
         } else {
             document.getElementById("unit").style.display = "none";
             document.getElementById("bank_unit").style.display = "none";
-            document.getElementById("bank_ho").style.display = "flex";
+            document.getElementById("bank_ho").style.display = "block";
+            document.getElementById("bank_name_unit").disabled = true;
+            document.getElementById("bank_name").disabled = false;
         }
     }
 
@@ -1003,7 +1013,7 @@ if (isset($_GET['delid'])) {
                     if (exclude === 0) { // show Received only in create mode
                         parts.push('Received: <b>₹' + rcvd.toFixed(2) + '</b>');
                     }
-                    parts.push('Installments: <b>' + inst_cnt + '</b>');
+                    parts.push('Installmentssssssss: <b>' + inst_cnt + '</b>');
                     parts.push('Remaining: <b id="remain_' + rowId + '">₹' + remain.toFixed(2) + '</b>');
 
                     $("#proj_info_" + rowId).html(parts.join(' | '));
@@ -1175,194 +1185,136 @@ if (isset($_GET['delid'])) {
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap');
 
     :root {
-        --red-light: #f44336;
-        --red-dark: #cc0000;
-        --red-deep: #a00000;
-        --yellow: #f6b800;
-        --green: #008b00;
-        --soft-bg: #fdfaf9;
+        --primary: #c83232;
+        --primary-light: #f8e5e5;
+        --bg-color: #fbfafb;
+        --success: #28A745;
+        --danger: #E74C3C;
         --glass: rgba(255, 255, 255, 0.1);
     }
 
     body {
-        background: var(--soft-bg);
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        background-attachment: fixed;
         font-family: 'Inter', sans-serif;
         color: #333;
     }
 
-    /* 💎 Premium Layered Shadows */
+    /* 💎 Premium Layered Shadows & Glassmorphism */
     .card,
     .card-custom {
-        border: none;
-        border-radius: 20px !important;
-        background: #fff;
-        margin-bottom: 30px;
-        overflow: hidden;
-        box-shadow:
-            0 2px 4px rgba(0, 0, 0, 0.02),
-            0 10px 20px rgba(0, 0, 0, 0.04),
-            0 20px 40px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(248, 229, 229, 0.5) !important;
+        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 4px 15px rgba(200, 50, 50, 0.03) !important;
         transition: box-shadow 0.3s ease;
     }
 
     .card:hover,
     .card-custom:hover {
-        box-shadow:
-            0 25px 50px -12px rgba(183, 28, 28, 0.15),
-            0 10px 20px -5px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 8px 25px rgba(200, 50, 50, 0.06) !important;
     }
 
-    /* ✨ Glassmorphism Header */
+    /* ✨ Clean Header */
     .card-header,
     .card-custom .card-header {
-        background: linear-gradient(135deg, var(--red-light), var(--red-dark), var(--red-deep)) !important;
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        color: white !important;
+        background: transparent !important;
+        border-bottom: 1px solid #fdf2f2 !important;
+        color: var(--primary) !important;
         font-family: 'Outfit', sans-serif;
-        font-weight: 700 !important;
-        border-top-left-radius: 20px !important;
-        border-top-right-radius: 20px !important;
-        padding: 16px 24px;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
+        font-weight: 800 !important;
+        padding: 16px 24px 12px !important;
     }
 
     .card-title {
         font-size: 1.2rem;
         font-family: 'Outfit', sans-serif;
         margin-bottom: 0 !important;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     label {
-        font-weight: 700 !important;
+        text-transform: uppercase;
         font-size: 14px !important;
-        margin-bottom: 2px !important;
-        /* Tighter label-input gap */
-        color: #444;
+        color: var(--primary);
+        font-weight: 800 !important;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px !important;
+        position: relative;
+        padding-left: 10px;
+    }
+
+    label::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 12px;
+        background-color: var(--primary);
+        border-radius: 2px;
     }
 
     .form-select,
     .form-control {
         border-radius: 8px;
-        border: 1.5px solid #e0e0e0;
+        border: 1px solid #f1d4d4;
         transition: all 0.3s ease;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
-        /* Subtle depth */
+        box-shadow: none;
+        font-size: 13px;
+        padding: 8px 12px;
     }
 
     .form-control:focus,
     .form-select:focus {
-        border-color: var(--red-light) !important;
-        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.12) !important;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px rgba(200, 50, 50, 0.1) !important;
         background-color: #fff !important;
         outline: none;
     }
 
-    /* Primary button */
-    .btn-primary {
-        background: linear-gradient(135deg, var(--red-light), var(--red-dark));
-        border: none;
-        color: #fff;
+    .btn-success {
+        background: linear-gradient(135deg, #28A745, #2ed351) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .actions-col {
+        min-width: 150px;
+    }
+
+    .dropdown-menu {
+        border: 1px solid var(--primary-light);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 8px 0;
+        margin-top: 8px;
+    }
+
+    .dropdown-item {
+        padding: 10px 20px;
+        font-size: 13px;
         border-radius: 8px;
-        padding: 8px 25px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.4s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 2px 8px;
+        transition: all 0.2s ease;
     }
 
-    .btn-primary:hover {
-        background: linear-gradient(135deg, var(--red-dark), var(--red-light));
-        transform: scale(1.05) translateY(-2px);
-        box-shadow: 0 7px 14px rgba(229, 57, 53, 0.3);
+    .dropdown-item:hover {
+        background: var(--primary-light);
+        color: var(--primary);
+        transform: translateX(4px);
     }
-
-    .btn:active {
-        transform: scale(0.96) translateY(0) !important;
-        /* Pressed feel */
-        transition: transform 0.1s ease;
-    }
-
-    /* Table Styling */
-    .table-custom {
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    table thead th {
-        background: linear-gradient(45deg, var(--red-light), var(--red-dark));
-        text-align: center;
-        vertical-align: middle;
-        font-size: 13px;
-        white-space: nowrap;
-        color: white !important;
-    }
-
-    table tbody td {
-        font-size: 13px;
-        padding: 12px 8px !important;
-        color: #444;
-        border: 1px solid #f0f0f0 !important;
-    }
-
-    table tr:hover {
-        background-color: #fff5f6 !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-    }
-
-    /* 🎞️ Entry Animations */
-
-
-    .sticky-header thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-
-    /* GLOBAL PERFECT CENTER ALIGN FOR ALL INPUTS & SELECTS */
-    input.form-control,
-    select.form-select,
-    input[type="text"],
-    input[type="date"],
-    input[type="number"],
-    select {
-        height: 42px !important;
-        text-align: center !important;
-        padding: 5px 10px !important;
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        /* Bold Input Text */
-    }
-
-
-    /* For placeholder center */
-    input::placeholder,
-    select::placeholder {
-        text-align: center !important;
-    }
-
-    /* Sidebar always on top */
-    .sidebar {
-        position: fixed;
-        z-index: 9999 !important;
-    }
-
-    /* Your fixed TH behind sidebar */
-    table th {
-        position: sticky;
-        top: 0;
-        z-index: 10 !important;
-    }
-
-
-
-
-    /* Print mode */
 </style>
 
 
@@ -1394,147 +1346,136 @@ if (isset($_GET['delid'])) {
                             </div>
                         </div>
 
+                <div class="col-md-2 mb-3">
+                    <label>Fund Received to</label>
+
+                    <?php
+                    $username = $_SESSION['username'];
+                    $isHo = ($username == "headacc") ? 1 : 0;
+                    ?>
+                    <select name="fund_receive_to" id="fund_receive_to" class="form-control form-select"
+                        tabindex="<?php echo $tab++; ?>" onchange="fund_receive_to()" <?php echo $isHo ? '' : 'style="pointer-events: none; background-color: #e9ecef;"'; ?>>
+                        <option value="HO" <?php echo $isHo ? 'selected' : ''; ?>>
+                            HO
+                        </option>
+                        <option value="Unit" <?php echo $isHo ? '' : 'selected'; ?>>
+                            UNIT
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3" id="unit">
+                    <label>Unit Name</label>
+                    <select name="unit_id" id="unit_id" class="form-control form-select">
+                        <option value="">-select-</option>
+                        <?php
+                        if (is_array($_SESSION['divisions'])) {
+                            foreach ($_SESSION['divisions'] as $k => $v) {
+                                $selected = (@$_POST['unit_id'] == $v) ? 'selected' : '';
+                                echo '<option value="' . $v . '" ' . $selected . '>' . get_division($v) . '</option>';
+                            }
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label>Installment</label>
+                    <select name="installment" id="installment" class="form-control form-select"
+                        tabindex="<?php echo $tab++; ?>">
+                        <option value="">Select--</option>
+                        <?php
+                        for ($k = 1; $k <= 10; $k++) {
+                            $sel = (@$_POST['installment'] == $k ? 'selected' : '');
+                            echo '<option value="' . $k . '" ' . $sel . '>' . str_repeat('I', $k) . ' Installment</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label>Order No.(GO)</label>
+                    <input type="text" name="order_no" id="order_no" class="form-control"
+                        onblur="getOrderData(this.value)" value="<?php echo @$_POST['order_no']; ?>"
+                        tabindex="<?php echo $tab++; ?>">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label>Voucher Number <small class="text-muted"></small></label>
+                    <input type="text" name="voucher_no" id="voucher_no" class="form-control"
+                        value="<?php echo @$_POST['voucher_no'] ?? ''; ?>" tabindex="<?php echo $tab++; ?>"
+                        placeholder="UPRNSS/2025-26/FUND/0001" oninput="setTodayDate()" required>
+                </div>
+                <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
+                    <label>Order Date</label>
+                    <script type="text/javascript" language="javascript">
+                        document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['order_date']; ?>', <?php echo $tab;
+                           $tab += 4; ?>));
+                    </script>
+                </div>
+                <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
+                    <label>Received Date</label>
+                    <script type="text/javascript" language="javascript">
+                        document.writeln(DateInput('receive_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['receive_date']; ?>', <?php echo $tab;
+                           $tab += 4; ?>));
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Project Details Card -->
+    <div class="card mb-4 shadow-sm" id="hide_project_type"
+        style="display:none; border-radius: 12px; border: 1px solid var(--primary-light);">
+        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+            style="border-bottom: none;">
+            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Project-wise Allocation</h5>
+            <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="add_rows()"
+                style="background-color: var(--primary); border-color: var(--primary); border-radius: 8px;">+ Add
+                Row</button>
+        </div>
+        <div class="card-body p-4">
+            <input type="hidden" name="division_id" id="division_id" class="form-control"
+                value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
+
+            <!-- First row (existing markup adapted with wrapper & remove icon) -->
+            <div id="rows_container">
+                <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
+                    <div id="row_wrap_<?php echo $i; ?>" class="row <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Fund Received to</label>
-                                <?php $isUnit = ($_SESSION['usertype'] == "9"); ?>
-                                <select name="fund_receive_to" id="fund_receive_to" class="form-control"
-                                    tabindex="<?php echo $tab++; ?>" onchange="fund_receive_to()" <?php echo $isUnit ? 'disabled' : ''; ?>>
-                                    <option value="HO" <?php echo ($_POST['fund_receive_to'] == 'HO' ? 'selected' : ''); ?>>HO</option>
-                                    <option value="Unit" <?php echo ($_POST['fund_receive_to'] == 'Unit' ? 'selected' : ''); ?>>UNIT</option>
-                                </select>
-                                <?php if ($isUnit) { ?><input type="hidden" name="fund_receive_to"
-                                                value="Unit"><?php } ?>
+                            <div class="form-group mb-1">
+                                <label>Department</label>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <select class="form-control" name="department_id_<?php echo $i; ?>"
+                                        id="department_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
+                                        <option value="">--- Select ---</option>
+                                        <?php
+                                        if (!empty($_SESSION['department'])) {
+                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
+                                        } elseif (!empty($_SESSION['divisions'])) {
+                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
+                                        }
+                                        $run = mysqli_query($db, $query);
+                                        while ($data = mysqli_fetch_array($run)) {
+                                            echo '<option value="' . $data['sno'] . '" ';
+                                            if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
+                                                echo ' selected="Selected"';
+                                            }
+                                            echo '>' . trim($data['department_name_hindi']) . '</option>';
+                                        }
+                                        ?>
+                                    </select>
+                                    <?php if ($i > 1) { ?>
+                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" title="Remove row"
+                                            onclick="remove_row(<?php echo $i; ?>)">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    <?php } ?>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="col-md-3" id="unit">
-                            <div class="form-group">
-                                <label>Unit Name</label>
-                                <?php
-                                $options = '';
-                                if (is_array($_SESSION['divisions'])) {
-                                    foreach ($_SESSION['divisions'] as $k => $v) {
-                                        $options .= '<option value="' . $v . '">' . get_division($v) . '</option>';
-                                    }
-                                }
-                                ?>
-                                <select name="unit_id" id="unit_id" class="form-control"
-                                    onChange="fill_bank_details(this.value)">
-                                    <option value="">-select-</option>
-                                    <?php echo $options; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Installment</label>
-                                <select name="installment" id="installment" class="form-control"
-                                    tabindex="<?php echo $tab++; ?>">
-                                    <option value="">Select--</option>
-                                    <?php
-                                    for ($k = 1; $k <= 10; $k++) {
-                                        $sel = ($_POST['installment'] == $k ? 'selected' : '');
-                                        echo '<option value="' . $k . '" ' . $sel . '>' . str_repeat('I', $k) . ' Installment</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-2">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Order No.(GO)</label>
-                                <input type="text" name="order_no" id="order_no" class="form-control" 
-                                onblur="getOrderData(this.value)" value="<?php echo $_POST['order_no']; ?>" tabindex="<?php echo $tab++; ?>">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Voucher Number <small class="text-muted">(Format: UPRNSS/2025-26/FUND/0001)</small></label>
-                                <input type="text" name="voucher_no" id="voucher_no" class="form-control"
-                                    value="<?php echo $_POST['voucher_no'] ?? ''; ?>" tabindex="<?php echo $tab++; ?>"
-                                    placeholder="UPRNSS/2025-26/FUND/0001" 
-                                    oninput="setTodayDate()" required>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Order Date</label>
-                                <script type="text/javascript" language="javascript">
-                                    document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo $_POST['order_date']; ?>', <?php echo $tab;
-                                       $tab += 4; ?>));
-                                </script>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Received Date</label>
-                                <script type="text/javascript" language="javascript">
-                                    document.writeln(DateInput('receive_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo $_POST['receive_date']; ?>', <?php echo $tab;
-                                       $tab += 4; ?>));
-                                </script>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Projects card -->
-                    <div class="card card-custom mt-3" id="hide_project_type" style="display:none;">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0 text-white"><i class="fas fa-tasks me-2"></i>Project-wise Allocation</h6>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-outline-primary btn-sm text-white" title="Add Row"
-                                    onclick="add_rows()">
-                                    <i class="fas fa-plus me-1"></i> Add Row
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <input type="hidden" name="division_id" id="division_id" class="form-control"
-                                value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
-
-                            <!-- First row (existing markup adapted with wrapper & remove icon) -->
-                            <div id="rows_container">
-                                <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
-                                            <div id="row_wrap_<?php echo $i; ?>"
-                                                class="row <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
-                                                <div class="col-md-2">
-                                                    <div class="form-group mb-1">
-                                                        <label>Department</label>
-                                                        <div class="d-flex gap-2 align-items-center">
-                                                            <select class="form-control" name="department_id_<?php echo $i; ?>"
-                                                                id="department_id_<?php echo $i; ?>"
-                                                                tabindex="<?php echo $tab++; ?>"
-                                                                onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
-                                                                <option value="">--- Select ---</option>
-                                                                <?php
-                                                                if (!empty($_SESSION['department'])) {
-                                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
-                                                                } elseif (!empty($_SESSION['divisions'])) {
-                                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
-                                                                }
-                                                                $run = mysqli_query($db, $query);
-                                                                while ($data = mysqli_fetch_array($run)) {
-                                                                    echo '<option value="' . $data['sno'] . '" ';
-                                                                    if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
-                                                                        echo ' selected="Selected"';
-                                                                    }
-                                                                    echo '>' . trim($data['department_name_hindi']) . '</option>';
-                                                                }
-                                                                ?>
-                                                            </select>
-                                                            <?php if ($i > 1) { ?>
-                                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2"
-                                                                            title="Remove row" onclick="remove_row(<?php echo $i; ?>)">
-                                                                            <i class="fas fa-trash-alt"></i>
-                                                                        </button>
-                                                            <?php } ?>
-                                                        </div>
-                                                    </div>
-                                                </div>
 
                                                 <div class="col-md-2">
                                                     <div class="form-group mb-1">
@@ -1546,194 +1487,194 @@ if (isset($_GET['delid'])) {
                                                     </div>
                                                 </div>
 
-                                                <div class="col-md-2">
-                                                    <div class="form-group mb-1">
-                                                        <label>District</label>
-                                                        <select class="form-control" name="district_id_<?php echo $i; ?>"
-                                                            id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                                            onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-3">
-                                                    <div class="form-group mb-1">
-                                                        <label>Project<span
-                                                                id="ledger_link_<?php echo $i; ?>"></span></label>
-                                                        <select class="form-control" name="project_id_<?php echo $i; ?>"
-                                                            id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                                            onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>)"></select>
-                                                        <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-3">
-                                                    <div class="form-group mb-1">
-                                                        <label>Project received amount</label>
-                                                        <input type="text" name="p_receive_amount_<?php echo $i; ?>"
-                                                            id="p_receive_amount_<?php echo $i; ?>" class="form-control"
-                                                            value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
-                                                            tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
-                                                        <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
-
-                                                        <!-- NEW: send displayed values via POST -->
-                                                        <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
-                                                            id="cgst_amount_<?php echo $i; ?>">
-                                                        <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
-                                                            id="sgst_amount_<?php echo $i; ?>">
-                                                        <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
-                                                            id="p_diff_amount_<?php echo $i; ?>">
-
-                                                    </div>
-                                                </div>
-                                            </div>
-                                <?php } ?>
-                            </div>
-
-                            <input type="hidden" name="add_rows_id" id="add_rows_id"
-                                value="<?php echo $_POST['add_rows_id']; ?>">
-                        </div>
-                    </div>
-
-                    
-                    <div class="row mt-2">
-                        <div class="col-md-1">
-                            <div class="form-group">
-                                <label>Percentage</label>
-                                <input type="text" name="tds_per" id="tds_per" class="form-control"
-                                    value="<?php echo $_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                                    onInput="percent_amt_calc()">
-                            </div>
-                        </div>
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label>TDS Deducted</label>
-                                <input type="text" name="tds_deducted" id="tds_deducted" class="form-control"
-                                    value="<?php echo $_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
+                            <div class="form-group mb-1">
+                                <label>District</label>
+                                <select class="form-control" name="district_id_<?php echo $i; ?>"
+                                    id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                    onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
                             </div>
                         </div>
-                        <div class="col-md-1">
-                            <div class="form-group">
-                                <label>Percentage</label>
-                                <input type="text" name="gst_tds_per" class="form-control" id="gst_tds_per"
-                                    value="<?php echo $_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                                    onInput="percent_amt_calc()">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>GST-TDS Deducted</label>
-                                <input type="text" name="gsttds_deducted" id="gsttds_deducted" class="form-control"
-                                    value="<?php echo $_POST['gsttds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Labour Cess</label>
-                                <input type="text" name="labour_sess" id="labour_sess" class="form-control"
-                                    value="<?php echo $_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
-                                    onInput="percent_amt_calc()">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Remark</label>
-                                <textarea name="remark" id="remark" class="form-control"
-                                    tabindex="<?php echo $tab++; ?>"><?php echo trim($_POST['remark']); ?></textarea>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Total Received Amount</label>
-                                <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount"
-                                    id="tot_receive_amount" class="form-control"
-                                    value="<?php echo $_POST['tot_receive_amount']; ?>"
-                                    tabindex="<?php echo $tab++; ?>">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Total Credit Amount in Bank</label>
-                                <input type="text" name="tot_credit_amount" id="tot_credit_amount"
-                                    class="form-control" value="<?php echo $_POST['tot_credit_amount']; ?>"
-                                    tabindex="<?php echo $tab++; ?>">
-                            </div>
-                        </div>
-                        <div class="col-md-4" id="bank_ho">
-                            <div class="form-group">
-                                <label>Bank Details</label>
-                                <select class="form-control" name="bank_name" id="bank_name"
-                                    tabindex="<?php echo $tab++; ?>">
-                                    <option value="">--- Select ---</option>
-                                    <?php
-                                    $query = 'select * from billit_customer where parent ="1" and unit_id="53"';
-                                    $run = mysqli_query($db, $query);
-                                    while ($data = mysqli_fetch_array($run)) {
-                                        echo '<option value="' . $data['sno'] . '" ';
-                                        if (isset($_POST['bank_name']) && $_POST['bank_name'] == $data['sno']) {
-                                            echo ' selected="Selected"';
-                                        }
-                                        echo '>' . trim($data['cus_name']) . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4" id="bank_unit">
-                            <div class="form-group">
-                                <label>Bank Details</label>
-                                <select class="form-control" name="bank_name" id="bank_name_unit"
-                                    tabindex="<?php echo $tab++; ?>"></select>
-                            </div>
-                        </div>
-                    </div>
-                    </div>
 
-                    <div class="col-md-12 pt-2" align="center">
-                        <div class="form-group">
-                            <button type="submit" name="submit" class="btn btn-success btn-fill">
-                                <?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
-                            </button>
-                            <input type="hidden" id="edit_sno" name="edit_sno"
-                                value="<?php echo $_POST['edit_sno']; ?>">
+                        <div class="col-md-3">
+                            <div class="form-group mb-1">
+                                <label>Project<span id="ledger_link_<?php echo $i; ?>"></span></label>
+                                <select class="form-control" name="project_id_<?php echo $i; ?>"
+                                    id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                    onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>)"></select>
+                                <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-1">
+                                <label>ProjectReceivedAmount</label>
+                                <input type="text" name="p_receive_amount_<?php echo $i; ?>"
+                                    id="p_receive_amount_<?php echo $i; ?>" class="form-control"
+                                    value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
+                                    tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
+                                <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
+
+                                <!-- NEW: send displayed values via POST -->
+                                <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
+                                    id="cgst_amount_<?php echo $i; ?>">
+                                <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
+                                    id="sgst_amount_<?php echo $i; ?>">
+                                <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
+                                    id="p_diff_amount_<?php echo $i; ?>">
+
+                            </div>
                         </div>
                     </div>
+                <?php } ?>
+            </div>
+
+            <input type="hidden" name="add_rows_id" id="add_rows_id" value="<?php echo $_POST['add_rows_id']; ?>">
+        </div>
+    </div>
+
+
+    <!-- 3. Financial Settings Card -->
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+            style="border-bottom: none;">
+            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Financial Settings</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-2 mb-3">
+                    <label>TDS (%)</label>
+                    <input type="text" name="tds_per" id="tds_per" class="form-control"
+                        value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                        onInput="percent_amt_calc()">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label>TDS Deducted</label>
+                    <input type="text" name="tds_deducted" id="tds_deducted" class="form-control"
+                        value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label>GST TDS (%)</label>
+                    <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control"
+                        value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                        onInput="percent_amt_calc()">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label>GST TDS Deducted</label>
+                    <input type="text" name="gsttds_deducted" id="gsttds_deducted" class="form-control"
+                        value="<?php echo @$_POST['gsttds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label>Labour Cess</label>
+                    <input type="text" name="labour_sess" id="labour_sess" class="form-control"
+                        value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
+                        onInput="percent_amt_calc()">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-12 mb-3">
+                    <label>Remark</label>
+                    <textarea name="remark" id="remark" class="form-control" style="height: auto; padding: 6px 12px;"
+                        rows="1" tabindex="<?php echo $tab++; ?>"><?php echo trim(@$_POST['remark']); ?></textarea>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 4. Dashboard Totals Card -->
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+            style="border-bottom: none;">
+            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Overview Totals</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label>Total Received Amount</label>
+                    <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount" id="tot_receive_amount"
+                        class="form-control" value="<?php echo @$_POST['tot_receive_amount']; ?>"
+                        tabindex="<?php echo $tab++; ?>" style="background-color: #fdfaf9;">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label>Total Credit Amount In Bank</label>
+                    <input type="text" name="tot_credit_amount" id="tot_credit_amount" class="form-control"
+                        value="<?php echo @$_POST['tot_credit_amount']; ?>" tabindex="<?php echo $tab++; ?>"
+                        style="background-color: #f6fdf6;">
+                </div>
+                <div class="col-md-4 mb-3" id="bank_ho">
+                    <label>Bank Details (HO)</label>
+                    <select class="form-control form-select" name="bank_name" id="bank_name"
+                        tabindex="<?php echo $tab++; ?>">
+                        <option value="">--- Select ---</option>
+                        <?php
+                        $query = 'select * from billit_customer where parent ="1" and unit_id="53"';
+                        $run = mysqli_query($db, $query);
+                        while ($data = mysqli_fetch_array($run)) {
+                            echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3" id="bank_unit" style="display:none;">
+                    <label>Bank Details (Unit)</label>
+                    <select class="form-control form-select" name="bank_name" id="bank_name_unit"
+                        tabindex="<?php echo $tab++; ?>">
+                        <option value="">--Select--</option>
+                        <?php
+                        $query = "SELECT * FROM billit_customer WHERE unit_id LIKE '%53%'";
+                        $run = mysqli_query($db, $query);
+                        while ($data = mysqli_fetch_assoc($run)) {
+                            echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Section -->
+    <div class="text-center mb-5">
+        <button type="submit" name="submit" class="btn btn-success btn-lg shadow-sm px-5"
+            style="border-radius: 10px; font-weight: 700; font-size: 16px;">
+            <?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
+        </button>
+        <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo @$_POST['edit_sno']; ?>">
     </div>
 </form>
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card card-custom">
-            <div class="card-header d-flex align-items-center">
-                <i class="fas fa-history me-2"></i>
-                <h6 class="mb-0 text-white">Recent Receipts</h6>
+        <!-- 5. Recent Fund Receives Table -->
+        <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+            <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+                style="border-bottom: none;">
+                <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Journal Voucher</h5>
             </div>
-            <div class="card-body table-full-width table-responsive">
-                <table class="table table-hover table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th>S.No.</th>
-                            <th>Voucher No.</th>
-                            <th>Fund Recevied at</th>
-                            <th>Order No</th>
-                            <th>Order Date</th>
-                            <th>Installment</th>
-                            <th>Tot Received Amount</th>
-                            <th>Remark</th>
-                            <th class="no-print">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $sql = 'SELECT * FROM `invoice_fund_receive` ORDER BY sno desc LIMIT 200';
-                        $result = execute_query($sql);
-                        $i = 1;
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            $actId = (int) $row['sno'];
-                            echo '<tr>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>S.No.</th>
+                                <th>Voucher No.</th>
+                                <th>FundReceivedAt</th>
+                                <th>OrderNo</th>
+                                <th>OrderDate</th>
+                                <th>Installment</th>
+                                <th>TotalReceivedAmount</th>
+                                <th>Remark</th>
+                                <th class="no-print">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $sql = 'SELECT * FROM `invoice_fund_receive` ORDER BY sno desc LIMIT 200';
+                            $result = execute_query($sql);
+                            $i = 1;
+                            while ($row = mysqli_fetch_assoc($result)) {
+                                $actId = (int) $row['sno'];
+                                echo '<tr>
                             <td>' . $i++ . '</td>
                             <td>' . htmlspecialchars($row['voucher_no']) . '</td>
                             <td>' . htmlspecialchars($row['fund_receive_to']) . '</td>
@@ -1757,18 +1698,18 @@ if (isset($_GET['delid'])) {
                                 </div>
                             </td>
                             </tr>';
-                        }
-                        ?>
-                    </tbody>
-                </table>
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<?php
-page_footer_start();
-?>
+    <?php
+    page_footer_start();
+    ?>
 
 <script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
 <script>
@@ -1790,26 +1731,26 @@ page_footer_start();
 
     function getOrderData(orderNo) {
         console.log("getOrderData called with:", orderNo);
-        
+
         if (!orderNo || orderNo.trim() === '') {
             console.log("Empty order number, skipping AJAX call");
             return;
         }
-        
+
         $.ajax({
             type: "POST",
             url: "scripts/ajax.php",
-            data: { 
+            data: {
                 "term": "b",
                 "id": "order_no",
-                "val": orderNo 
+                "val": orderNo
             },
             success: function (ajaxdata) {
                 console.log("Raw AJAX response:", ajaxdata);
                 try {
                     var data = JSON.parse(ajaxdata);
                     console.log("Parsed JSON:", data);
-                    
+
                     if(data.status == "success") {
                         console.log("Success! Order date:", data.order_date);
                         $("#voucher_no").val(data.voucher_no.trim());

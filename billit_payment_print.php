@@ -10,11 +10,11 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 date_default_timezone_set('Asia/Calcutta');
 
-if(isset($_GET['id'])){
+if (isset($_GET['id'])) {
     // First get the main voucher info
-    $sql = 'SELECT pay.* FROM billit_invoice_erp_payment pay WHERE pay.sno="'.$_GET['id'].'"';
+    $sql = 'SELECT pay.* FROM billit_invoice_erp_payment pay WHERE pay.sno="' . $_GET['id'] . '"';
     $old_data = mysqli_fetch_assoc(execute_query($sql));
-    
+
     // Check if voucher data exists
     if (!$old_data) {
         echo "<h2>Error: Voucher not found</h2>";
@@ -50,7 +50,7 @@ if(isset($_GET['id'])){
             // Ignore errors and continue with fallback
         }
     }
-    
+
     // Method 2: Get unit info from billit_stock_erp_payment table (this is where unit_id is actually stored)
     if ($old_data && $old_data['sno']) {
         try {
@@ -81,28 +81,34 @@ if(isset($_GET['id'])){
             // Ignore errors and continue
         }
     }
-    
+
     // Helper functions to get names
-    function get_unit_name($unit_id) {
-        if (empty($unit_id)) return '';
+    function get_unit_name($unit_id)
+    {
+        if (empty($unit_id))
+            return '';
         $result = execute_query("SELECT unit, unit_desc FROM billit_unit WHERE sno = '" . $unit_id . "' LIMIT 1");
         if ($result && $row = mysqli_fetch_assoc($result)) {
             return $row['unit_desc'] ?? $row['unit'] ?? '';
         }
         return $unit_id;
     }
-    
-    function get_project_name($project_id) {
-        if (empty($project_id)) return '';
+
+    function get_project_name($project_id)
+    {
+        if (empty($project_id))
+            return '';
         $result = execute_query("SELECT project_name_hindi FROM uprnss_project_temp WHERE sno = '" . $project_id . "' LIMIT 1");
         if ($result && $row = mysqli_fetch_assoc($result)) {
             return $row['project_name_hindi'] ?? '';
         }
         return $project_id;
     }
-    
-    function get_department_name($dept_id) {
-        if (empty($dept_id)) return '';
+
+    function get_department_name($dept_id)
+    {
+        if (empty($dept_id))
+            return '';
         $result = execute_query("SELECT department_name_hindi FROM uprnss_department_name WHERE sno = '" . $dept_id . "' LIMIT 1");
         if ($result && $row = mysqli_fetch_assoc($result)) {
             return $row['department_name_hindi'] ?? '';
@@ -112,38 +118,46 @@ if(isset($_GET['id'])){
 }
 ?>
 <html>
+
 <head>
-	<title>Payment Voucher</title>
-	<style>
-		body{width:1024px;}
-		td, th{padding: 5px;}
-		
-			
-		@media print {
-			.total-row {
-				font-weight: bold;
-				background-color: transparent !important;
-			}
-			th {
-				background-color: transparent !important;
-			}
-		}
+    <title>Journal Voucher</title>
+    <style>
+        body {
+            width: 1024px;
+        }
 
-		@media print {
-			body::after {
-				content: "Powered By AIPPCA";
-				position: fixed;
-				font-size: 50px;
-				color: rgba(0, 0, 0, 0.1);
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%) rotate(-45deg);
-				z-index: -2;
-			}
-		}
-	</style>
+        td,
+        th {
+            padding: 5px;
+        }
 
-	
+
+        @media print {
+            .total-row {
+                font-weight: bold;
+                background-color: transparent !important;
+            }
+
+            th {
+                background-color: transparent !important;
+            }
+        }
+
+        @media print {
+            body::after {
+                content: "Powered By AIPPCA";
+                position: fixed;
+                font-size: 50px;
+                color: rgba(0, 0, 0, 0.1);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                z-index: -2;
+            }
+        }
+    </style>
+
+
 </head>
 
 <head>
@@ -155,122 +169,136 @@ if(isset($_GET['id'])){
             font-family: Arial, sans-serif;
             margin: 20px;
         }
+
         .header {
             text-align: center;
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 10px;
         }
+
         h4 {
             margin: 5px 0;
-			text-align: center;
+            text-align: center;
         }
-		p {
+
+        p {
             margin: 2px 0;
-			text-align: center;
+            text-align: center;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid black;
             padding: 8px;
             text-align: left;
         }
+
         th {
             background-color: #f2f2f2;
         }
-        .debit, .credit {
+
+        .debit,
+        .credit {
             text-align: right;
         }
+
         .total-row {
             font-weight: bold;
             background-color: #ddd;
         }
-		
-		.header-container {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 10px;
-		}
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
+
 <body>
-	<div style="margin-left: 30px; margin-right: 15px;">
-		<div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
-		<div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
-		<p>State Name: Uttar Pradesh, Code:09<p>
-		<p>E-Mail: paccfedho@gmail.com<p>
-		<h4>Payment  At: <?php echo get_division($old_data['unit_id']); ?></h4>
-		
-		<h4>Payment Voucher</h4>
-		
-		<div class="header-container">
-			<div class="left">Voucher No.: <?php echo $old_data['voucher_no']; ?></div>
-			<div class="right">Date: <?php echo date("d-m-Y", strtotime($old_data['timestamp'])); ?></div>
-		</div>
-		<table>
-			<thead>
-				<tr>
-					<th>S.No.</th>
-					<th>Particulars</th>
-					<th class="debit">Debit (₹)</th>
-					<th class="credit">Credit (₹)</th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php
-				$sql = 'SELECT * FROM billit_stock_erp_payment WHERE journal_id="'.$old_data['sno'].'"';
-				$result_trans = execute_query($sql);
-				$i = 1;
-				$tot_debit = 0;
-				$tot_credit = 0;
+    <div style="margin-left: 30px; margin-right: 15px;">
+        <div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
+        <div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
+        <p>State Name: Uttar Pradesh, Code:09
+        <p>
+        <p>E-Mail: paccfedho@gmail.com
+        <p>
+        <h4>Payment At: <?php echo get_division($old_data['unit_id']); ?></h4>
 
-				while ($row = mysqli_fetch_assoc($result_trans)) {
-					$particulars = '';
-					$debit = '';
-					$credit = '';
+        <h4>Journal Voucher</h4>
 
-					if (!empty($row['by'])) {
-						$particulars = get_ledger($row['by']);
-						$debit = number_format($row['amount'], 2);
-						$tot_debit += $row['amount'];
-					} else {
-						$particulars = get_ledger($row['to']);
-						$credit = number_format($row['amount'], 2);
-						$tot_credit += $row['amount'];
-					}
+        <div class="header-container">
+            <div class="left">Voucher No.: <?php echo $old_data['voucher_no']; ?></div>
+            <div class="right">Date: <?php echo date("d-m-Y", strtotime($old_data['timestamp'])); ?></div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>S.No.</th>
+                    <th>Particulars</th>
+                    <th class="debit">Debit (₹)</th>
+                    <th class="credit">Credit (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $sql = 'SELECT * FROM billit_stock_erp_payment WHERE journal_id="' . $old_data['sno'] . '"';
+                $result_trans = execute_query($sql);
+                $i = 1;
+                $tot_debit = 0;
+                $tot_credit = 0;
 
-					echo '<tr>
-							<td>'.$i++.'</td>
-							<td>'.$particulars.'</td>
-							<td class="debit">'.$debit.'</td>
-							<td class="credit">'.$credit.'</td>
+                while ($row = mysqli_fetch_assoc($result_trans)) {
+                    $particulars = '';
+                    $debit = '';
+                    $credit = '';
+
+                    if (!empty($row['by'])) {
+                        $particulars = get_ledger($row['by']);
+                        $debit = number_format($row['amount'], 2);
+                        $tot_debit += $row['amount'];
+                    } else {
+                        $particulars = get_ledger($row['to']);
+                        $credit = number_format($row['amount'], 2);
+                        $tot_credit += $row['amount'];
+                    }
+
+                    echo '<tr>
+							<td>' . $i++ . '</td>
+							<td>' . $particulars . '</td>
+							<td class="debit">' . $debit . '</td>
+							<td class="credit">' . $credit . '</td>
 						  </tr>';
-				}
-				echo '<tr class="">
-						<td colspan="2" align="right"></br><b>On Account of:&nbsp; &nbsp;</b>'. $old_data['remarks'].'<br></td>
+                }
+                echo '<tr class="">
+						<td colspan="2" align="right"></br><b>On Account of:&nbsp; &nbsp;</b>' . $old_data['remarks'] . '<br></td>
 						<td></td>
 						<td></td>
 					  </tr>';
-				
-				echo '<tr class="total-row">
+
+                echo '<tr class="total-row">
 						<td colspan="2" align="right"></td>
-						<td class="debit">'.number_format($tot_debit, 2).'</td>
-						<td class="credit">'.number_format($tot_credit, 2).'</td>
+						<td class="debit">' . number_format($tot_debit, 2) . '</td>
+						<td class="credit">' . number_format($tot_credit, 2) . '</td>
 					  </tr>';
-				?>
-			</tbody>
-		</table>
-		
-		<div class="header-container">
-			<div class="left"></div>
-			<div class="right" style="margin-top:60px; margin-right:70px;">Authorised Signatory</div>
-		</div>
-		
-	</div>
+                ?>
+            </tbody>
+        </table>
+
+        <div class="header-container">
+            <div class="left"></div>
+            <div class="right" style="margin-top:60px; margin-right:70px;">Authorised Signatory</div>
+        </div>
+
+    </div>
 </body>
+
 </html>

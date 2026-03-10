@@ -114,7 +114,7 @@ if(isset($_GET['voucher'])){
 		<p>E-Mail: paccfedho@gmail.com<p>
 		<h4>Receipt  At: <?php echo get_division($old_data['unit_id']); ?></h4>
 		
-		<h4>Receipt Voucher</h4>
+		<h4>Journal Voucher</h4>
 		
 		<div class="header-container">
 			<div class="left">Voucher No.: <?php echo $old_data['voucher_no']; ?></div>

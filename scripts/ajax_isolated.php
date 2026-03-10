@@ -116,8 +116,8 @@ if ($id == 'sub_dep') {
         $q1 = execute_query('SELECT sanction_cost, financial_go_amount FROM uprnss_project_temp WHERE sno=' . $prj . ' LIMIT 1');
         if ($q1 && mysqli_num_rows($q1)) {
             $r1 = mysqli_fetch_assoc($q1);
-            $out['sanction_cost_lakh'] = floatval($r1['sanction_cost']);
-            $out['advance_amount'] = floatval($r1['financial_go_amount']);
+            $out['sanction_cost_lakh'] = customRound($r1['sanction_cost']);
+            $out['advance_amount'] = customRound($r1['financial_go_amount']);
         }
 
         $sql2 = 'SELECT COALESCE(SUM(tfr.p_receive_amount),0) AS rcvd,
@@ -131,8 +131,8 @@ if ($id == 'sub_dep') {
         $q2 = execute_query($sql2);
         if ($q2 && mysqli_num_rows($q2)) {
             $r2 = mysqli_fetch_assoc($q2);
-            $out['received_to_date'] = floatval($r2['rcvd']);
-            $out['installments_count'] = intval($r2['inst_cnt']);
+            $out['received_to_date'] = customRound($r2['rcvd']);
+            $out['installments_count'] = customRound($r2['inst_cnt']);
         }
     }
     $data = $out;

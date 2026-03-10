@@ -234,6 +234,7 @@ function get_ledger($sno){
 	if(isset($row['cus_name'])){
 		return $row['cus_name']; 
 	}
+	return '';
 }
 
 ?>

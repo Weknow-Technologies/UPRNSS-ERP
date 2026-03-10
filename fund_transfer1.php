@@ -275,7 +275,7 @@ if (isset($_POST['submit'])) {
   foreach ($prepared as $r) {
     if (!empty($r['proposed']) && $r['proposed'] > 0) {
       $amt_str = money($r['proposed']);
-      $total_debits += (float)$amt_str;
+      $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                      VALUES ("' . q($journal_id) . '", "' . q($r['to_bank']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($r['division']) . '", "")';
     }
@@ -288,8 +288,8 @@ if (isset($_POST['submit'])) {
     // GST Deduction (CGST + SGST) — split 50-50, last entry absorbs ₹0.01 if odd
     if (!empty($r['gstded']) && $r['gstded'] > 0) {
       $cgst_amt = money($r['gstded'] / 2);
-      $sgst_amt = money($r['gstded'] - (float)$cgst_amt); // absorbs rounding remainder
-      $total_debits += (float)$cgst_amt + (float)$sgst_amt;
+      $sgst_amt = money($r['gstded'] - (float) $cgst_amt); // absorbs rounding remainder
+      $total_debits += (float) $cgst_amt + (float) $sgst_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                      VALUES ("' . q($journal_id) . '", "' . q($cgst['sno']) . '", "", "' . $cgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
@@ -300,7 +300,7 @@ if (isset($_POST['submit'])) {
     // Advance Centage Deduction
     if (!empty($r['advcen']) && $r['advcen'] > 0) {
       $amt_str = money($r['advcen']);
-      $total_debits += (float)$amt_str;
+      $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                      VALUES ("' . q($journal_id) . '", "' . q($advcen['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
@@ -308,8 +308,8 @@ if (isset($_POST['submit'])) {
     // GST-TDS Deduction (CGST-TDS + SGST-TDS) — split 50-50
     if (!empty($r['gsttds']) && $r['gsttds'] > 0) {
       $cgst_tds_amt = money($r['gsttds'] / 2);
-      $sgst_tds_amt = money($r['gsttds'] - (float)$cgst_tds_amt);
-      $total_debits += (float)$cgst_tds_amt + (float)$sgst_tds_amt;
+      $sgst_tds_amt = money($r['gsttds'] - (float) $cgst_tds_amt);
+      $total_debits += (float) $cgst_tds_amt + (float) $sgst_tds_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                    VALUES ("' . q($journal_id) . '", "' . q($cgsttds['sno']) . '", "", "' . $cgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
@@ -320,7 +320,7 @@ if (isset($_POST['submit'])) {
     // Labour Cess Deduction
     if (!empty($r['labour']) && $r['labour'] > 0) {
       $amt_str = money($r['labour']);
-      $total_debits += (float)$amt_str;
+      $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                      VALUES ("' . q($journal_id) . '", "' . q($labourw['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
@@ -328,7 +328,7 @@ if (isset($_POST['submit'])) {
     // Income Tax Deduction
     if (!empty($r['itax']) && $r['itax'] > 0) {
       $amt_str = money($r['itax']);
-      $total_debits += (float)$amt_str;
+      $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
                      VALUES ("' . q($journal_id) . '", "' . q($ittds['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
@@ -446,203 +446,289 @@ if (isset($_POST['submit'])) {
 ?>
 
 <form id="sale_form" name="sale_form" autocomplete="off" method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-  <div class="card">
+  <div class="container-fluid px-0">
     <div class="px-3 pt-2"><?php echo $msg; ?></div>
-    <div class="text-right px-3">
-      <a href="billit_payment_report.php?view=view"><button type="button" class="btn btn-warning">View
-          Vouchers</button></a>
+
+    <!-- 1. Basic Information Card -->
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+      <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+        style="border-bottom: none;">
+        <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Basic Information</h5>
+        <!-- <a href="billit_payment_report.php?view=view"><button type="button" class="btn btn-warning btn-sm shadow-sm"
+            style="border-radius: 8px;">View Vouchers</button></a> -->
+      </div>
+      <div class="card-body p-4">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label>Fund Transfer To</label>
+            <select class="form-control form-select" name="fund_transfer_to" id="fund_transfer_to"
+              tabindex="<?php echo $tab++; ?>">
+              <option value="">--- Select ---</option>
+              <?php
+              $run = mysqli_query($db, 'select * from billit_customer where parent ="1" order by cus_name');
+              while ($d = mysqli_fetch_array($run)) {
+                echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['fund_transfer_to'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
+              }
+              ?>
+            </select>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label>HO From Account</label>
+            <select class="form-control form-select" name="from_account_no" id="from_account_no"
+              tabindex="<?php echo $tab++; ?>" required>
+              <option value="">--- Select ---</option>
+              <?php
+              $run = mysqli_query($db, 'select * from billit_customer where parent ="1" and unit_id="53"');
+              while ($d = mysqli_fetch_array($run)) {
+                echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['from_account_no'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
+              }
+              ?>
+            </select>
+          </div>
+          <div class="col-md-2 mb-3">
+            <label>Voucher No.</label>
+            <input class="form-control" name="order_no" id="order_no" value="<?php echo @$_POST['order_no']; ?>">
+          </div>
+          <div class="col-md-2 mb-3">
+            <label>Order Date</label>
+            <script>document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['order_date']; ?>', <?php echo $tab;
+               $tab += 4; ?>));</script>
+          </div>
+          <div class="col-md-2 mb-3">
+            <label>Transfer Date</label>
+            <script>document.writeln(DateInput('transafer_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['transafer_date']; ?>', <?php echo $tab;
+               $tab += 4; ?>));</script>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-3">
-          <label>Fund Transfer To</label>
-          <select class="form-control" name="fund_transfer_to" id="fund_transfer_to" tabindex="<?php echo $tab++; ?>">
-            <option value="">--- Select ---</option>
-            <?php
-            $run = mysqli_query($db, 'select * from billit_customer where parent ="1" order by cus_name');
-            while ($d = mysqli_fetch_array($run)) {
-              echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['fund_transfer_to'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
-            }
-            ?>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label>HO From Account</label>
-          <select class="form-control" name="from_account_no" id="from_account_no" tabindex="<?php echo $tab++; ?>"
-            required>
-            <option value="">--- Select ---</option>
-            <?php
-            $run = mysqli_query($db, 'select * from billit_customer where parent ="1" and unit_id="53"');
-            while ($d = mysqli_fetch_array($run)) {
-              echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['from_account_no'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
-            }
-            ?>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label>Voucher No.</label>
-          <input class="form-control" name="order_no" id="order_no" value="<?php echo @$_POST['order_no']; ?>">
-        </div>
-        <div class="col-md-2">
-          <label>Order Date</label>
-          <script>document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['order_date']; ?>', <?php echo $tab;
-             $tab += 4; ?>));</script>
-        </div>
-        <div class="col-md-2">
-          <label>Transfer Date</label>
-          <script>document.writeln(DateInput('transafer_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['transafer_date']; ?>', <?php echo $tab;
-             $tab += 4; ?>));</script>
-        </div>
-
-
+    <!-- 2. Project Details Card -->
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+      <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+        style="border-bottom: none;">
+        <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Project Details</h5>
+        <button type="button" class="btn btn-primary btn-sm shadow-sm" id="btnAddRow"
+          style="background-color: var(--primary); border-color: var(--primary); border-radius: 8px;">+ Add Row</button>
       </div>
-
-      <hr>
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">Project Details</h5>
-        <button type="button" class="btn btn-primary btn-sm" id="btnAddRow">+ Add Row</button>
-      </div>
-
-      <div class="table-responsive">
-        <table class="table table-sm table-bordered table-responsive table-striped" id="rows_table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Department</th>
-              <th>District</th>
-              <th>Project</th>
-              <th>Received</th>
-              <th>Transferred</th>
-              <th>Remaining</th>
-              <th>To Bank (Unit)</th>
-              <th>Proposed Amount</th>
-              <th>GST</th>
-              <th>Remain</th>
-              <th>Advance Centage</th>
-              <th>GST-TDS</th>
-              <th>Labour</th>
-              <th>IT</th>
-              <th>Transfer</th>
-              <th>Del</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr class="font-weight-bold">
-              <td colspan="8" class="text-right">Totals →</td>
-              <td id="T_amt">0.00</td>
-              <td id="T_gst">0.00</td>
-              <td id="T_rem">0.00</td>
-              <td id="T_adv">0.00</td>
-              <td id="T_gsttds">0.00</td>
-              <td id="T_lab">0.00</td>
-              <td id="T_it">0.00</td>
-              <td id="T_prop">0.00</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div class="row">
-        <div class="col-md-1">
-          <label>GST %</label>
-          <select class="form-control" name="gst_per" id="gst_per">
-            <option value="">--Select--</option>
-            <option value="12" <?php echo (@$_POST['gst_per'] == '12') ? 'selected' : ''; ?>>12</option>
-            <option value="18" <?php echo (@$_POST['gst_per'] == '18') ? 'selected' : ''; ?>>18</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label>GST (CGST/SGST)</label>
-          <input type="hidden" name="gstdeduction" id="gstdeduction_hidden"
-            value="<?php echo @$_POST['gstdeduction']; ?>">
-          <input type="text" name="cgst_amount" id="cgst_amount" class="form-control mb-1" placeholder="CGST"
-            value="<?php echo @$_POST['cgst_amount']; ?>">
-          <input type="text" name="sgst_amount" id="sgst_amount" class="form-control" placeholder="SGST"
-            value="<?php echo @$_POST['sgst_amount']; ?>">
-        </div>
-        <div class="col-md-2">
-          <label>Advance Centage.%</label>
-          <input class="form-control" name="sentagepercentage" id="sentagepercentage"
-            value="<?php echo @$_POST['sentagepercentage']; ?>">
-        </div>
-        <div class="col-md-1">
-          <label>GST-TDS%</label>
-          <input class="form-control" name="gsttdspercentage" id="gsttdspercentage"
-            value="<?php echo @$_POST['gsttdspercentage']; ?>">
-        </div>
-        <div class="col-md-2">
-          <label>GST-TDS (CGST/SGST)</label>
-          <input type="hidden" name="gsttds" id="gsttds_hidden" value="<?php echo @$_POST['gsttds']; ?>">
-          <input type="text" name="gsttds_cgst" id="gsttds_cgst" class="form-control mb-1" placeholder="CGST"
-            value="<?php echo @$_POST['gsttds_cgst']; ?>" readonly>
-          <input type="text" name="gsttds_sgst" id="gsttds_sgst" class="form-control" placeholder="SGST"
-            value="<?php echo @$_POST['gsttds_sgst']; ?>" readonly>
-        </div>
-        <div class="col-md-2">
-          <label>IT %</label>
-          <input class="form-control" name="it_per" id="it_per" value="<?php echo @$_POST['it_per']; ?>">
-        </div>
-        <div class="col-md-2">
-          <label>Labour Cess (Amt)</label>
-          <input class="form-control" name="leborses" id="leborses" value="<?php echo @$_POST['leborses']; ?>">
-        </div>
-        <div class="col-md-12 mt-2">
-          <label>Remark</label>
-          <textarea class="form-control" name="remark"><?php echo @$_POST['remark']; ?></textarea>
+      <div class="card-body p-4">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover" id="rows_table" style="min-width: 1500px;">
+            <thead
+              style="background-color: #fffafb; color: var(--primary); font-size: 12px; text-transform: uppercase;">
+              <tr>
+                <th>#</th>
+                <th>Department</th>
+                <th>District</th>
+                <th>Project</th>
+                <th>Received</th>
+                <th>Transferred</th>
+                <th>Remaining</th>
+                <th>To Bank (Unit)</th>
+                <th>Proposed Amount</th>
+                <th>GST</th>
+                <th>Remain</th>
+                <th>Advance Centage</th>
+                <th>GST-TDS</th>
+                <th>Labour</th>
+                <th>IT</th>
+                <th>Transfer</th>
+                <th>Del</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot class="bg-light">
+              <tr class="font-weight-bold">
+                <td colspan="8" class="text-right">Totals →</td>
+                <td id="T_amt">0.00</td>
+                <td id="T_gst">0.00</td>
+                <td id="T_rem">0.00</td>
+                <td id="T_adv">0.00</td>
+                <td id="T_gsttds">0.00</td>
+                <td id="T_lab">0.00</td>
+                <td id="T_it">0.00</td>
+                <td id="T_prop">0.00</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
-      <!-- Readonly header mirrors -> write to header table fields -->
-      <div class="row">
-        <div class="col-md-2"><label>Total Transfer</label><input class="form-control" id="transafer_amount"
-            name="transafer_amount" readonly></div>
-        <div class="col-md-2"><label>GST Total</label><input class="form-control" id="gstdeduction" name="gstdeduction"
-            readonly></div>
-        <div class="col-md-2"><label>Remain Total</label><input class="form-control" id="totelmgst" name="totelmgst"
-            readonly></div>
-        <div class="col-md-2"><label>Advance Centage</label><input class="form-control" id="sentage" name="sentage"
-            readonly></div>
-        <div class="col-md-2"><label>GST-TDS Total</label><input class="form-control" id="gsttds" name="gsttds"
-            readonly></div>
-        <div class="col-md-2"><label>IT Total</label><input class="form-control" id="incometax" name="incometax"
-            readonly></div>
-        <div class="col-md-2"><label>Labour Cess Total</label><input class="form-control" id="labourcess_total"
-            name="labourcess_total" readonly></div>
-        <div class="col-md-2 mt-2"><label>Proposed Total</label><input class="form-control" id="praposemoney"
-            name="praposemoney" readonly></div>
+    </div>
+
+    <!-- 3. Financial Settings Card -->
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+      <div class="card-header bg-transparent pt-4 pb-0" style="border-bottom: none;">
+        <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Financial Settings</h5>
       </div>
+      <div class="card-body p-4">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label>GST %</label>
+            <select class="form-control form-select" name="gst_per" id="gst_per">
+              <option value="">--Select--</option>
+              <option value="12" <?php echo (@$_POST['gst_per'] == '12') ? 'selected' : ''; ?>>12</option>
+              <option value="18" <?php echo (@$_POST['gst_per'] == '18') ? 'selected' : ''; ?>>18</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>GST (CGST/SGST)</label>
+            <input type="hidden" name="gstdeduction" id="gstdeduction_hidden"
+              value="<?php echo @$_POST['gstdeduction']; ?>">
+            <div class="d-flex" style="gap: 10px;">
+              <input type="text" name="cgst_amount" id="cgst_amount" class="form-control" style="width: 50%;"
+                placeholder="CGST" value="<?php echo @$_POST['cgst_amount']; ?>">
+              <input type="text" name="sgst_amount" id="sgst_amount" class="form-control" style="width: 50%;"
+                placeholder="SGST" value="<?php echo @$_POST['sgst_amount']; ?>">
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Advance Centage.%</label>
+            <input class="form-control" name="sentagepercentage" id="sentagepercentage"
+              value="<?php echo @$_POST['sentagepercentage']; ?>">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>GST-TDS%</label>
+            <input class="form-control" name="gsttdspercentage" id="gsttdspercentage"
+              value="<?php echo @$_POST['gsttdspercentage']; ?>">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>GST-TDS (CGST/SGST)</label>
+            <input type="hidden" name="gsttds" id="gsttds_hidden" value="<?php echo @$_POST['gsttds']; ?>">
+            <div class="d-flex" style="gap: 10px;">
+              <input type="text" name="gsttds_cgst" id="gsttds_cgst" class="form-control" style="width: 50%;"
+                placeholder="CGST" value="<?php echo @$_POST['gsttds_cgst']; ?>" readonly>
+              <input type="text" name="gsttds_sgst" id="gsttds_sgst" class="form-control" style="width: 50%;"
+                placeholder="SGST" value="<?php echo @$_POST['gsttds_sgst']; ?>" readonly>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>IT %</label>
+            <input class="form-control" name="it_per" id="it_per" value="<?php echo @$_POST['it_per']; ?>">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Labour Cess (Amt)</label>
+            <input class="form-control" name="leborses" id="leborses" value="<?php echo @$_POST['leborses']; ?>">
+          </div>
+          <div class="col-md-8 mb-3">
+            <label>Remark</label>
+            <textarea class="form-control" name="remark" style="height: auto; padding: 6px 12px;"
+              rows="1"><?php echo @$_POST['remark']; ?></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
-      <div class="text-center mt-3">
-        <input type="hidden" name="edit_header_id"
-          value="<?php echo @$_GET['edit_header_id'] ? (int) $_GET['edit_header_id'] : ''; ?>" />
-        <button type="submit" name="submit" class="btn btn-success">Submit</button>
+
+    <!-- 5. Totals Card -->
+    <div class="card mb-4 shadow-sm dashboard-totals"
+      style="border-radius: 12px; border: 1px solid var(--primary-light);">
+      <div class="card-header bg-transparent pt-4 pb-0" style="border-bottom: none;">
+        <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Totals Dashboard</h5>
       </div>
+      <div class="card-body p-4">
+        <div class="row text-center align-items-center">
+          <div class="col-md-3 mb-4">
+            <div class="p-3 rounded shadow-sm h-100" style="background-color: var(--primary-light);">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">Total
+                Transfer</label>
+              <input class="form-control text-center font-weight-bold" id="transafer_amount" name="transafer_amount"
+                readonly style="background: transparent; border: none; font-size: 1.25rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">GST
+                Total</label>
+              <input class="form-control text-center font-weight-bold" id="gstdeduction" name="gstdeduction" readonly
+                style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">Remain
+                Total</label>
+              <input class="form-control text-center font-weight-bold" id="totelmgst" name="totelmgst" readonly
+                style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">Advance
+                Centage</label>
+              <input class="form-control text-center font-weight-bold" id="sentage" name="sentage" readonly
+                style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">GST-TDS
+                Total</label>
+              <input class="form-control text-center font-weight-bold" id="gsttds" name="gsttds" readonly
+                style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">IT Total</label>
+              <input class="form-control text-center font-weight-bold" id="incometax" name="incometax" readonly
+                style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="p-3 border rounded shadow-sm h-100 bg-white">
+              <label class="d-block mb-1 text-muted text-uppercase" style="font-size: 12px !important;">Labour Cess
+                Total</label>
+              <input class="form-control text-center font-weight-bold" id="labourcess_total" name="labourcess_total"
+                readonly style="background: transparent; border: none; font-size: 1.1rem; color: #333;">
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="p-3 rounded shadow-sm h-100" style="background-color: #E8F5E9; border: 1px solid #A5D6A7;">
+              <label class="d-block mb-1 text-success text-uppercase" style="font-size: 12px !important;">Proposed
+                Total</label>
+              <input class="form-control text-center font-weight-bold text-success" id="praposemoney"
+                name="praposemoney" readonly style="background: transparent; border: none; font-size: 1.25rem;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Submit Section -->
+    <div class="text-center mb-5 mt-4">
+      <input type="hidden" name="edit_header_id"
+        value="<?php echo @$_GET['edit_header_id'] ? (int) $_GET['edit_header_id'] : ''; ?>" />
+      <button type="submit" name="submit" class="btn btn-success px-5 py-2 shadow"
+        style="font-size: 1.1rem; border-radius: 8px; background-color: var(--success); border-color: var(--success);">
+        <i class="fas fa-check-circle me-2"></i> Submit Transfer
+      </button>
     </div>
   </div>
 </form>
 
+<!-- 7. Recent Transfers Table -->
 <div class="row">
   <div class="col-md-12">
-    <div class="card card-custom">
-      <div class="card-header d-flex align-items-center">
-        <i class="fas fa-history me-2"></i>
-        <h6 class="mb-0 text-white">Recent Fund Transfers</h6>
+    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+      <div class="card-header d-flex align-items-center bg-transparent pt-4 pb-3" style="border-bottom: none;">
+        <i class="fas fa-history me-2" style="color: var(--primary); font-size: 1.2rem;"></i>
+        <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Recent Fund Transfers</h5>
       </div>
-      <div class="card-body table-full-width table-responsive">
+      <div class="card-body p-4 table-full-width table-responsive">
         <?php echo $msg1; ?>
-        <table class="table table-hover table-striped table-bordered">
-          <thead>
+        <table class="table table-hover table-striped table-bordered" style="min-width: 1000px;">
+          <thead style="background-color: #fffafb; color: var(--primary); font-size: 12px; text-transform: uppercase;">
             <tr>
-              <th>S.No.</th>
+              <th class="text-center">S.No.</th>
               <th>Voucher No.</th>
               <th>Fund Transfer To</th>
-              <th>Order details</th>
+              <th>Order Details</th>
               <th>Bank</th>
-              <th>Total Transfer Amount</th>
-              <th>Net Transfer</th>
-              <th class="no-print">Actions</th>
+              <th class="text-right">Total Transfer</th>
+              <th class="text-right">Net Transfer</th>
+              <th class="no-print text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -669,19 +755,19 @@ if (isset($_POST['submit'])) {
                   $netAmount = $row['total_proposed'] ?? 0;
 
                   echo '<tr>
-                        <td>' . $i++ . '</td>
+                        <td class="text-center">' . $i++ . '</td>
                         <td><b>' . htmlspecialchars($row['order_no'] ?: 'FT' . date('Y') . sprintf('%04d', $row['sno'])) . '</b></td>
                         <td>' . htmlspecialchars($row['transfer_to_name'] ?? '') . '</td>
                         <td>' . htmlspecialchars($row['order_no'] ?? '') . '<br><small>' . date("d-m-Y", strtotime($row['order_date'] ?? date('Y-m-d'))) . ' / ' . date("d-m-Y", strtotime($row['transfer_date'] ?? date('Y-m-d'))) . '</small></td>
                         <td>' . htmlspecialchars($row['from_acc'] ?? '') . '</td>
-                        <td><b>₹' . number_format($row['total_transfer_amount'], 2) . '</b></td>
-                        <td><b class="text-success">₹' . number_format($netAmount, 2) . '</b></td>
-                        <td class="no-print actions-col" style="white-space:nowrap">
+                        <td class="text-right"><b>₹' . number_format($row['total_transfer_amount'], 2) . '</b></td>
+                        <td class="text-right"><b class="text-success">₹' . number_format($netAmount, 2) . '</b></td>
+                        <td class="no-print actions-col text-center" style="white-space:nowrap">
                             <div class="dropdown">
                               <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 Actions
                               </button>
-                              <div class="dropdown-menu dropdown-menu-right">
+                              <div class="dropdown-menu dropdown-menu-right shadow-sm border-0">
                                 <a class="dropdown-item" href="' . $_SERVER['PHP_SELF'] . '?edit_header_id=' . $actId . '">✏️ Edit</a>
                                 <a class="dropdown-item" target="_blank" href="fund_recive_details.php?id=' . $actId . '">👁️ View Details</a>
                                 <a class="dropdown-item" target="_blank" href="billit_payment_print.php?id=' . $row['journal_id'] . '">🧾 Voucher</a>
@@ -693,10 +779,10 @@ if (isset($_POST['submit'])) {
                         </tr>';
                 }
               } else {
-                echo '<tr><td colspan="8" class="text-center text-muted">No records found. Submit a fund transfer to see data here.</td></tr>';
+                echo '<tr><td colspan="8" class="text-center text-muted py-4">No records found. Submit a fund transfer to see data here.</td></tr>';
               }
             } else {
-              echo '<tr><td colspan="8" class="text-center text-danger">Database query failed: ' . mysqli_error($db) . '</td></tr>';
+              echo '<tr><td colspan="8" class="text-center text-danger py-4">Database query failed: ' . mysqli_error($db) . '</td></tr>';
             }
             ?>
           </tbody>
@@ -713,102 +799,112 @@ if (isset($_POST['submit'])) {
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap');
 
   :root {
-    --red-light: #f44336;
-    --red-dark: #cc0000;
-    --red-deep: #a00000;
-    --yellow: #f6b800;
-    --green: #008b00;
-    --soft-bg: #fdfaf9;
+    --primary: #c83232;
+    --primary-light: #f8e5e5;
+    --bg-color: #fbfafb;
+    --success: #28A745;
+    --danger: #E74C3C;
     --glass: rgba(255, 255, 255, 0.1);
   }
 
   body {
-    background: var(--soft-bg);
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    background-attachment: fixed;
     font-family: 'Inter', sans-serif;
     color: #333;
   }
 
-  /* 💎 Premium Layered Shadows */
+  /* 💎 Premium Layered Shadows & Glassmorphism */
   .card,
   .card-custom {
-    border: none;
-    border-radius: 20px !important;
-    background: #fff;
-    margin-bottom: 30px;
-    overflow: hidden;
-    box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.02),
-      0 10px 20px rgba(0, 0, 0, 0.04),
-      0 20px 40px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(248, 229, 229, 0.5) !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 15px rgba(200, 50, 50, 0.03) !important;
     transition: box-shadow 0.3s ease;
   }
 
   .card:hover,
   .card-custom:hover {
-    box-shadow:
-      0 25px 50px -12px rgba(183, 28, 28, 0.15),
-      0 10px 20px -5px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 25px rgba(200, 50, 50, 0.06) !important;
   }
 
-  /* ✨ Glassmorphism Header */
+  /* ✨ Clean Header */
   .card-header,
   .card-custom .card-header {
-    background: linear-gradient(135deg, var(--red-light), var(--red-dark), var(--red-deep)) !important;
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: white !important;
+    background: transparent !important;
+    border-bottom: 1px solid #fdf2f2 !important;
+    color: var(--primary) !important;
     font-family: 'Outfit', sans-serif;
-    font-weight: 700 !important;
-    border-top-left-radius: 20px !important;
-    border-top-right-radius: 20px !important;
-    padding: 16px 24px;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
+    font-weight: 800 !important;
+    padding: 16px 24px 12px !important;
   }
 
-  .card-title {
-    font-size: 1.2rem;
+  .card-title,
+  .card-header h5,
+  .card-header .mb-0 {
+    font-size: 1.5rem !important;
     font-family: 'Outfit', sans-serif;
     margin-bottom: 0 !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: 800 !important;
   }
 
   label {
-    font-weight: 700 !important;
+    text-transform: uppercase;
     font-size: 14px !important;
-    margin-bottom: 2px !important;
-    color: #444;
+    color: var(--primary);
+    font-weight: 800 !important;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px !important;
+    position: relative;
+    padding-left: 10px;
+  }
+
+  label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 12px;
+    background-color: var(--primary);
+    border-radius: 2px;
   }
 
   .form-select,
   .form-control {
     border-radius: 8px;
-    border: 1.5px solid #e0e0e0;
+    border: 1px solid #f1d4d4;
     transition: all 0.3s ease;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-shadow: none;
+    font-size: 13px;
+    padding: 8px 12px;
   }
 
   .form-control:focus,
   .form-select:focus {
-    border-color: var(--red-light) !important;
-    box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.12) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(200, 50, 50, 0.1) !important;
     background-color: #fff !important;
     outline: none;
   }
 
   .btn-success {
-    background: linear-gradient(135deg, #4caf50, #45a049) !important;
+    background: linear-gradient(135deg, #28A745, #2ed351) !important;
     border: none !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     font-weight: 600 !important;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
     transition: all 0.3s ease;
   }
 
   .btn-success:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
   }
 
   .actions-col {
@@ -816,24 +912,24 @@ if (isset($_POST['submit'])) {
   }
 
   .dropdown-menu {
-    border: none;
+    border: 1px solid var(--primary-light);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     padding: 8px 0;
     margin-top: 8px;
   }
 
   .dropdown-item {
     padding: 10px 20px;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 8px;
     margin: 2px 8px;
     transition: all 0.2s ease;
   }
 
   .dropdown-item:hover {
-    background: var(--red-light);
-    color: white;
+    background: var(--primary-light);
+    color: var(--primary);
     transform: translateX(4px);
   }
 </style>
