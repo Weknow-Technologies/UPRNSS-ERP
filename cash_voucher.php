@@ -889,7 +889,7 @@ function update_parent(parent_id) {
 <script src="js/jquery-ui.js"></script>
 <!-- Bootstrap -->
 <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
-<script src="js/core/bootstrap.min.js"></script>
+<!--<script src="js/core/bootstrap.min.js"></script>-->
 <!-- <script src="http://localhost/ERP-UPRNSS/bootstrap/js/bootstrap-switch.js"></script> -->
 <script src="js/plugins/bootstrap-switch.js"></script>
 
