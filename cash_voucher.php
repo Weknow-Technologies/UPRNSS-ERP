@@ -1,10 +1,11 @@
 <?php
 include("scripts/settings.php");
 include("scripts/billit_settings.php");
-$msg = '';
-$response = 0;
-$finalmsg = '';
-$tab = 1;
+include("scripts/alerts.php");
+$msg='';
+$response=0;
+$finalmsg='';
+$tab=1;
 date_default_timezone_set('Asia/Calcutta');
 //print_r($_POST);
 if (session_status() === PHP_SESSION_NONE) {
@@ -15,8 +16,8 @@ if (!isset($_SESSION['username'])) {
 }
 
 
-if (isset($_POST['sale_date'])) {
-	foreach ($_POST as $k => $v) {
+if(isset($_POST['sale_date']) && !$_POST['edit_sno']){
+	foreach($_POST as $k => $v){
 		$_POST[$k] = strtoupper($v);
 	}
 	$time = $_POST['sale_date'];
@@ -73,12 +74,12 @@ if (isset($_POST['sale_date'])) {
 		}
 	}
 
-	if (mysqli_error($db)) {
-		$msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
-	} else {
-		for ($i = 1; $i <= $_POST['id']; $i++) {
+if(mysqli_error($db)){
+    $msg .= 'Error # 1.369 >> '.$sql;
+} else {
+    for($i=1; $i<=$_POST['id']; $i++){
 
-			if (isset($_POST['account_' . $i . '_sno']) && $_POST['account_' . $i . '_sno'] != '') {
+        if(isset($_POST['account_'.$i.'_sno']) && $_POST['account_'.$i.'_sno'] != '') {
 
 				$description = isset($_POST['description_' . $i]) ? $_POST['description_' . $i] : '';
 				$remark = isset($_POST['remark_1']) ? $_POST['remark_1'] : '';
@@ -118,20 +119,20 @@ if (isset($_POST['sale_date'])) {
 				// Execute query
 				execute_query($sql);
 
-				// Check for MySQL errors
-				if (mysqli_error($db)) {
-					$msg .= '<div class="alert alert-danger">Error # 1.025 at Line : ' . $i . ' >> ' . mysqli_error($db) . ' >> ' . $sql . '</div>';
-				}
-			}
-		}
+            // Check for MySQL errors
+            if(mysqli_error($db)){
+                $msg .= 'Error # 1.025 at Line : '.$i.' >> '.mysqli_error($db).' >> '.$sql;
+            }
+        }
+    }
 
-		if ($msg == '') {
-			$msg .= '<div class="alert alert-success">Cash Voucher Data Saved</div>';
-			// Redirect to same page to show success message
-			echo "<script>window.location.href='cash_voucher.php?success=1';</script>";
-			exit();
-		}
-	}
+    if($msg == ''){
+        $msg .= 'Cash Voucher Data Saved.';
+        // Redirect to same page to show success message
+        echo "<script>window.location.href='cash_voucher.php?success=1';</script>";
+        exit();
+    }
+}
 
 	$response = 1;
 } else {
