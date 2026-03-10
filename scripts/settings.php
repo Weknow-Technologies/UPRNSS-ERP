@@ -14,8 +14,7 @@ error_reporting(1);
 ?>
 <?php
 include("settings_dbase.php");
-//include("scripts/setting_dbase_emb.php");
-include("settings_dbase_payroll_for_erp.php");
+//include("settings_dbase_payroll_for_erp.php");
 
 $sms_user = mysqli_fetch_array(execute_query("select * from general_settings where `desc`='sms_user'"));
 $sms_user = $sms_user['rate'];
