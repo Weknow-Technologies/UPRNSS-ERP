@@ -279,7 +279,7 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
         input[type="number"],
         select {
             height: 40px !important;
-            text-align: center !important;
+            text-align: left !important;
             padding: 5px 10px !important;
             font-size: 14px !important;
             font-weight: 600 !important;
