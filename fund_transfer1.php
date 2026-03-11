@@ -1,5 +1,6 @@
 <?php
 include("scripts/settings.php");
+include("scripts/alerts.php");
 $msg = '';
 $msg1 = '';
 $tab = 1;
@@ -56,7 +57,7 @@ if (isset($_GET['delh']) && !isset($_POST['submit'])) {
     execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id="' . q($jid) . '"');
     execute_query('DELETE FROM billit_invoice_erp_payment WHERE sno="' . q($jid) . '"');
   }
-  $msg1 .= '<div class="alert alert-danger">Successfully deleted.</div>';
+  $msg1 .= 'Successfully deleted.';
 }
 
 /* ---------------- Prefill EDIT mode (GET) ---------------- */
@@ -101,7 +102,7 @@ if (isset($_GET['edit_header_id']) && !isset($_POST['submit'])) {
     // seed for JS
     $seed_rows_js = json_encode($rows, JSON_UNESCAPED_UNICODE);
   } else {
-    $msg .= '<div class="alert alert-warning">Header not found or deleted.</div>';
+    $msg .= 'Header not found or deleted.';
   }
 }
 
@@ -120,7 +121,7 @@ if (isset($_POST['submit'])) {
 
   $rows_in = $_POST['rows'] ?? [];
   if (empty($rows_in)) {
-    $msg .= '<p class="alert alert-danger">Please add at least one row.</p>';
+    $msg .= 'Please add at least one row.';
   }
 
   // If edit: remove old voucher/payment lines and transaction rows (we will recreate)
@@ -215,12 +216,12 @@ if (isset($_POST['submit'])) {
       $T_prop += $proposed;
     }
     if (empty($prepared)) {
-      $msg .= '<p class="alert alert-danger">No valid rows (all have zero Remaining).</p>';
+      $msg .= 'No valid rows (all have zero Remaining).';
     }
   }
 
   if ($clamped_any) {
-    $msg .= '<p class="alert alert-warning">Some rows exceeded Remaining; amounts were clamped to Remaining.</p>';
+    $msg .= 'Some rows exceeded Remaining; amounts were clamped to Remaining.';
   }
 
   // Check if this is a single large amount that should be one row
@@ -246,7 +247,7 @@ if (isset($_POST['submit'])) {
            "invoice_fund_transfer", "0")';
   execute_query($sql);
   if (mysqli_error($db)) {
-    $msg .= '<p class="alert alert-danger">Voucher error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+    $msg .= 'Voucher error: ' . mysqli_error($db) . ' >> ' . $sql;
     goto postblank;
   } else {
     $journal_id = mysqli_insert_id($db);
@@ -345,7 +346,7 @@ if (isset($_POST['submit'])) {
 
   // check for DB errors after voucher lines
   if (mysqli_error($db)) {
-    $msg .= '<div class="alert alert-danger">Voucher lines error >> ' . mysqli_error($db) . '</div>';
+    $msg .= 'Voucher lines error >> ' . mysqli_error($db);
     goto postblank;
   }
 
@@ -377,7 +378,7 @@ if (isset($_POST['submit'])) {
           WHERE sno='" . q($edit_header_id) . "' AND status!='5'";
     execute_query($up);
     if (mysqli_error($db)) {
-      $msg .= '<p class="alert alert-danger">Header update error: ' . mysqli_error($db) . ' >> ' . $up . '</p>';
+      $msg .= 'Header update error: ' . mysqli_error($db) . ' >> ' . $up;
       goto postblank;
     }
     $invoice_header_id = $edit_header_id;
@@ -395,7 +396,7 @@ if (isset($_POST['submit'])) {
        " . ($journal_id ? "'" . $journal_id . "'" : "NULL") . ", 0, '" . $_SESSION['username'] . "', '" . date("Y-m-d H:i:s") . "')";
     execute_query($sql);
     if (mysqli_error($db)) {
-      $msg .= '<p class="alert alert-danger">Header insert error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+      $msg .= 'Header insert error: ' . mysqli_error($db) . ' >> ' . $sql;
       goto postblank;
     } else {
       $invoice_header_id = mysqli_insert_id($db);
@@ -413,14 +414,14 @@ if (isset($_POST['submit'])) {
       creation_time=NOW()";
       execute_query($sql);
       if (mysqli_error($db)) {
-        $msg .= '<p class="alert alert-danger">Line insert error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+        $msg .= 'Line insert error: ' . mysqli_error($db) . ' >> ' . $sql;
         break;
       }
     }
   }
 
   if ($msg == '') {
-    $msg .= '<p class="alert alert-success">' . ($is_edit ? 'Successfully edited' : 'Successfully added') . '.</p>';
+    $msg .= ($is_edit ? 'Successfully edited' : 'Successfully added');
     // Clear form data for new entry but keep success message
     $_POST = [];
     goto postblank;
@@ -447,7 +448,13 @@ if (isset($_POST['submit'])) {
 
 <form id="sale_form" name="sale_form" autocomplete="off" method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
   <div class="container-fluid px-0">
-    <div class="px-3 pt-2"><?php echo $msg; ?></div>
+    <div class="px-3 pt-2">
+        <?php
+            if($msg != ''){
+                echo '<h5>' . alert($msg) . '</h5>';
+            }
+        ?>
+    </div>
 
     <!-- 1. Basic Information Card -->
     <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
@@ -717,7 +724,11 @@ if (isset($_POST['submit'])) {
         <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Recent Fund Transfers</h5>
       </div>
       <div class="card-body p-4 table-full-width table-responsive">
-        <?php echo $msg1; ?>
+        <?php
+            if($msg1 != ''){
+                echo '<h5>' . alert($msg1) . '</h5>';
+            }
+        ?>
         <table class="table table-hover table-striped table-bordered" style="min-width: 1000px;">
           <thead style="background-color: #fffafb; color: var(--primary); font-size: 12px; text-transform: uppercase;">
             <tr>

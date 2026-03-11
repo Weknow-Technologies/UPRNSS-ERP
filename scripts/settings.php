@@ -2023,4 +2023,12 @@ function get_department($id)
 	}
 }
 
+function customRound($number) {
+    if ((float)$number == 0) {
+        return $number;
+    }
+    $int = floor($number);
+    $decimal = $number - $int;
+    return ($decimal < 0.50) ? number_format($int + 0.50, 2) : number_format($int + 1, 2);
+}
 ?>

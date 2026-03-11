@@ -758,9 +758,9 @@ if (isset($_GET['delid'])) {
         // UI text
         const pct = (halfRate * 100).toFixed(0);
         holder.innerHTML =
-            'CGST (' + pct + '%): <b>₹' + cgst.toFixed(2) + '</b> | ' +
-            'SGST (' + pct + '%): <b>₹' + sgst.toFixed(2) + '</b> | ' +
-            'Base: <b>₹' + base.toFixed(2) + '</b>';
+            'CGST (' + pct + '%): <b>₹' + customRound(cgst.toFixed(2)) + '</b> | ' +
+            'SGST (' + pct + '%): <b>₹' + customRound(sgst.toFixed(2)) + '</b> | ' +
+            'Base: <b>₹' + customRound(base.toFixed(2)) + '</b>';
 
         // push values into hidden inputs
         const hc = document.getElementById('cgst_amount_' + rowId);
@@ -772,6 +772,21 @@ if (isset($_GET['delid'])) {
     }
 
 
+    function customRound(number) {
+        number = Number(number);
+        if (number === 0) {
+            return number;
+        }
+        let int = Math.floor(number);
+        let decimal = number - int;
+        let result;
+        if (decimal < 0.50) {
+            result = int + 0.50;
+        } else {
+            result = int + 1;
+        }
+        return result.toFixed(2);
+    }
 
     function addCalc(line_serial) {
         var id = parseFloat($("#add_rows_id").val());
@@ -1013,7 +1028,7 @@ if (isset($_GET['delid'])) {
                     if (exclude === 0) { // show Received only in create mode
                         parts.push('Received: <b>₹' + rcvd.toFixed(2) + '</b>');
                     }
-                    parts.push('Installmentssssssss: <b>' + inst_cnt + '</b>');
+                    parts.push('Installments: <b>' + inst_cnt + '</b>');
                     parts.push('Remaining: <b id="remain_' + rowId + '">₹' + remain.toFixed(2) + '</b>');
 
                     $("#proj_info_" + rowId).html(parts.join(' | '));
@@ -1326,7 +1341,7 @@ if (isset($_GET['delid'])) {
             <div class="card card-custom">
                 <div class="card-header d-flex align-items-center justify-content-center">
                     <i class="fas fa-wallet me-2"></i>
-                    <h5 class="card-title text-white mb-0">Fund Received</h5>
+                    <h5 class="card-title mb-0">Fund Received</h5>
                 </div>
                 <div class="card-body py-4">
                     <?php

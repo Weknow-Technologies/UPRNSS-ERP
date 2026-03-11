@@ -408,26 +408,39 @@ page_sidebar();
                         $sql = 'SELECT * FROM billit_invoice_journal';
                     }
 
-                    $result = execute_query($sql);
-                    $i = 1;
-                    while($row = mysqli_fetch_assoc($result)){
-                        echo '<tr>
-                            <td>'.$i++.'</td>
-                            <td>'.$row['timestamp'].'</td>
-                            <td>'.get_division($row['unit_id']).'</td>
-                            <td>'.get_ledger($row['first_by']).'</td>
-                            <td>'.$row['voucher_no'].'</td>
-                            <td>'.get_ledger($row['first_to']).'</td>
-                            <td>'.$row['tot_debit'].'</td>
-                            <td><a href="billit_journal_print.php?id='.$row['sno'].'" target="_blank">View</a></td>
+								$result = execute_query($sql);
+								$i = 1;
+								while ($row = mysqli_fetch_assoc($result)) {
+									echo '<tr>
+                            <td>' . $i++ . '</td>
+                            <td>' . $row['timestamp'] . '</td>
+                            <td>' . get_division($row['unit_id']) . '</td>
+                            <td>' . get_ledger($row['first_by']) . '</td>
+                            <td>' . $row['voucher_no'] . '</td>
+                            <td>' . get_ledger($row['first_to']) . '</td>
+                            <td>' . $row['tot_debit'] . '</td>
+                            <td class="no-print actions-col" style="white-space:nowrap">
+                                <div class="dropdown">
+                                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Actions
+                                  </button>
+                                  <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="billit_journal.php?id=' . $row['sno'] . '">✏️ Edit</a>
+                                    <a class="dropdown-item" target="_blank" href="billit_journal_details.php?id=' . $row['sno'] . '">👁️ View Details</a>
+                                    <a class="dropdown-item" target="_blank" href="billit_journal_print.php?id=' . $row['sno'] . '">🧾 Voucher</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-danger" href="billit_journal.php?del=' . $row['sno'] . '" onclick="return confirm(\'Are you sure you want to delete this voucher?\');">🗑️ Delete</a>
+                                  </div>
+                                </div>
+                            </td>
                         </tr>';
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+								}
+								?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
 
 		  
 		  <?php
@@ -550,8 +563,8 @@ page_sidebar();
 		</div>
 	</div>
 </div>
-<?php page_footer_start();?>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<?php page_footer_start(); ?>
+<script src="js/core/bootstrap.min.js"></script>
 
 <script>
 	function create_new() {
@@ -770,14 +783,10 @@ function update_parent(parent_id) {
 
 </script>
 <!-- FIRST load jQuery only ONCE -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Then load jQuery UI -->
-<script src="http://localhost/ERP-UPRNSS/jquery_ui/jquery-ui.js"></script>
-
-<!-- Bootstrap -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="http://localhost/ERP-UPRNSS/bootstrap/js/bootstrap-switch.js"></script>
+<script src="js/jquery.3.2.1.min.js"></script>
+<script src="js/jquery-ui.js"></script>
+<script src="js/core/bootstrap.min.js"></script>
+<script src="js/plugins/bootstrap-switch.js"></script>
 
 <!-- Then your custom scripts / handlers -->
 <script>
@@ -795,6 +804,50 @@ $("#create_form").on("submit", function(e){
 </script>
 
 <?php
-page_footer_end();
+if (isset($_GET['id'])) {
+	$sql = 'select * from billit_stock_journal where journal_id="' . $_GET['id'] . '"';
+	$result = execute_query($sql);
+	$rows = [];
+	while ($row = mysqli_fetch_assoc($result)) {
+		$description = $row['remarks'];
+		$rows[] = $row;
+	}
+
+	echo "<script>
+			$(document).ready(function() {
+				$('#unit_id').val('" . $old_data['unit_id'] . "');
+		";
+
+	echo "$('#description_1').val('" . $description . "');";
+
+	$i = 1;
+	foreach ($rows as $r) {
+		if ($i > 1) {
+			echo "add_new_row();\n";
+			echo "$('#description_" . $i . "').val('" . $r['remarks'] . "');\n";
+		}
+
+		if ($r['by'] != "") {
+			echo "$('#voucher_type_" . $i . "').val('by');\n";
+			echo "$('#account_" . $i . "_sno').val('" . $r['by'] . "');\n";
+			echo "$('#account_" . $i . "').val('" . get_ledger($r['by']) . "');\n";
+			echo "$('#debit_" . $i . "').val('" . $r['amount'] . "');\n";
+			echo "update_voucher(" . $i . ");\n";
+		} else {
+			echo "$('#voucher_type_" . $i . "').val('to');\n";
+			echo "$('#account_" . $i . "_sno').val('" . $r['to'] . "');\n";
+			echo "$('#account_" . $i . "').val('" . get_ledger($r['to']) . "');\n";
+			echo "$('#credit_" . $i . "').val('" . $r['amount'] . "');\n";
+			echo "update_voucher(" . $i . ");\n";
+		}
+		$i++;
+	}
+	echo "
+				calc_total();
+			});
+		</script>";
+}
 ?>
+<?php
+page_footer_end();
 ?>

@@ -12,72 +12,164 @@ if(isset($_GET['id'])){
 }
 ?>
 <html>
+
 <head>
-	<title>Journal</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Journal Entry Print</title>
 	<style>
-		body{width:1024px;}
-		td, th{padding: 5px;}
+		body {
+			font-family: Arial, sans-serif;
+			margin: 20px;
+		}
+
+		.header {
+			text-align: center;
+			font-size: 18px;
+			font-weight: bold;
+			margin-bottom: 10px;
+		}
+
+		h4 {
+			margin: 5px 0;
+			text-align: center;
+		}
+
+		p {
+			margin: 2px 0;
+			text-align: center;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 14px;
+		}
+
+		th,
+		td {
+			border: 1px solid black;
+			padding: 8px;
+			text-align: left;
+		}
+
+		th {
+			background-color: #f2f2f2;
+		}
+
+		.debit,
+		.credit {
+			text-align: right;
+		}
+
+		.total-row {
+			font-weight: bold;
+			background-color: #ddd;
+		}
+
+		.header-container {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+
+		@media print {
+			body::after {
+				content: "Powered By AIPPCA";
+				position: fixed;
+				font-size: 50px;
+				color: rgba(0, 0, 0, 0.1);
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%) rotate(-45deg);
+				z-index: -2;
+			}
+
+			.total-row {
+				font-weight: bold;
+				background-color: transparent !important;
+			}
+
+			th {
+				background-color: transparent !important;
+			}
+		}
 	</style>
 </head>
+
 <body>
-	<h3>Journal Entry : <?php echo $old_data['timestamp']; ?></h3>
-	<h3>Unit Name : <?php echo get_division($old_data['unit_id']); ?></h3>
-	<h3>Voucher No. : <?php echo $old_data['voucher_no']; ?></h3>
-	<table border="1" width="100%" cellpadding="0" cellspacing="0">
-		<thead>
-			<tr>
-				<th>S.No.</th>
-				<th>Particulars</th>
-				<th>Vendor</th>
-				<th>Description</th>
-				<th>Debit</th>
-				<th>Credit</th>
-			</tr>
-		</thead>
-		<tbody>
-			<?php
-			$sql = 'select * from billit_stock_journal where journal_id="'.$old_data['sno'].'"';
-			$result_trans = execute_query($sql);
-			$i=1;
-			$tot_debit=0;
-			$tot_credit=0;
-			while($row = mysqli_fetch_assoc($result_trans)){
-				$particulars='';
-				$debit='';
-				$credit='';
-				if($row['by']!=''){
-					$particulars = get_ledger($row['by']);
-					$debit = $row['amount'];
-					$tot_debit+=$debit;
+	<div style="margin-left: 30px; margin-right: 15px;">
+		<div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
+		<div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
+		<p>State Name: Uttar Pradesh, Code:09</p>
+		<p>E-Mail: paccfedho@gmail.com</p>
+
+		<h4>Payment At: <?php echo get_division($old_data['unit_id']); ?></h4>
+		<h4>Journal Voucher</h4>
+
+		<div class="header-container">
+			<div class="left">Voucher No.: <?php echo $old_data['voucher_no']; ?></div>
+			<div class="right">Date: <?php echo date("d-m-Y", strtotime($old_data['timestamp'])); ?></div>
+		</div>
+		<table>
+			<thead>
+				<tr>
+					<th>S.No.</th>
+					<th>Particulars</th>
+					<th>Vendor</th>
+					<th>Description</th>
+					<th class="debit">Debit (₹)</th>
+					<th class="credit">Credit (₹)</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php
+				$sql = 'SELECT * FROM billit_stock_journal WHERE journal_id="' . $old_data['sno'] . '"';
+				$result_trans = execute_query($sql);
+				$i = 1;
+				$tot_debit = 0;
+				$tot_credit = 0;
+
+				while ($row = mysqli_fetch_assoc($result_trans)) {
+					$particulars = '';
+					$debit = '';
+					$credit = '';
+
+					if (!empty($row['by'])) {
+						$particulars = get_ledger($row['by']);
+						$debit = number_format($row['amount'], 2);
+						$tot_debit += $row['amount'];
+					} else {
+						$particulars = get_ledger($row['to']);
+						$credit = number_format($row['amount'], 2);
+						$tot_credit += $row['amount'];
+					}
+
+					echo '<tr>
+							<td>' . $i++ . '</td>
+							<td>' . $particulars . '</td>
+							<td>' . $row['vendor'] . '</td>
+							<td>' . $row['remarks'] . '</td>
+							<td class="debit">' . $debit . '</td>
+							<td class="credit">' . $credit . '</td>
+						  </tr>';
 				}
-				else{
-					$particulars = get_ledger($row['to']);
-					$credit = $row['amount'];
-					$tot_credit+=$credit;
-				}
-				
-				
-				echo '<tr>
-				<td>'.$i++.'</td>
-				<td>'.$particulars.'</td>
-				<td>'.$row['vendor'].'</td>
-				<td>'.$row['remarks'].'</td>
-				<td align="right">'.$debit.'</td>
-				<td align="right">'.$credit.'</td>
-				</tr>';
-			}
-			echo '<tr>
-			<th></th>
-			<th></th>
-			<th></th>
-			<th></th>
-			<th align="right">'.$tot_debit.'</th>
-			<th align="right">'.$tot_credit.'</th>
-			</tr>';
-			
-			?>
-		</tbody>
-		
-	</table>
+
+				echo '<tr class="total-row">
+						<td colspan="4" align="right"></td>
+						<td class="debit">' . number_format($tot_debit, 2) . '</td>
+						<td class="credit">' . number_format($tot_credit, 2) . '</td>
+					  </tr>';
+				?>
+			</tbody>
+		</table>
+
+		<div class="header-container">
+			<div class="left"></div>
+			<div class="right" style="margin-top:60px; margin-right:70px;">Authorised Signatory</div>
+		</div>
+	</div>
 </body>
+
 </html>
