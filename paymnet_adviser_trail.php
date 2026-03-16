@@ -12,8 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_action'])) {
     $action = $_POST['approve_action'];
     $remarks = $_POST['remarks'] ?? '';
     processApprovalAction($req_id, $employee_id, $action, $moduleName, $remarks);
-    echo "<p style='color:green;'>✔️ Action '$action'</p>";
-    // echo "<p style='color:green;'>✔️ Action '$action' performed on request ID $req_id</p>";
+    header("Location: " . $_SERVER['PHP_SELF'] . "?request_id=" . $_GET['request_id']);
+    exit;
 }
 
 
@@ -231,25 +231,70 @@ $ho_bank_row = mysqli_fetch_assoc(execute_query('SELECT * FROM billit_customer W
     $otherRequests = $db->query($sql);
 
     ?>
-    <?php foreach ($otherRequests as $req): ?>
+
+    <?php
+    $forwardChain = [];
+    $hasForwarded = false;
+
+    $logSql = "SELECT u.user_name, ut.user_type as designation
+           FROM approval_logs al
+           JOIN approval_requests ar ON al.request_id = ar.id
+           LEFT JOIN users u ON al.approved_by = u.sno
+           LEFT JOIN user_type ut ON u.type = ut.sno
+           WHERE ar.row_id = $request_id 
+             AND ar.module_name = '$moduleName'
+             AND al.action = 'forward'
+           ORDER BY al.id ASC";
+
+    $logRes = $db->query($logSql);
+    if ($logRes && $logRes->num_rows > 0) {
+        $hasForwarded = true;
+        while ($row = $logRes->fetch_assoc()) {
+            $name = htmlspecialchars($row['user_name'] ?? '');
+            $desig = htmlspecialchars($row['designation'] ?? '');
+            $forwardChain[] = "$name ($desig)";
+        }
+    }
+    ?>
+    <?php if ($hasForwarded): ?>
         <table class="table1">
+            <tr><th>Approved By</th></tr>
             <tr>
-                <th>Action</th>
-            </tr>
-            <tr>
-                <td>
-                    <form method="post">
-                        <input type="hidden" name="request_id" value="<?= $req['id'] ?>">
-                        <textarea name="remarks" rows="4" cols="90" required placeholder="Your remarks..."></textarea><br>
-                        <button name="approve_action" value="forward" style="font-size: 18px; padding: 10px 20px;">✅
-                            Forward</button>
-                        <button name="approve_action" value="revert" style="font-size: 18px; padding: 10px 20px;">↩️
-                            Revert</button>
-                    </form>
+                <td style="text-align:left; padding:10px;">
+                <span style="font-weight: bold; color: green; font-size: 16px;">
+                    <?php echo implode(" <span style='color:black;'>></span> ", $forwardChain); ?>
+                </span>
                 </td>
             </tr>
         </table>
-    <?php endforeach; ?>
+        <br>
+    <?php endif; ?>
+
+    <?php if ($otherRequests && $otherRequests->num_rows > 0): ?>
+        <?php foreach ($otherRequests as $req): ?>
+            <table class="table1">
+                <tr><th>Action</th></tr>
+                <tr>
+                    <td>
+                        <form method="post">
+                            <input type="hidden" name="request_id" value="<?= $req['id'] ?>">
+                            <textarea name="remarks" rows="4" cols="90" required placeholder="Your remarks..."></textarea><br>
+                            <button name="approve_action" value="forward" style="font-size: 18px; padding: 10px 20px;">✅ Approve</button>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <table class="table1">
+            <tr><th>Action</th></tr>
+            <tr>
+                <td style="text-align:left; padding:10px;">
+                    वर्तमान उपयोगकर्ता/पद के लिए कोई लंबित या रिवर्टेड एक्शन उपलब्ध नहीं है।
+                </td>
+            </tr>
+        </table>
+    <?php endif; ?>
 
 </body>
 

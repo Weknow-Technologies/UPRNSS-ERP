@@ -33,55 +33,63 @@ function get_parent($id){
 	return $parent['description'];
 }
 
+function add_customer($data){
+    global $db;
+    $name            = trim($data['cus_name'] ?? '');
+    $address         = trim($data['address'] ?? '');
+    $address2        = trim($data['add_2'] ?? '');
+    $city            = trim($data['city'] ?? '');
+    $state           = trim($data['state'] ?? '');
+    $zip             = trim($data['zipcode'] ?? '');
+    $country         = trim($data['country'] ?? '');
+    $mobile          = trim($data['mobile'] ?? '');
+    $tin             = trim($data['tin'] ?? '');
+    $aadhar          = trim($data['adhar_no'] ?? '');
+    $type            = trim($data['cus_type'] ?? '');
+    $opening_balance = trim($data['opening_balance'] ?? 0);
+    $ifsc            = trim($data['ifsc'] ?? '');
+    $account_no      = trim($data['account_no'] ?? '');
+    $visibility      = trim($data['visibility'] ?? '');
+    $parent_ledger   = trim($data['parent'] ?? '');
+    $department_id   = trim($data['department_id'] ?? '');
+    $unit_id         = trim($data['unit_id'] ?? '');
+    $opening_date    = trim($data['opening_date'] ?? '');
+    $pan             = trim($data['pan'] ?? '');
 
-function add_customer($name, $address, $address2, $city, $state, $zip, $country, $mobile, $tin, $aadhar='', $fname='', $mob_2='', $mob_3='', $mob_4='', $type='', $cus_occupation='', $dob='', $opening_balance=0, $category='', $parent=0, $ifsc='', $account_no='', $visibility='', $parent_ledger='', $department_id='', $unit_id=''){
-	global $db;
-	$name = trim($name);
-	$address = trim($address);
-	$address2 = trim($address2);
-	$city = trim($city);
-	$state = trim($state);
-	$zip = trim($zip);
-	$country = trim($country);
-	$mobile = trim($mobile);
-	$tin = trim($tin);
-	
-	$sql = 'select * from general_settings where `desc`="duplicate_mobile"';
-	$duplicate_mobile = mysqli_fetch_array(execute_query($sql));
-	$duplicate_mobile = $duplicate_mobile['rate'];
+    /* duplicate mobile check */
+    $sql = 'SELECT rate FROM general_settings WHERE `desc`="duplicate_mobile"';
+    $duplicate_mobile = mysqli_fetch_array(execute_query($sql));
+    $duplicate_mobile = $duplicate_mobile['rate'];
+    if($duplicate_mobile == 0 && $mobile != ''){
+        $sql = 'SELECT sno FROM billit_customer 
+                WHERE mobile="'.$mobile.'" 
+                OR mob_2="'.$mobile.'" 
+                OR mob_3="'.$mobile.'" 
+                OR mob_4="'.$mobile.'"';
+        $result = execute_query($sql);
+        if(mysqli_num_rows($result) != 0){
+            $supplier = mysqli_fetch_array($result);
+            return $supplier['sno'];
+        }
+    }
 
-	if($duplicate_mobile==0){
-		if($mobile!=''){
-			$sql = 'select * from billit_customer where mobile="'.$mobile.'" or mob_2="'.$mobile.'" or mob_3="'.$mobile.'" or mob_4="'.$mobile.'"';
-			$result = execute_query($sql);
-			if(mysqli_num_rows($result)!=0){
-				$supplier = mysqli_fetch_array($result);
-				return $supplier['sno'];
-			}
-		}
-	}
-	
-	if($tin!=''){
-		$sql = 'select * from billit_customer where tin="'.$tin.'"';
-		$result = execute_query($sql);
-		if(mysqli_num_rows($result)!=0){
-			$supplier = mysqli_fetch_array($result);
-			return $supplier['sno'];
-		}
-	}
-	if($name!=''){
-		$sql = 'select * from billit_customer where cus_name="'.$name.'"';
-		$result = execute_query($sql);
-		if(mysqli_num_rows($result)!=0){
-			$supplier = mysqli_fetch_array($result);
-			return $supplier['sno'];
-		}
-	}
-	$sql = 'insert into billit_customer (cus_name, fname, address, add_2, city, state, zipcode, country, mobile, mob_2, mob_3, mob_4, cus_type, cus_occupation, dob, opening_balance, tin, adhar_no, category, parent, ifsc, account_no, created_by, creation_time, visibility, parent_ledger, department_id, unit_id) values ("'.$name.'", "'.$fname.'", "'.$address.'", "'.$address2.'", "'.$city.'", "'.$state.'", "'.$zip.'", "'.$country.'", "'.$mobile.'", "'.$mob_2.'", "'.$mob_3.'", "'.$mob_4.'", "'.$type.'", "'.$cus_occupation.'", "'.$dob.'", "'.$opening_balance.'", "'.$tin.'", "'.$aadhar.'", "'.$category.'", "'.$parent.'", "'.$ifsc.'", "'.$account_no.'", "'.$_SESSION['username'].'", "'.date("Y-m-d H:i:s").'", "'.$visibility.'", "'.$parent_ledger.'", "'.$department_id.'","'.$unit_id.'")';
-	//echo $sql;
-	execute_query($sql);
-	//echo mysqli_error($db);
-	return insert_id();
+    /* duplicate GST check */
+    if($tin != ''){
+        $sql = 'SELECT sno FROM billit_customer WHERE tin="'.$tin.'"';
+        $result = execute_query($sql);
+        if(mysqli_num_rows($result) != 0){
+            $supplier = mysqli_fetch_array($result);
+            return $supplier['sno'];
+        }
+    }
+
+    /* insert customer */
+    $sql = 'INSERT INTO billit_customer 
+    (cus_name, address, add_2, city, state, zipcode, country, mobile, tin, adhar_no, pan, cus_type, opening_balance, ifsc, account_no, created_by, creation_time, visibility, parent_ledger, department_id, unit_id, opening_date)
+    VALUES
+    ("'.$name.'", "'.$address.'", "'.$address2.'", "'.$city.'", "'.$state.'", "'.$zip.'", "'.$country.'", "'.$mobile.'", "'.$tin.'", "'.$aadhar.'", "'.$pan.'", "'.$type.'", "'.$opening_balance.'", "'.$ifsc.'", "'.$account_no.'", "'.$_SESSION['username'].'", "'.date("Y-m-d H:i:s").'", "'.$visibility.'", "'.$parent_ledger.'", "'.$department_id.'", "'.$unit_id.'", "'.$opening_date.'")';
+    execute_query($sql);
+    return insert_id();
 }
 
 function get_cust_balace($from,$to,$id, $in_out=''){
