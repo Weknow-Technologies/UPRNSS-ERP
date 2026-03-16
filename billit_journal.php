@@ -85,7 +85,7 @@ if(mysqli_error($db)){
             $description = isset($_POST['description_'.$i]) ? $_POST['description_'.$i] : '';
             $remark = isset($_POST['remark_1']) ? $_POST['remark_1'] : '';
 
-            if(isset($_POST['voucher_type_'.$i]) && $_POST['voucher_type_'.$i] == 'BY') {
+            if(isset($_POST['voucher_type_'.$i]) && strtoupper(trim($_POST['voucher_type_'.$i])) == 'BY') {
                 $sql = 'INSERT INTO billit_stock_journal 
                 (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
                 VALUES (
@@ -152,8 +152,16 @@ else {
 }
 
 if(isset($_GET['id'])){
-	$sql = 'select * from billit_stock_journal where sno="'.$_GET['id'].'"';
+	$sql = 'SELECT * FROM billit_invoice_journal WHERE sno="'.$_GET['id'].'"';
 	$old_data = mysqli_fetch_assoc(execute_query($sql));
+	
+	// Also get vendor name and status from stock journal if possible
+	$sql_extra = 'SELECT vendor, status FROM billit_stock_journal WHERE journal_id="'.$_GET['id'].'" LIMIT 1';
+	$res_extra = execute_query($sql_extra);
+	if($row_extra = mysqli_fetch_assoc($res_extra)){
+		$old_data['vendor_name'] = $row_extra['vendor'];
+		$old_data['status'] = $row_extra['status'];
+	}
 }
 if(isset($_GET['del'])){
 	$sql = 'delete from billit_stock_journal where sno="'.$_GET['del'].'"';
@@ -234,7 +242,7 @@ page_sidebar();
 								
 							</td>
               
-							<td>Treat as Final : <input type="checkbox" name="treat_as_final" <?php if(isset($_GET['id'])){if($old_data['status']==1){echo "checked='checked'";}}else{ echo 'checked="checked"';}?>></td>
+							<td>Treat as Final : <input type="checkbox" name="treat_as_final" <?php if(isset($old_data['status']) && $old_data['status']==1){echo "checked='checked'";} elseif(!isset($_GET['id'])){ echo 'checked="checked"'; } ?>></td>
 							<td class="text-right">
 								<a href="billit_journal.php?view=view"><button type="button" class="btn btn-warning">View Vouchers (Journal Report)</button></a>
 							</td>
@@ -245,7 +253,7 @@ page_sidebar();
 							document.writeln(DateInput('sale_date', 'purchase_form', false, 'YYYY-MM-DD', '<?php if(isset($_GET['id'])){echo $old_data['timestamp'];}else{ echo $_POST['sale_date'];} ?>', <?php echo $tab++; $tab+=3; ?>));
 							</script></td>
 							<td>Voucher No.</td>
-							<td><input id="challan_no" name="challan_no" class="field text" size="12" maxlength="18" tabindex="<?php echo $tab++; ?>" type="text" value="<?php if(isset($_GET['id'])){echo $old_data['challan_no'];}?>"></td>
+							<td><input id="challan_no" name="challan_no" class="field text" size="12" maxlength="18" tabindex="<?php echo $tab++; ?>" type="text" value="<?php if(isset($old_data['voucher_no'])){echo $old_data['voucher_no'];}?>"></td>
 						</tr>
 					</table>
 				</div>
@@ -260,33 +268,45 @@ page_sidebar();
 				<div class="legend" id="legend_container">
 						<div class="row" id="row_1">
 							<div class="col-md-3 mb-2">
-								<label for="vendor_1" class="form-label">Vendor</label>
-								<select name="vendor_1" id="vendor_1" class="form-control" onFocus="set_current(1)">
-									<option value="">-- Select Vendor --</option>
-
-									<?php   
-									// Fetch vendors from vendor table
-									$sql = "
-										SELECT sno, firm_name 
-										FROM vendor
-										WHERE firm_name IS NOT NULL
-										  AND firm_name != ''
-										ORDER BY firm_name ASC
-									";
-
-									$result = mysqli_query($db, $sql);
-
-									if ($result && mysqli_num_rows($result) > 0) {
-										while ($row = mysqli_fetch_assoc($result)) {
-											$id   = htmlspecialchars($row['sno']);
-											$name = htmlspecialchars(trim($row['firm_name']));
-											echo "<option value=\"$id\">$name</option>";
-										}
-									} else {
-										echo "<option value=''>No Vendors Found</option>";
+								<?php
+								// Fetch all vendors from vendor table
+								$vendor_list_html = '';
+								$vendor_map = [];
+								$vendor_sql = "SELECT sno, firm_name FROM vendor WHERE firm_name IS NOT NULL AND firm_name != '' ORDER BY firm_name ASC";
+								$vendor_result = mysqli_query($db, $vendor_sql);
+								if ($vendor_result) {
+									while ($v_row = mysqli_fetch_assoc($vendor_result)) {
+										$name = htmlspecialchars(trim($v_row['firm_name']));
+										$id = $v_row['sno'];
+										$vendor_list_html .= '<option value="' . $name . '">';
+										$vendor_map[$name] = $id;
 									}
-									?>
-								</select>
+								}
+								?>
+								<datalist id="vendor_list">
+									<?php echo $vendor_list_html; ?>
+								</datalist>
+								<script>
+									var vendorMap = <?php echo json_encode($vendor_map); ?>;
+									function updateVendorId(id) {
+										var name = $('#vendor_name_' + id).val();
+										if (vendorMap[name]) {
+											$('#vendor_' + id).val(vendorMap[name]);
+										} else {
+											$('#vendor_' + id).val('');
+										}
+									}
+								</script>
+								<label for="vendor_name_1" class="form-label">Vendor</label>
+								<input type="text" name="vendor_name_1" id="vendor_name_1" list="vendor_list" class="form-control" onFocus="set_current(1)" onInput="updateVendorId(1)" placeholder="Select or Search Vendor..." value="<?php echo isset($old_data['vendor_name']) ? $old_data['vendor_name'] : ''; ?>">
+								<input type="hidden" name="vendor_1" id="vendor_1">
+								<script>
+									$(document).ready(function(){
+										if($("#vendor_name_1").val() != ""){
+											updateVendorId(1);
+										}
+									});
+								</script>
 							</div>
 
 							<!-- Remark -->
@@ -504,7 +524,7 @@ page_sidebar();
 					<div class="row">
 						<div class="col-md-6">
 							<label>Company Name</label>
-							<input id="supplier" name="cus_name" tabindex="21" value="" type="text" class="form-control">
+							<input id="cus_name" name="cus_name" tabindex="21" value="" type="text" class="form-control">
 						</div>
 						<div class="col-md-6">
 							<label>State</label>
@@ -517,8 +537,13 @@ page_sidebar();
 							$res_state = execute_query($sql);
 							while($row_state = mysqli_fetch_array($res_state)){
 								echo '<option value="'.$row_state['state_code'].'" ';
-								if(isset($_GET['id'])){
+								if(isset($ledger['state'])){
 									if(strtoupper(trim($row_state['state_code']))==strtoupper(trim($ledger['state']))){
+										echo ' selected="selected" ';
+									}
+								}
+								elseif(isset($old_data['state'])){
+									if(strtoupper(trim($row_state['state_code']))==strtoupper(trim($old_data['state']))){
 										echo ' selected="selected" ';
 									}
 								}
@@ -558,7 +583,7 @@ page_sidebar();
 			<div class="modal-footer">
 				<div class="col-md-12 text-center" id="ajax_loader" style="display:none;"><img src="images/loading_transparent.gif"></div>
 				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-<button type="submit" class="btn btn-primary" id="save">Save changes</button>
+				<button type="submit" form="create_ledger" class="btn btn-primary" id="save">Save changes</button>
 			</div>
 		</div>
 	</div>
@@ -568,16 +593,16 @@ page_sidebar();
 
 <script>
 	function create_new() {
-    var parent = $('#parent').val(); // Get selected parent dynamically
-    var cus_name = encodeURIComponent($('#cus_name').val());
+    var parent = $('#parent').val();
+    var cus_name_val = $('#cus_name').val();
+    var cus_name = encodeURIComponent(cus_name_val);
     var state = $('#state').val();
     var mobile = $('#mobile').val();
     var tin = $('#tin').val();
     var address = $('#address').val();
     var address2 = $('#add_2').val();
 
-    var finaldata = '';
-    finaldata = 'id=create_ledger' +
+    var finaldata = 'id=create_ledger' +
                 '&parent=' + parent +
                 '&term=t' +
                 '&cus_name=' + cus_name +
@@ -586,27 +611,50 @@ page_sidebar();
                 '&tin=' + tin +
                 '&address=' + address +
                 '&add_2=' + address2;
-    var form = $('#create_ledger');
+    
+    console.log("Creating new ledger with data:", finaldata);
     document.getElementById('ajax_loader').style.display = 'block';
 
     $.ajax({
         type: "GET",
-        url: form.attr('action'),
+        url: "scripts/billit_ajax.php", // Simplified URL
         data: finaldata,
+        dataType: 'json',
         cache: false,
-        complete: function(response) {
+        success: function(response) {
+            console.log("Ledger creation response:", response);
             document.getElementById('ajax_loader').style.display = 'none';
-            $('#createModal').modal('hide');
-
-            // Set supplier field and returned sno (ledger id)
-            $("#supplier").val(decodeURIComponent(cus_name));
-           
-
-            // Show formatted details
-            var details = address + ", " + address2 + 
-                          ". <br/><b>M:</b> " + mobile + 
-                          "<br/><b>GSTIN:</b> " + tin;
-            $('#supplier_data').html(details);
+            if(response.success){
+                alert('✅ Ledger "' + response.name + '" created successfully!');
+                
+                // Hide modal and remove backdrop robustly
+                $('#createModal').modal('hide');
+                $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+                
+                var current_row = $("#current").val();
+                
+                // Populate the ledger field in the main journal form
+                if (current_row) {
+                    $("#account_" + current_row).val(response.name);
+                    $("#account_" + current_row + "_sno").val(response.id);
+                    
+                    // Clear the modal form for next time
+                    $('#create_ledger')[0].reset();
+                    
+                    // Use setTimeout to ensure focus happens after modal is gone
+                    setTimeout(function(){
+                        $("#debit_" + current_row).focus();
+                    }, 500);
+                }
+            } else {
+                alert("❌ Error: " + response.message);
+            }
+        },
+        error: function(xhr, status, error){
+            console.error("AJAX Error:", error, status, xhr.responseText);
+            document.getElementById('ajax_loader').style.display = 'none';
+            alert("❌ Something went wrong while creating the ledger. Check console for details.");
         }
     });
 }
@@ -623,7 +671,15 @@ page_sidebar();
 	$(function() {
 		var options = {
 			source: function (request, response){
-				$.getJSON("scripts/billit_ajax.php?id=cust_name&cust=1",request, response);
+				$.ajax({
+					url: "scripts/billit_ajax.php?id=cust_name&cust=1",
+					dataType: "json",
+					data: request,
+					cache: false,
+					success: function(data){
+						response(data);
+					}
+				});
 			},
 			minLength: 1,
 			select: function( event, ui ) {
@@ -662,7 +718,7 @@ page_sidebar();
 		var max_id = parseInt($("#id").val());
 		var new_id = max_id + 1;
 		
-		var txt = '<div class="row" id="row_' + new_id + '"><div class="col-1"><label>&nbsp;</label><select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')"><option value="by">By</option><option value="to">To</option></select></div><div class="col-3"><label for="">Ledger</label><input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')"><input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno" class="form-control"><input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '" class="form-control"></div><div class="col-2"><label for="">Debit</label><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Amount" onFocus="set_current(' + new_id + ')"></div><div class="col-2"><label for="">Credit</label><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Amount" disabled onFocus="set_current(' + new_id + ')"></div><div class="col-3"><label for="">Description</label><input type="text" name="description_' + new_id + '" id="description_' + new_id + '" class="form-control" placeholder="Description" onFocus="set_current(' + new_id + ')"></div><div class="col-1"><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">Remove</button></div></div>';
+		var txt = '<div class="row" id="row_ledger_' + new_id + '"><div class="col-1"><label>&nbsp;</label><select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')"><option value="by">By</option><option value="to">To</option></select></div><div class="col-3"><label for="">Ledger</label><input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')"><input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno" class="form-control"><input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '" class="form-control"></div><div class="col-2"><label for="">Debit</label><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Amount" onFocus="set_current(' + new_id + ')"></div><div class="col-2"><label for="">Credit</label><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Amount" disabled onFocus="set_current(' + new_id + ')"></div><div class="col-3"><label for="">Description</label><input type="text" name="description_' + new_id + '" id="description_' + new_id + '" class="form-control" placeholder="Description" onFocus="set_current(' + new_id + ')"></div><div class="col-1"><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">Remove</button></div></div>';
 		
 		$("#legend_container").append(txt);
 		$("#id").val(new_id);
@@ -711,17 +767,56 @@ page_sidebar();
 		
 	}
 	
-	function update_voucher(id){
-		var vch_type = $("#voucher_type_"+id).val();
-		if(vch_type=='by'){
-			$("#credit_"+id).prop("disabled", true);
-			$("#debit_"+id).prop("disabled", false);
+	function update_voucher(id) {
+		var vch_type = $("#voucher_type_" + id).val();
+		var debit_val = $("#debit_" + id).val();
+		var credit_val = $("#credit_" + id).val();
+
+		if (vch_type == 'by') {
+			if (debit_val == '' || debit_val == 0) { // Only shift if debit is empty
+				if (credit_val != '' && credit_val != 0) {
+					$("#debit_" + id).val(credit_val);
+					$("#credit_" + id).val('');
+				}
+			}
+			$("#credit_" + id).prop("disabled", true);
+			$("#debit_" + id).prop("disabled", false);
 		}
-		else if(vch_type=='to'){
-			$("#credit_"+id).prop("disabled", false);
-			$("#debit_"+id).prop("disabled", true);
+		else if (vch_type == 'to') {
+			if (credit_val == '' || credit_val == 0) { // Only shift if credit is empty
+				if (debit_val != '' && debit_val != 0) {
+					$("#credit_" + id).val(debit_val);
+					$("#debit_" + id).val('');
+				}
+			}
+			$("#credit_" + id).prop("disabled", false);
+			$("#debit_" + id).prop("disabled", true);
 		}
+		calc_total();
 	}
+
+	$(document).on('keydown', '[id^="debit_"], [id^="credit_"]', function(e) {
+		if (e.which === 13) { // Enter key
+			e.preventDefault();
+			var current_id = parseInt($(this).attr('id').split('_')[1]);
+			var next_id = current_id + 1;
+
+			// Add row if it doesn't exist
+			if (!$('#row_ledger_' + next_id).length && !$('#row_' + next_id).length) {
+				add_new_row();
+			}
+
+			// Toggle Voucher Type
+			var current_type = $('#voucher_type_' + current_id).val();
+			var next_type = (current_type === 'by') ? 'to' : 'by';
+
+			$('#voucher_type_' + next_id).val(next_type);
+			update_voucher(next_id);
+
+			// Move focus to next row ledger field
+			$('#account_' + next_id).focus();
+		}
+	});
 	
 	function set_current(id){
 		$("#current").val(id);
@@ -782,22 +877,9 @@ function update_parent(parent_id) {
 
 
 </script>
-<!-- FIRST load jQuery only ONCE -->
-<script src="js/jquery.3.2.1.min.js"></script>
-<script src="js/jquery-ui.js"></script>
-<script src="js/core/bootstrap.min.js"></script>
-<script src="js/plugins/bootstrap-switch.js"></script>
-
-<!-- Then your custom scripts / handlers -->
 <script>
-$(document).on('click','[data-toggle="modal"]',function(){
-    $($(this).data('target')).modal('show');
-});
-</script>
-<script>
-$("#create_form").on("submit", function(e){
+$("#create_ledger").on("submit", function(e){
     e.preventDefault();
-    console.log("Form submit executed!");
     create_new();
 });
 
