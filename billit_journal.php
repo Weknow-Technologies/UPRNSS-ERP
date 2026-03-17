@@ -85,7 +85,7 @@ if(mysqli_error($db)){
             $description = isset($_POST['description_'.$i]) ? $_POST['description_'.$i] : '';
             $remark = isset($_POST['remark_1']) ? $_POST['remark_1'] : '';
 
-            if(isset($_POST['voucher_type_'.$i]) && strtoupper(trim($_POST['voucher_type_'.$i])) == 'BY') {
+            if(isset($_POST['voucher_type_'.$i]) && $_POST['voucher_type_'.$i] == 'BY') {
                 $sql = 'INSERT INTO billit_stock_journal 
                 (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `vendor`, `challan_no`, `unit_id`, `status`) 
                 VALUES (
@@ -318,8 +318,8 @@ page_sidebar();
 
 							<!-- On Account Of -->
 							<div class="col-md-3 mb-2">
-								<label for="description_1" class="form-label">On account of</label>
-								<input type="text" name="description_1" id="description_1" class="form-control"
+								<label for="header_description" class="form-label">On account of</label>
+								<input type="text" name="description_1" id="header_description" class="form-control"
 									placeholder="Enter Description" onBlur="insert_row(1);" onFocus="set_current(1)">
 							</div>
 							<div class="col-md-3 mb-2">
@@ -795,26 +795,48 @@ page_sidebar();
 		calc_total();
 	}
 
-	$(document).on('keydown', '[id^="debit_"], [id^="credit_"]', function(e) {
+	$(document).on('keydown', 'input, select', function (e) {
 		if (e.which === 13) { // Enter key
 			e.preventDefault();
-			var current_id = parseInt($(this).attr('id').split('_')[1]);
-			var next_id = current_id + 1;
+			var $this = $(this);
+			var id = $this.attr('id') || '';
 
-			// Add row if it doesn't exist
-			if (!$('#row_ledger_' + next_id).length && !$('#row_' + next_id).length) {
-				add_new_row();
+			// Special handling for Description to add row
+			if (id.indexOf('description_') !== -1 && id !== 'header_description') {
+				var current_id = parseInt(id.split('_')[1]);
+				var next_id = current_id + 1;
+
+				// Add row if it doesn't exist
+				if (!$('#row_ledger_' + next_id).length && !$('#row_' + next_id).length) {
+					add_new_row();
+				}
+
+				// Toggle Voucher Type
+				var current_type = $('#voucher_type_' + current_id).val();
+				var next_type = (current_type === 'by') ? 'to' : 'by';
+
+				$('#voucher_type_' + next_id).val(next_type);
+				update_voucher(next_id);
+
+				// Move focus to next row ledger field
+				$('#account_' + next_id).focus();
+				return;
 			}
 
-			// Toggle Voucher Type
-			var current_type = $('#voucher_type_' + current_id).val();
-			var next_type = (current_type === 'by') ? 'to' : 'by';
+			// Special handling for Debit/Credit to move to Description
+			if (id.indexOf('debit_') !== -1 || id.indexOf('credit_') !== -1) {
+				var current_id = parseInt(id.split('_')[1]);
+				$('[name="description_' + current_id + '"]').focus();
+				return;
+			}
 
-			$('#voucher_type_' + next_id).val(next_type);
-			update_voucher(next_id);
+			// Generic "Enter as Tab" behavior
+			var inputs = $(this).closest('form').find(':input:visible:not([disabled])');
+			var idx = inputs.index(this);
 
-			// Move focus to next row ledger field
-			$('#account_' + next_id).focus();
+			if (idx !== -1 && idx < inputs.length - 1) {
+				inputs[idx + 1].focus();
+			}
 		}
 	});
 	
@@ -900,7 +922,7 @@ if (isset($_GET['id'])) {
 				$('#unit_id').val('" . $old_data['unit_id'] . "');
 		";
 
-	echo "$('#description_1').val('" . $description . "');";
+	echo "$('#header_description').val('" . $description . "');";
 
 	$i = 1;
 	foreach ($rows as $r) {

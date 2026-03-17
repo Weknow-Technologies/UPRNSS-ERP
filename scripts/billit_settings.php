@@ -33,8 +33,46 @@ function get_parent($id){
 	return $parent['description'];
 }
 
-function add_customer($data){
+function add_customer($data_or_name, ...$other_args){
     global $db;
+    
+    // Check if we got an array (new style) or multiple arguments (old style)
+    if (is_array($data_or_name)) {
+        $data = $data_or_name;
+    } else {
+        // Old style: mapping positional arguments to keys expected by the function
+        $data = [
+            'cus_name'         => $data_or_name,
+            'address'          => $other_args[0] ?? '',
+            'add_2'            => $other_args[1] ?? '',
+            'city'             => $other_args[2] ?? '',
+            'state'            => $other_args[3] ?? '',
+            'zipcode'          => $other_args[4] ?? '',
+            'country'          => $other_args[5] ?? '',
+            'mobile'           => $other_args[6] ?? '',
+            'tin'              => $other_args[7] ?? '',
+            'adhar_no'         => $other_args[8] ?? '',
+            'fname'            => $other_args[9] ?? '',
+            'mob_2'            => $other_args[10] ?? '',
+            'mob_3'            => $other_args[11] ?? '',
+            'mob_4'            => $other_args[12] ?? '',
+            'cus_type'         => $other_args[13] ?? '',
+            'cus_occupation'   => $other_args[14] ?? '',
+            'dob'              => $other_args[15] ?? '',
+            'opening_balance'  => $other_args[16] ?? 0,
+            'category'         => $other_args[17] ?? '',
+            'parent'           => $other_args[18] ?? '',
+            'ifsc'             => $other_args[19] ?? '',
+            'account_no'       => $other_args[20] ?? '',
+            'visibility'       => $other_args[21] ?? '',
+            'parent_ledger'    => $other_args[22] ?? '',
+            'department_id'    => $other_args[23] ?? '',
+            'unit_id'          => $other_args[24] ?? '',
+            'opening_date'     => $other_args[25] ?? '',
+            'pan'              => $other_args[26] ?? ''
+        ];
+    }
+
     $name            = trim($data['cus_name'] ?? '');
     $address         = trim($data['address'] ?? '');
     $address2        = trim($data['add_2'] ?? '');
@@ -54,6 +92,9 @@ function add_customer($data){
     $department_id   = trim($data['department_id'] ?? '');
     $unit_id         = trim($data['unit_id'] ?? '');
     $opening_date    = trim($data['opening_date'] ?? '');
+    if($opening_date == ''){
+        $opening_date = date("Y-m-d");
+    }
     $pan             = trim($data['pan'] ?? '');
 
     /* duplicate mobile check */

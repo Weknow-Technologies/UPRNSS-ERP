@@ -47,19 +47,35 @@ if(isset($_GET['voucher'])){
     function get_ledger_name($ledger_id) {
         if(empty($ledger_id)) return 'Unknown';
         
-        // Try to get from general_settings first
+        // 1. Try direct lookup in billit_customer using get_ledger()
+        $name = get_ledger($ledger_id);
+        if($name != '') {
+            return $name;
+        }
+        
+        // 2. Try looking up as a tag in general_settings
         $result = execute_query('SELECT rate FROM general_settings WHERE `desc` = "' . mysqli_real_escape_string($GLOBALS['db'], $ledger_id) . '" LIMIT 1');
         if($result && $row = mysqli_fetch_assoc($result)) {
+            // If the rate is a numeric ID, try getting the ledger name for it
+            if(is_numeric($row['rate'])) {
+                $name = get_ledger($row['rate']);
+                if($name != '') return $name;
+            }
             return $row['rate'];
         }
         
-        // Try to get from ledgers table if exists
-        $result = execute_query('SELECT name FROM ledgers WHERE sno = "' . mysqli_real_escape_string($GLOBALS['db'], $ledger_id) . '" LIMIT 1');
-        if($result && $row = mysqli_fetch_assoc($result)) {
-            return $row['name'];
-        }
+        // 3. Fallback to common tags if not in DB
+        $common = [
+            'CGST' => 'CGST',
+            'SGST' => 'SGST',
+            'IGST' => 'IGST',
+            'GSTTDS' => 'GST TDS',
+            'ITTDS' => 'Income Tax',
+            'LABORCESS' => 'Labour Cess',
+            'ADVCEN' => 'ADV Cess'
+        ];
+        if(isset($common[$ledger_id])) return $common[$ledger_id];
         
-        // Return the ledger_id as is if no match found
         return $ledger_id;
     }
 ?>
@@ -237,7 +253,7 @@ if(isset($_GET['voucher'])){
 					// Show all debit entries
 					echo '<tr>
 							<td>'.$i++.'</td>
-							<td>'.($data['first_by'] ?? 'Bank Transfer').'</td>
+							<td>'.get_ledger_name($data['first_by'] ?? 'Bank Transfer').'</td>
 							<td class="debit">'.number_format($data['praposemoney'], 2).'</td>
 							<td class="credit"></td>
 						  </tr>';
@@ -312,7 +328,7 @@ if(isset($_GET['voucher'])){
 					// Credit should equal total debit amount
 					echo '<tr>
 							<td>'.$i++.'</td>
-							<td>'.($data['first_to'] ?? 'HO Bank Account').'</td>
+							<td>'.get_ledger_name($data['first_to'] ?? 'HO Bank Account').'</td>
 							<td class="debit"></td>
 							<td class="credit">'.number_format($total_debit_amount, 2).'</td>
 						  </tr>';

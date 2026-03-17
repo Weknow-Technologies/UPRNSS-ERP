@@ -4,6 +4,10 @@ $time = mktime(true);
 include("settings.php");
 include("billit_settings.php");
 
+$q = htmlspecialchars(urldecode(strtoupper($_GET["term"])), ENT_QUOTES);
+if (!$q)
+	return;
+
 if (isset($_REQUEST['id'])) {
 	$id = $_REQUEST['id'];
 } else {
@@ -12,8 +16,6 @@ if (isset($_REQUEST['id'])) {
 $result = array();
 
 if ($id == 'cust_name') {
-	$term = isset($_GET['term']) ? $_GET['term'] : '';
-	$q = htmlspecialchars(urldecode(strtoupper($term)), ENT_QUOTES);
 	if (!$q) {
 		echo json_encode([]);
 		exit;
@@ -60,7 +62,7 @@ if ($id == 'cust_name') {
 		session_start();
 	}
 
-	$cus_name = isset($_GET['cus_name']) ? trim($_GET['cus_name']) : '';
+	$cus_name = isset($_GET['cus_name']) ? trim(htmlspecialchars(urldecode($_GET['cus_name']))) : '';
 	$parent = isset($_GET['parent']) ? intval($_GET['parent']) : 0;
 	$state = isset($_GET['state']) ? trim($_GET['state']) : '';
 	$mobile = isset($_GET['mobile']) ? trim($_GET['mobile']) : '';
@@ -74,34 +76,16 @@ if ($id == 'cust_name') {
 	}
 
 	// add_customer() from billit_settings.php — returns sno if already exists or new insert id
-	$sno = add_customer(
-		strtoupper($cus_name), // name
-		$address,              // address
-		$address2,             // address2
-		'',                    // city
-		$state,                // state
-		'',                    // zip
-		'',                    // country
-		$mobile,               // mobile
-		$tin,                  // tin (GSTIN)
-		'',                    // aadhar
-		'',                    // fname
-		'',
-		'',
-		'',            // mob_2, mob_3, mob_4
-		'',                    // cus_type
-		'',                    // cus_occupation
-		'',                    // dob
-		0,                     // opening_balance
-		'',                    // category
-		$parent,               // parent (head group)
-		'',                    // ifsc
-		'',                    // account_no
-		'public',              // visibility
-		'',                    // parent_ledger
-		'',                    // department_id
-		''                     // unit_id
-	);
+	$sno = add_customer([
+		'cus_name' => strtoupper($cus_name),
+		'address' => $address,
+		'add_2' => $address2,
+		'state' => $state,
+		'mobile' => $mobile,
+		'tin' => $tin,
+		'parent' => $parent,
+		'visibility' => 'public'
+	]);
 
 	if ($sno) {
 		echo json_encode([
@@ -111,9 +95,7 @@ if ($id == 'cust_name') {
 			'message' => 'Ledger created successfully.'
 		]);
 	} else {
-		global $db;
-		$err = mysqli_error($db);
-		echo json_encode(['success' => false, 'message' => 'Failed to create ledger. ' . $err]);
+		echo json_encode(['success' => false, 'message' => 'Failed to create ledger. Please try again.']);
 	}
 	exit;
 } elseif ($id == 'delete_type') {
@@ -237,5 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 }
 
 
-echo json_encode($result);
+if (empty($result) != true) {
+	echo json_encode($result);
+}
 ?>

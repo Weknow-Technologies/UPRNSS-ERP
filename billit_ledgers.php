@@ -9,7 +9,28 @@ if(isset($_POST['saveForm'])){
 		$_POST[$k] = strtoupper($v);
 	}
 	if($_POST['edit_sno']==''){
-        add_customer($_POST);
+		add_customer([
+			'cus_name' => $_POST['cus_name'],
+			'address' => $_POST['address'],
+			'add_2' => $_POST['add_2'],
+			'city' => $_POST['city'] ?? '',
+			'state' => $_POST['state'],
+			'zipcode' => $_POST['zipcode'] ?? '',
+			'country' => $_POST['country'] ?? '',
+			'mobile' => $_POST['mobile'],
+			'tin' => $_POST['tin'],
+			'adhar_no' => $_POST['adhar_no'] ?? '',
+			'cus_type' => $_POST['cus_type'] ?? '',
+			'opening_balance' => $_POST['opening_balance'] ?? 0,
+			'parent' => $_POST['parent'] ?? '',
+			'ifsc' => $_POST['ifsc'] ?? '',
+			'account_no' => $_POST['account_no'] ?? '',
+			'visibility' => $_POST['visibility'] ?? 'public',
+			'department_id' => $_POST['department_id'] ?? '',
+			'unit_id' => $_POST['unit_id'] ?? '',
+			'opening_date' => $_POST['opening_date'] ?? '',
+			'pan' => $_POST['pan'] ?? ''
+		]);
         if(!mysqli_error($db)){
 			$msg .= 'Successful Inserted.';
 		}

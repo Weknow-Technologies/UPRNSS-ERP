@@ -293,9 +293,9 @@ if (isset($_POST['submit'])) {
       $total_debits += (float) $cgst_amt + (float) $sgst_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($cgst['sno']) . '", "", "' . $cgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($cgst['rate']) . '", "", "' . $cgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($sgst['sno']) . '", "", "' . $sgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($sgst['rate']) . '", "", "' . $sgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Advance Centage Deduction
@@ -303,7 +303,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['advcen']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($advcen['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($advcen['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // GST-TDS Deduction (CGST-TDS + SGST-TDS) — split 50-50
@@ -313,9 +313,9 @@ if (isset($_POST['submit'])) {
       $total_debits += (float) $cgst_tds_amt + (float) $sgst_tds_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                   VALUES ("' . q($journal_id) . '", "' . q($cgsttds['sno']) . '", "", "' . $cgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                   VALUES ("' . q($journal_id) . '", "' . q($cgsttds['rate']) . '", "", "' . $cgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                   VALUES ("' . q($journal_id) . '", "' . q($sgsttds['sno']) . '", "", "' . $sgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                   VALUES ("' . q($journal_id) . '", "' . q($sgsttds['rate']) . '", "", "' . $sgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Labour Cess Deduction
@@ -323,7 +323,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['labour']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($labourw['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($labourw['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Income Tax Deduction
@@ -331,7 +331,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['itax']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($ittds['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($ittds['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
   }
 
