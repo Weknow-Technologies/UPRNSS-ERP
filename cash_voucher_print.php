@@ -119,7 +119,7 @@ if (isset($_GET['id'])) {
 				<tr>
 					<th>S.No.</th>
 					<th>Particulars</th>
-					<th>Vendor</th>
+					<!-- <th>Vendor</th> -->
 					<th>Description</th>
 					<th class="debit">Debit (₹)</th>
 					<th class="credit">Credit (₹)</th>
@@ -151,7 +151,7 @@ if (isset($_GET['id'])) {
 					echo '<tr>
 							<td>' . $i++ . '</td>
 							<td>' . $particulars . '</td>
-							<td>' . $row['vendor'] . '</td>
+							<!-- <td>' . $row['vendor'] . '</td> -->
 							<td>' . $row['remarks'] . '</td>
 							<td class="debit">' . $debit . '</td>
 							<td class="credit">' . $credit . '</td>
@@ -159,7 +159,7 @@ if (isset($_GET['id'])) {
 				}
 
 				echo '<tr class="total-row">
-						<td colspan="4" align="right"></td>
+						<td colspan="3" align="right"></td><!-- Vendor column commented out, changed from 4 to 3 -->
 						<td class="debit">' . number_format($tot_debit, 2) . '</td>
 						<td class="credit">' . number_format($tot_credit, 2) . '</td>
 					  </tr>';

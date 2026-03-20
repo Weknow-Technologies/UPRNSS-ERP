@@ -1,13 +1,15 @@
 <?php
-include("scripts/settings.php");$msg='';
-include("scripts/billit_settings.php");$msg='';
-$response=0;
-$finalmsg='';
-$tab=1;
+include("scripts/settings.php");
+$msg = '';
+include("scripts/billit_settings.php");
+$msg = '';
+$response = 0;
+$finalmsg = '';
+$tab = 1;
 date_default_timezone_set('Asia/Calcutta');
 //print_r($_POST);
-if(isset($_GET['id'])){
-	$sql = 'select * from billit_invoice_journal where sno="'.$_GET['id'].'"';
+if (isset($_GET['id'])) {
+	$sql = 'select * from billit_invoice_journal where sno="' . $_GET['id'] . '"';
 	$old_data = mysqli_fetch_assoc(execute_query($sql));
 }
 ?>
@@ -117,7 +119,7 @@ if(isset($_GET['id'])){
 				<tr>
 					<th>S.No.</th>
 					<th>Particulars</th>
-					<th>Vendor</th>
+					<!-- <th>Vendor</th> -->
 					<th>Description</th>
 					<th class="debit">Debit (₹)</th>
 					<th class="credit">Credit (₹)</th>
@@ -149,7 +151,7 @@ if(isset($_GET['id'])){
 					echo '<tr>
 							<td>' . $i++ . '</td>
 							<td>' . $particulars . '</td>
-							<td>' . $row['vendor'] . '</td>
+							<!-- <td>' . $row['vendor'] . '</td> -->
 							<td>' . $row['remarks'] . '</td>
 							<td class="debit">' . $debit . '</td>
 							<td class="credit">' . $credit . '</td>
@@ -157,7 +159,7 @@ if(isset($_GET['id'])){
 				}
 
 				echo '<tr class="total-row">
-						<td colspan="4" align="right"></td>
+						<td colspan="3" align="right"></td><!-- Vendor column commented out, changed from 4 to 3 -->
 						<td class="debit">' . number_format($tot_debit, 2) . '</td>
 						<td class="credit">' . number_format($tot_credit, 2) . '</td>
 					  </tr>';

@@ -381,8 +381,9 @@ if ($msg != '') {
 
 							<div class="legend" id="legend_container">
 								<div class="row" id="row_1">
-									<div class="col-md-3 mb-2">
-										<?php
+									<!-- Vendor Dropdown Commented Out
+									<div class="col-md-3 mb-2" style="display:none;">
+										<?#php
 										// Fetch all vendors for datalist
 										$vendor_list_html = '';
 										$vendor_map = [];
@@ -394,12 +395,12 @@ if ($msg != '') {
 											$vendor_list_html .= '<option value="' . $name . '">';
 											$vendor_map[$name] = $id;
 										}
-										?>
+										#?>
 										<datalist id="vendor_list">
-										<?php echo $vendor_list_html; ?>
+										<?#php echo $vendor_list_html; #?>
 										</datalist>
 										<script>
-											var vendorMap = <?php echo json_encode($vendor_map); ?>;
+											var vendorMap = <?#php echo json_encode($vendor_map); #?>;
 											function updateVendorId(id) {
 												var name = $('#vendor_name_' + id).val();
 												if (vendorMap[name]) {
@@ -412,15 +413,14 @@ if ($msg != '') {
 										<label for="vendor_name_1" class="form-label">Vendor</label>
 										<input type="text" name="vendor_name_1" id="vendor_name_1" list="vendor_list"
 											class="form-control" onFocus="set_current(1)" onInput="updateVendorId(1)"
-											placeholder="Select or Search Vendor..."
-											value="<?php if (isset($_GET['id']) && isset($old_data['vendor'])) {
+											placeholder="Select or Search Vendor..." value="<?#php if (isset($_GET['id']) && isset($old_data['vendor'])) {
 												echo $old_data['vendor'];
-											} ?>">
-										<input type="hidden" name="vendor_1" id="vendor_1"
-											value="<?php if (isset($_GET['id']) && isset($old_data['vendor_1'])) {
-												echo $old_data['vendor_1'];
-											} ?>">
+											} #?>">
+										<input type="hidden" name="vendor_1" id="vendor_1" value="<?#php if (isset($_GET['id']) && isset($old_data['vendor_1'])) {
+											echo $old_data['vendor_1'];
+										} #?>">
 									</div>
+									-->
 
 									<!-- Remark -->
 									<!-- <div class="col-md-3 mb-2">
@@ -456,6 +456,7 @@ if ($msg != '') {
 										<label for="">Ledger</label>
 										<input type="text" name="account_1" id="account_1" class="form-control"
 											onFocus="set_current(1)">
+										<span id="balance_1" class="text-primary font-weight-bold" style="font-size: 12px; display: block; margin-top: 2px;"></span>
 										<input type="hidden" name="account_1_sno" id="account_1_sno" class="form-control">
 										<input type="hidden" name="ledger_type_1" id="ledger_type_1" class="form-control">
 									</div>
@@ -795,6 +796,12 @@ if ($msg != '') {
 				$("[name='account_" + id + "']").val(ui.label);
 				$('#account_' + id + '_sno').val(ui.id);
 				$('#ledger_type_' + id).val(ui.type);
+				
+				var balance = parseFloat(ui.balance) || 0;
+				var formattedBalance = Math.abs(balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+				var balanceText = formattedBalance + (balance < 0 ? ' Cr' : (balance > 0 ? ' Dr' : ''));
+				$('#balance_' + id).text(balanceText);
+				
 				return false;
 			}
 
@@ -815,14 +822,26 @@ if ($msg != '') {
 		// Auto-toggle By/To and move focus on Enter key
 		$(document).on('keydown', 'input, select', function (e) {
 			if (e.keyCode === 13) { // Enter key
+				// IMPORTANT: Do not prevent default if the element is the submit button itself
+				if ($(this).attr('id') === 'saveForm' || $(this).attr('type') === 'submit') {
+					return true;
+				}
 				e.preventDefault();
 				var $this = $(this);
 				var id = $this.attr('id') || '';
-				
+
 				// Special handling for Description to add row
 				if (id.indexOf('description_') !== -1 && id !== 'header_description') {
 					var current_id = parseInt(id.split('_')[1]);
 					var next_id = current_id + 1;
+
+					// Only jump to submit if we are on Description and the totals match
+					var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
+					var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
+					if (tot_damt > 0 && Math.abs(tot_damt - tot_camt) < 0.001) {
+						setTimeout(function() { $('#saveForm').focus(); }, 10);
+						return;
+					}
 
 					// Add row if it doesn't exist
 					if (!$('#row_' + next_id).length) {
@@ -852,10 +871,7 @@ if ($msg != '') {
 				var inputs = $(this).closest('form').find(':input:visible:not([disabled])');
 				var idx = inputs.index(this);
 
-				if (idx == inputs.length - 1) {
-					// Last input, maybe submit or just blur
-					// inputs[0].focus(); // Loop back? Probably not needed
-				} else {
+				if (idx !== -1 && idx < inputs.length - 1) {
 					inputs[idx + 1].focus();
 				}
 			}
@@ -866,10 +882,17 @@ if ($msg != '') {
 	});
 
 	function add_new_row() {
+		var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
+		var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
+		if (tot_damt > 0 && tot_camt > 0 && tot_damt === tot_camt) {
+			$('#saveForm').focus();
+			return false;
+		}
+
 		var max_id = parseInt($("#id").val());
 		var new_id = max_id + 1;
 
-		var txt = '<div class="row" id="row_' + new_id + '"><div class="col-1"><label>&nbsp;</label><select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')"><option value="by">By</option><option value="to">To</option></select></div><div class="col-3"><label for="">Ledger</label><input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')"><input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno" class="form-control"><input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '" class="form-control"></div><div class="col-2"><label for="">Debit</label><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Amount" onFocus="set_current(' + new_id + ')"></div><div class="col-2"><label for="">Credit</label><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Amount" disabled onFocus="set_current(' + new_id + ')"></div><div class="col-3"><label for="">Description</label><input type="text" name="description_' + new_id + '" id="description_' + new_id + '" class="form-control" placeholder="Description" onFocus="set_current(' + new_id + ')"></div><div class="col-1"><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">Remove</button></div></div>';
+		var txt = '<div class="row" id="row_' + new_id + '"><div class="col-1"><label>&nbsp;</label><select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')"><option value="by">By</option><option value="to">To</option></select></div><div class="col-3"><label for="">Ledger</label><input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')"><span id="balance_' + new_id + '" class="text-primary font-weight-bold" style="font-size: 12px; display: block; margin-top: 2px;"></span><input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno" class="form-control"><input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '" class="form-control"></div><div class="col-2"><label for="">Debit</label><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Amount" onFocus="set_current(' + new_id + ')"></div><div class="col-2"><label for="">Credit</label><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Amount" disabled onFocus="set_current(' + new_id + ')"></div><div class="col-3"><label for="">Description</label><input type="text" name="description_' + new_id + '" id="description_' + new_id + '" class="form-control" placeholder="Description" onFocus="set_current(' + new_id + ')"></div><div class="col-1"><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">Remove</button></div></div>';
 
 		$("#legend_container").append(txt);
 		$("#id").val(new_id);

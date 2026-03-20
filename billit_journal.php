@@ -267,8 +267,9 @@ page_sidebar();
 				
 				<div class="legend" id="legend_container">
 						<div class="row" id="row_1">
-							<div class="col-md-3 mb-2">
-								<?php
+							<!-- Vendor Dropdown Commented Out
+							<div class="col-md-3 mb-2" style="display:none;">
+								<?#php
 								// Fetch all vendors from vendor table
 								$vendor_list_html = '';
 								$vendor_map = [];
@@ -282,12 +283,12 @@ page_sidebar();
 										$vendor_map[$name] = $id;
 									}
 								}
-								?>
+								#?>
 								<datalist id="vendor_list">
-									<?php echo $vendor_list_html; ?>
+									<?#php echo $vendor_list_html; #?>
 								</datalist>
 								<script>
-									var vendorMap = <?php echo json_encode($vendor_map); ?>;
+									var vendorMap = <?#php echo json_encode($vendor_map); #?>;
 									function updateVendorId(id) {
 										var name = $('#vendor_name_' + id).val();
 										if (vendorMap[name]) {
@@ -298,7 +299,7 @@ page_sidebar();
 									}
 								</script>
 								<label for="vendor_name_1" class="form-label">Vendor</label>
-								<input type="text" name="vendor_name_1" id="vendor_name_1" list="vendor_list" class="form-control" onFocus="set_current(1)" onInput="updateVendorId(1)" placeholder="Select or Search Vendor..." value="<?php echo isset($old_data['vendor_name']) ? $old_data['vendor_name'] : ''; ?>">
+								<input type="text" name="vendor_name_1" id="vendor_name_1" list="vendor_list" class="form-control" onFocus="set_current(1)" onInput="updateVendorId(1)" placeholder="Select or Search Vendor..." value="<?#php echo isset($old_data['vendor_name']) ? $old_data['vendor_name'] : ''; #?>">
 								<input type="hidden" name="vendor_1" id="vendor_1">
 								<script>
 									$(document).ready(function(){
@@ -308,6 +309,7 @@ page_sidebar();
 									});
 								</script>
 							</div>
+							-->
 
 							<!-- Remark -->
 							<!-- <div class="col-md-3 mb-2">
@@ -715,6 +717,13 @@ page_sidebar();
 	});
 	
 	function add_new_row() {
+		var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
+		var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
+		if (tot_damt > 0 && tot_camt > 0 && tot_damt === tot_camt) {
+			$('#saveForm').focus();
+			return false;
+		}
+
 		var max_id = parseInt($("#id").val());
 		var new_id = max_id + 1;
 		
@@ -796,7 +805,11 @@ page_sidebar();
 	}
 
 	$(document).on('keydown', 'input, select', function (e) {
-		if (e.which === 13) { // Enter key
+		if (e.keyCode === 13) { // Enter key
+			// IMPORTANT: Do not prevent default if the element is the submit button itself
+			if ($(this).attr('id') === 'saveForm' || $(this).attr('type') === 'submit') {
+				return true;
+			}
 			e.preventDefault();
 			var $this = $(this);
 			var id = $this.attr('id') || '';
@@ -805,6 +818,14 @@ page_sidebar();
 			if (id.indexOf('description_') !== -1 && id !== 'header_description') {
 				var current_id = parseInt(id.split('_')[1]);
 				var next_id = current_id + 1;
+
+				// Only jump to submit if we are on Description and the totals match
+				var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
+				var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
+				if (tot_damt > 0 && Math.abs(tot_damt - tot_camt) < 0.001) {
+					setTimeout(function() { $('#saveForm').focus(); }, 10);
+					return;
+				}
 
 				// Add row if it doesn't exist
 				if (!$('#row_ledger_' + next_id).length && !$('#row_' + next_id).length) {
