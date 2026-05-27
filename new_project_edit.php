@@ -10,6 +10,12 @@ page_sidebar();
 // print_r($_POST);
 
 if(isset($_POST['submit'])){
+	$expected_keys = ['department', 'sub_department_id', 'division_id', 'district_name', 'project_sub_name_english', 'project_sub_name_hindi', 'go_type', 'sanction_cost', 'sanction_date', 'central_share', 'state_share', 'scheme', 'sub_scheme', 'project_under', 'go_number', 'go_date', 'go_amount', 'eid'];
+	foreach($expected_keys as $key) {
+		if (!isset($_POST[$key])) {
+			$_POST[$key] = '';
+		}
+	}
 	
 	$sql = 'update uprnss_project_temp  set 
 		
@@ -119,6 +125,7 @@ if(isset($_GET['eid'])){
 		$_POST['sanction_cost'] = $project_temp['sanction_cost'];
 		$_POST['central_share'] = $project_temp['central_share'];
 		$_POST['state_share'] = $project_temp['state_share'];
+		$_POST['go_amount'] = isset($project_temp['financial_go_amount']) ? $project_temp['financial_go_amount'] : '';
 		
 	if($project_temp['sanction_date'] ==''){
 		$_POST['sanction_date'] = $invoice['sanction_date'];
@@ -135,6 +142,7 @@ else{
 	$_POST['go_number'] = '';
 	$_POST['go_date'] = date("Y-m-d");
 	$_POST['go_short_number'] = '';
+	$_POST['go_amount'] = '';
 	$_POST['sanction_cost'] = '';
 	$_POST['sanction_date'] = date("Y-m-d");
 	$_POST['central_share'] = '';

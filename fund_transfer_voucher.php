@@ -45,21 +45,27 @@ if(isset($_GET['voucher'])){
     
     // Helper function to get ledger name
     function get_ledger_name($ledger_id) {
-        if(empty($ledger_id)) return 'Unknown';
+        if(empty($ledger_id)) {
+            return '';
+        }
         
-        // Try to get from general_settings first
+        // 1. Try direct lookup in billit_customer using get_ledger()
+        $name = get_ledger($ledger_id);
+        if($name != '') {
+            return $name;
+        }
+        
+        // 2. Try looking up as a tag in general_settings
         $result = execute_query('SELECT rate FROM general_settings WHERE `desc` = "' . mysqli_real_escape_string($GLOBALS['db'], $ledger_id) . '" LIMIT 1');
         if($result && $row = mysqli_fetch_assoc($result)) {
+            // If the rate is a numeric ID, try getting the ledger name for it
+            if(is_numeric($row['rate'])) {
+                $name = get_ledger($row['rate']);
+                if($name != '') return $name;
+            }
             return $row['rate'];
         }
         
-        // Try to get from ledgers table if exists
-        $result = execute_query('SELECT name FROM ledgers WHERE sno = "' . mysqli_real_escape_string($GLOBALS['db'], $ledger_id) . '" LIMIT 1');
-        if($result && $row = mysqli_fetch_assoc($result)) {
-            return $row['name'];
-        }
-        
-        // Return the ledger_id as is if no match found
         return $ledger_id;
     }
 ?>
@@ -183,34 +189,38 @@ if(isset($_GET['voucher'])){
 				if(!empty($voucher_lines)) {
 					// Use actual voucher lines from billit_stock_erp_payment
 					$source_bank_amount = 0;
+					$source_bank_name = '';
 					$debit_entries = [];
+					$credit_entries = [];
 					
 					foreach($voucher_lines as $line) {
 						if(!empty($line['to']) && $line['amount'] > 0) {
-							// This is source bank (should be CREDIT)
-							$source_bank_amount = $line['amount'];
-							$source_bank_name = get_ledger_name($line['to']);
-						}
-						elseif(!empty($line['by']) && $line['amount'] > 0) {
-							// These are debit entries
-							$particulars = get_ledger_name($line['by']);
-							$debit_entries[] = [
+							// This is a Credit entry
+							$particulars = get_ledger_name($line['to']);
+							$credit_entries[] = [
 								'particulars' => $particulars,
 								'amount' => $line['amount']
 							];
 						}
+						elseif(!empty($line['by']) && $line['amount'] > 0) {
+							// This is a Debit entry
+							$particulars = get_ledger_name($line['by']);
+							// Based on user request, move TDS/Income Tax to Credit even if saved as Debit
+							if(stripos($particulars, 'TDS') !== false || stripos($particulars, 'Income Tax') !== false || stripos($particulars, 'IT') !== false) {
+								$credit_entries[] = [
+									'particulars' => $particulars,
+									'amount' => $line['amount']
+								];
+							} else {
+								$debit_entries[] = [
+									'particulars' => $particulars,
+									'amount' => $line['amount']
+								];
+							}
+						}
 					}
 					
-					// Display Source Bank (CREDIT side)
-					echo '<tr>
-							<td>'.$i++.'</td>
-							<td>'.$source_bank_name.'</td>
-							<td class="debit"></td>
-							<td class="credit">'.number_format($source_bank_amount, 2).'</td>
-						  </tr>';
-					$tot_credit += $source_bank_amount;
-					
-					// Display all Debit Entries
+					// Display all Debit Entries first
 					foreach($debit_entries as $debit) {
 						echo '<tr>
 								<td>'.$i++.'</td>
@@ -221,102 +231,128 @@ if(isset($_GET['voucher'])){
 						$tot_debit += $debit['amount'];
 					}
 					
+					// Display all Credit Entries
+					foreach($credit_entries as $credit) {
+						echo '<tr>
+								<td>'.$i++.'</td>
+								<td>'.$credit['particulars'].'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($credit['amount'], 2).'</td>
+							  </tr>';
+						$tot_credit += $credit['amount'];
+					}
+					
 				} else {
-					// Fallback: Show proper accounting - Credit should be total of all debits
+					// Fallback: Show based on component breakdown
 					$total_debit_amount = 0;
 					
-					// Calculate total debit amount (net payment + all deductions)
-					$total_debit_amount = floatval($data['praposemoney']) + 
-									   floatval($data['cgst_amount'] ?? 0) + 
-									   floatval($data['sgst_amount'] ?? 0) +
-									   floatval($data['sentage'] ?? 0) + 
-									   floatval($data['gsttds'] ?? 0) + 
-									   floatval($data['leborses'] ?? 0) + 
-									   floatval($data['incometax'] ?? 0);
+					// Debit items: Net, CGST, SGST
+					$net_payment = floatval($data['praposemoney']);
+					$cgst = floatval($data['cgst_amount'] ?? 0);
+					$sgst = floatval($data['sgst_amount'] ?? 0);
 					
-					// Show all debit entries
+					// Credit items: Deductions
+					$gsttds = floatval($data['gsttds'] ?? 0);
+					$it = floatval($data['incometax'] ?? 0);
+					$cess = floatval($data['leborses'] ?? 0);
+					$centage = floatval($data['sentage'] ?? 0);
+
+					// 1. Show Bank Transfer (Debit)
 					echo '<tr>
 							<td>'.$i++.'</td>
-							<td>'.($data['first_by'] ?? 'Bank Transfer').'</td>
-							<td class="debit">'.number_format($data['praposemoney'], 2).'</td>
+							<td>'.get_ledger_name($data['first_by'] ?: ($data['firm_name'] ?: ($data['to_bank_name'] ?: 'Bank Transfer'))).'</td>
+							<td class="debit">'.number_format($net_payment, 2).'</td>
 							<td class="credit"></td>
 						  </tr>';
-					$tot_debit += floatval($data['praposemoney']);
+					$tot_debit += $net_payment;
 					
-					// Show CGST if exists
-					if(!empty($data['cgst_amount']) && floatval($data['cgst_amount']) > 0) {
+					// 2. Show CGST (Debit)
+					if($cgst > 0) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>CGST</td>
-								<td class="debit">'.number_format($data['cgst_amount'], 2).'</td>
+								<td>'.get_ledger_name('CGST').'</td>
+								<td class="debit">'.number_format($cgst, 2).'</td>
 								<td class="credit"></td>
 							  </tr>';
-						$tot_debit += floatval($data['cgst_amount']);
+						$tot_debit += $cgst;
 					}
 					
-					// Show SGST if exists
-					if(!empty($data['sgst_amount']) && floatval($data['sgst_amount']) > 0) {
+					// 3. Show SGST (Debit)
+					if($sgst > 0) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>SGST</td>
-								<td class="debit">'.number_format($data['sgst_amount'], 2).'</td>
+								<td>'.get_ledger_name('SGST').'</td>
+								<td class="debit">'.number_format($sgst, 2).'</td>
 								<td class="credit"></td>
 							  </tr>';
-						$tot_debit += floatval($data['sgst_amount']);
+						$tot_debit += $sgst;
 					}
 					
-					// Show ADV Cess if exists
-					if(!empty($data['sentage']) && floatval($data['sentage']) > 0) {
+					// 4. Show GST-TDS (Credit)
+					if($gsttds > 0) {
+						$tds_half = $gsttds / 2;
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>ADV Cess</td>
-								<td class="debit">'.number_format($data['sentage'], 2).'</td>
-								<td class="credit"></td>
+								<td>'.get_ledger_name('CGST-TDS Deducted').'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($tds_half, 2).'</td>
 							  </tr>';
-						$tot_debit += floatval($data['sentage']);
-					}
-					
-					// Show TDS if exists
-					if(!empty($data['gsttds']) && floatval($data['gsttds']) > 0) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>GST TDS</td>
-								<td class="debit">'.number_format($data['gsttds'], 2).'</td>
-								<td class="credit"></td>
+								<td>'.get_ledger_name('SGST-TDS Deducted').'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($tds_half, 2).'</td>
 							  </tr>';
-						$tot_debit += floatval($data['gsttds']);
+						$tot_credit += $gsttds;
 					}
 					
-					// Show Labour Cess if exists
-					if(!empty($data['leborses']) && floatval($data['leborses']) > 0) {
+					// 5. Show Income Tax (Credit)
+					if($it > 0) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>Labour Cess</td>
-								<td class="debit">'.number_format($data['leborses'], 2).'</td>
-								<td class="credit"></td>
+								<td>'.get_ledger_name('Income Tax Deducted').'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($it, 2).'</td>
 							  </tr>';
-						$tot_debit += floatval($data['leborses']);
+						$tot_credit += $it;
 					}
 					
-					// Show Income Tax if exists
-					if(!empty($data['incometax']) && floatval($data['incometax']) > 0) {
+					// 6. Show other deductions on Credit side if exists
+					if($cess > 0) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>Income Tax</td>
-								<td class="debit">'.number_format($data['incometax'], 2).'</td>
-								<td class="credit"></td>
+								<td>'.get_ledger_name('LABOUR CESS').'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($cess, 2).'</td>
 							  </tr>';
-						$tot_debit += floatval($data['incometax']);
+						$tot_credit += $cess;
 					}
+					if($centage > 0) {
+						echo '<tr>
+								<td>'.$i++.'</td>
+								<td>'.get_ledger_name('CENTAGE').'</td>
+								<td class="debit"></td>
+								<td class="credit">'.number_format($centage, 2).'</td>
+							  </tr>';
+						$tot_credit += $centage;
+					}
+
+					// 7. HO Bank Account - The source bank (Credit)
+					// It should be the balancing figure or the total transfer amount from HO
+					$ho_bank_credit = $tot_debit - $tot_credit;
+					// If ho_bank_credit is basically the net payout or specific amount in DB
+					// In current screenshot logic, Source was credit for GROSS
+					// But we want it to balance. 
+					// Let's use the Gross from DB if available, otherwise Debit total
 					
-					// Credit should equal total debit amount
+					$source_name = get_ledger_name($data['first_to'] ?: ($data['from_account_no'] ?: 'HO Bank Account'));
 					echo '<tr>
 							<td>'.$i++.'</td>
-							<td>'.($data['first_to'] ?? 'HO Bank Account').'</td>
+							<td>'.$source_name.'</td>
 							<td class="debit"></td>
-							<td class="credit">'.number_format($total_debit_amount, 2).'</td>
+							<td class="credit">'.number_format($ho_bank_credit, 2).'</td>
 						  </tr>';
-					$tot_credit += $total_debit_amount;
+					$tot_credit += $ho_bank_credit;
 				}
 				
 								

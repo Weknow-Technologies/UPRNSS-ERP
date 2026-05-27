@@ -11,15 +11,21 @@ if(isset($_POST['submit'])){
 	if($_POST['cid_sno']!=''){
 		
 		$sql = 'update projects set 
-		erp_code="'.$_POST['erp_code'].'"		
-		where id="'.$_POST['cid_sno'].'"';
+		erp_code="'.mysqli_real_escape_string($db_emb, $_POST['erp_code']).'"		
+		where id="'.(int)$_POST['cid_sno'].'"';
 	
 		$result = mysqli_query($db_emb, $sql);
 		if(mysqli_error($db_emb)){ 
 			$msg .= '<p class="text text-danger">Error # 1 : '.mysqli_error($db_emb).'>> '.$sql.'</p>';
 		}
 		else{
-			$msg .= '<div class="alert alert-danger">ERP CODE UPDATED!</div>';
+			// Update in uprnss_project_temp (on $db)
+			$safe_erp = mysqli_real_escape_string($db, $_POST['erp_code']);
+			$safe_cid = (int)$_POST['cid_sno'];
+			$up_temp = "UPDATE `uprnss_project_temp` SET `emb_project_id` = '$safe_cid' WHERE TRIM(erp_code) = TRIM('$safe_erp')";
+			mysqli_query($db, $up_temp);
+
+			$msg .= '<div class="alert alert-success">ERP CODE & EMB PROJECT ID UPDATED SUCCESSFULLY!</div>';
 			$_POST['cid_sno'] = '';
 			$_POST['department'] = '';
 			$_POST['sub_department_id'] = '';
@@ -303,20 +309,20 @@ page_sidebar();
 								
 								$sql = "SELECT 
 										projects.id AS project_id,
-										master_projects.id AS master_project_id,
-										parent_projects.id AS parent_project_id,
-										parent_project_zone_units.id AS zone_unit_id,
+										MAX(master_projects.id) AS master_project_id,
+										MAX(parent_projects.id) AS parent_project_id,
+										MAX(parent_project_zone_units.id) AS zone_unit_id,
 										
-										parent_project_zone_units.zone_master_id as zone_id, 
-										zone_masters.zone_code,
+										MAX(parent_project_zone_units.zone_master_id) as zone_id, 
+										GROUP_CONCAT(DISTINCT zone_masters.zone_code SEPARATOR ', ') AS zone_code,
 										
-										parent_project_zone_units.zone_unit_id as unit_id,
-										zonal_units.name,
+										MAX(parent_project_zone_units.zone_unit_id) as unit_id,
+										GROUP_CONCAT(DISTINCT zonal_units.name SEPARATOR ', ') AS name,
+										MAX(clients.name) AS client_name,
 										
 										projects.client_id,
 										projects.erp_code,
 										projects.project_name,
-										projects.parent_project_id,
 										projects.project_cost,
 										projects.project_estimated_cost,
 										projects.agreed_project_cost,
@@ -333,10 +339,7 @@ page_sidebar();
 										projects.end_date,
 										projects.total_cost,
 										projects.status,
-										projects.government_order,
-										parent_projects.id AS parent_project_id,
-										projects.parent_project_id,
-										parent_projects.master_project_id
+										projects.government_order
 										
 									FROM 
 										projects
@@ -350,6 +353,8 @@ page_sidebar();
 										zone_masters ON parent_project_zone_units.zone_master_id = zone_masters.id
 									LEFT JOIN 
 										zonal_units ON parent_project_zone_units.zone_unit_id = zonal_units.id
+									LEFT JOIN
+										clients ON projects.client_id = clients.id
 								
 								where (erp_code IS NULL OR erp_code = '') ";
 								
@@ -362,22 +367,20 @@ page_sidebar();
 								if ($_POST['unit'] != '') {
 									$sql .= ' and parent_project_zone_units.zone_unit_id="' . $_POST['unit'] . '"';
 								}
-								$sql .= 'GROUP BY projects.parent_project_id, parent_projects.master_project_id order by projects.id DESC ';
-								// echo $sql;
+								$sql .= 'GROUP BY projects.id order by projects.id DESC ';
 								$query = mysqli_query($db_emb, $sql);
+								if (!$query) {
+									die("Query Error case 1: " . mysqli_error($db_emb) . "<br>Query: " . $sql);
+								}
 								$i=1;
 								while ($row = mysqli_fetch_array($query , MYSQLI_ASSOC)){
-										$sql = "select * from clients where id='" . $row['client_id'] . "' ";
-										// echo $sql;
-										$row_client = mysqli_fetch_assoc(mysqli_query($db_emb, $sql));			 
-									
 										echo '<tr>
 										<td>'.$i++.'</td>
 									
 										<td>'.$row['zone_code'].'</td>
 										<td>'.$row['name'].'</td>
 										
-										<td>'.$row_client['name'].'</td>
+										<td>'.$row['client_name'].'</td>
 										<td>'.$row['project_name'].'</td>
 										<td>'.$row['project_cost'].'</td>
 										<td>'.$row['government_order'].'</td>
@@ -638,20 +641,20 @@ page_sidebar();
 								
 								$sql = "SELECT 
 										projects.id AS project_id,
-										master_projects.id AS master_project_id,
-										parent_projects.id AS parent_project_id,
-										parent_project_zone_units.id AS zone_unit_id,
+										MAX(master_projects.id) AS master_project_id,
+										MAX(parent_projects.id) AS parent_project_id,
+										MAX(parent_project_zone_units.id) AS zone_unit_id,
 										
-										parent_project_zone_units.zone_master_id as zone_id, 
-										zone_masters.zone_code,
+										MAX(parent_project_zone_units.zone_master_id) as zone_id, 
+										GROUP_CONCAT(DISTINCT zone_masters.zone_code SEPARATOR ', ') AS zone_code,
 										
-										parent_project_zone_units.zone_unit_id as unit_id,
-										zonal_units.name,
+										MAX(parent_project_zone_units.zone_unit_id) as unit_id,
+										GROUP_CONCAT(DISTINCT zonal_units.name SEPARATOR ', ') AS name,
+										MAX(clients.name) AS client_name,
 										
 										projects.client_id,
 										projects.erp_code,
 										projects.project_name,
-										projects.parent_project_id,
 										projects.project_cost,
 										projects.project_estimated_cost,
 										projects.agreed_project_cost,
@@ -668,10 +671,7 @@ page_sidebar();
 										projects.end_date,
 										projects.total_cost,
 										projects.status,
-										projects.government_order,
-										parent_projects.id AS parent_project_id,
-										projects.parent_project_id,
-										parent_projects.master_project_id
+										projects.government_order
 										
 									FROM 
 										projects
@@ -684,7 +684,10 @@ page_sidebar();
 									LEFT JOIN 
 										zone_masters ON parent_project_zone_units.zone_master_id = zone_masters.id
 									LEFT JOIN 
-										zonal_units ON parent_project_zone_units.zone_unit_id = zonal_units.id where (erp_code IS not NULL OR erp_code != '')";	
+										zonal_units ON parent_project_zone_units.zone_unit_id = zonal_units.id 
+									LEFT JOIN
+										clients ON projects.client_id = clients.id
+									where (erp_code IS not NULL OR erp_code != '')";	
 								
 								if ($_POST['department'] != '') {
 									$sql .= ' and client_id="' . $_POST['department'] . '"';
@@ -695,28 +698,60 @@ page_sidebar();
 								if ($_POST['unit'] != '') {
 									$sql .= ' and parent_project_zone_units.zone_unit_id="' . $_POST['unit'] . '"';
 								}
-								$sql .= 'GROUP BY projects.parent_project_id, parent_projects.master_project_id order by projects.id DESC';
-								// echo $sql;
+								$sql .= 'GROUP BY projects.id order by projects.id DESC';
 								$query = mysqli_query($db_emb, $sql);
-								$i=1;
-								while ($row = mysqli_fetch_array($query)){
-									$sql = "select * from clients where id='" . $row['client_id'] . "' ";
-									// echo $sql;
-									$row_client = mysqli_fetch_assoc(mysqli_query($db_emb, $sql));	
-
-									$sql = 'select uprnss_project_temp.sno as sno, new_project_trans_id, uprnss_department_name.department_sort_name as dpsortname,uprnss_project_temp.creation_time as ctime,  division_name,sub_department_hindi, district_name_hindi, department_name_hindi, project_name, project_name_hindi, project_type, sanction_date, sanction_cost, work_start_date, work_completion_date, admin_go_no, admin_go_date, financial_go_no, financial_go_date, project_status_1, master_freeze,uprnss_project_temp.status, uprnss_project_temp.creation_time 
+								if (!$query) {
+									die("Query Error case 3: " . mysqli_error($db_emb) . "<br>Query: " . $sql);
+								}
+								
+								$projects = [];
+								$erp_codes = [];
+								while ($row = mysqli_fetch_array($query, MYSQLI_ASSOC)) {
+									$projects[] = $row;
+									if ($row['erp_code'] != '') {
+										$erp_codes[] = $row['erp_code'];
+									}
+								}
+								
+								$erp_details_map = [];
+								if (!empty($erp_codes)) {
+									$escaped_codes = array_map(function($code) use ($db) {
+										return "'" . mysqli_real_escape_string($db, $code) . "'";
+									}, $erp_codes);
+									
+									$sql_erp = 'select uprnss_project_temp.sno as sno, uprnss_project_temp.erp_code as erp_code, new_project_trans_id, uprnss_department_name.department_sort_name as dpsortname,uprnss_project_temp.creation_time as ctime,  division_name,sub_department_hindi, district_name_hindi, department_name_hindi, project_name, project_name_hindi, project_type, sanction_date, sanction_cost, work_start_date, work_completion_date, admin_go_no, admin_go_date, financial_go_no, financial_go_date, project_status_1, master_freeze,uprnss_project_temp.status, uprnss_project_temp.creation_time 
 									from uprnss_project_temp 
 									left join uprnss_district on uprnss_district.sno = district_id
 									left join uprnss_division on uprnss_division.s_no = uprnss_project_temp.division_id
 									left join uprnss_department_name on uprnss_department_name.sno = department_id
-									left join uprnss_sub_department on uprnss_sub_department.sno = sub_department_id where uprnss_project_temp.erp_code="'.$row['erp_code'].'" ';
-									$result = execute_query($sql);
-									$row_erp_details = mysqli_fetch_assoc($result);
+									left join uprnss_sub_department on uprnss_sub_department.sno = sub_department_id 
+									where uprnss_project_temp.erp_code IN (' . implode(',', $escaped_codes) . ')';
+									
+									$result = execute_query($sql_erp);
+									if ($result) {
+										while ($erp_row = mysqli_fetch_assoc($result)) {
+											$erp_details_map[$erp_row['erp_code']] = $erp_row;
+										}
+									}
+								}
+								
+								$i=1;
+								foreach ($projects as $row) {
+									$row_erp_details = isset($erp_details_map[$row['erp_code']]) ? $erp_details_map[$row['erp_code']] : null;
+									if (!$row_erp_details) {
+										$row_erp_details = [
+											'division_name' => '',
+											'district_name_hindi' => '',
+											'department_name_hindi' => '',
+											'sub_department_hindi' => '',
+											'project_name_hindi' => '',
+										];
+									}
 									
 										echo '<tr>
 										<td>'.$i++.'</td>
 									
-										<td>'.$row_client['name'].'</td>
+										<td>'.$row['client_name'].'</td>
 									
 										<td>'.$row['zone_code'].'</td>
 										<td>'.$row['name'].'</td>

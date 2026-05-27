@@ -3591,7 +3591,7 @@ fieldset[disabled] .form-control {
 .table>thead>tr>th {
     border-bottom-width: 1px;
     font-size: 0.75rem;
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     color: #dc3545;
     font-weight: 400;
     padding-bottom: 5px;
@@ -3666,7 +3666,7 @@ fieldset[disabled] .form-control {
 
 .table-bigboy>thead>tr>th {
     font-size: 0.875rem;
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     color: #606060;
     font-weight: 400;
 }
@@ -5828,7 +5828,7 @@ fieldset[disabled] .form-control {
 .card label {
     font-size: 0.75rem;
     margin-bottom: 5px;
-    text-transform: uppercase;
+/* text-transform: capitalize; */
 }
 
 .card .card-title {
@@ -5836,7 +5836,11 @@ fieldset[disabled] .form-control {
     color: #333333;
     font-weight: 300;
 }
-
+input.form-control,
+select.form-select,
+input[type="number"] {
+   text-align: right !important;
+}
 .card .avatar {
     height: 100%;
     overflow: hidden;

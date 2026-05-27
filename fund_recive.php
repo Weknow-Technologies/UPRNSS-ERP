@@ -150,10 +150,10 @@ if (isset($_POST['submit'])) {
         }
 
         /* ---------- Insert or Update ---------- */
-        
+
         // Always set order date to current date
         $_POST['order_date'] = date("Y-m-d");
-        
+
         if ($_POST['edit_sno'] == '') {
             // INSERT header
             $sql = 'INSERT INTO invoice_fund_receive 
@@ -172,8 +172,8 @@ if (isset($_POST['submit'])) {
             "' . $_POST['gst_tds_per'] . '",
             "' . number_format($gsttds_total, 2, '.', '') . '",
             "' . number_format($labour_total, 2, '.', '') . '",
-            "' . $_POST['bank_name'] . '",
-            "' . $_POST['remark'] . '",
+            "' . mysqli_real_escape_string($db, $_POST['bank_name']) . '",
+            "' . mysqli_real_escape_string($db, $_POST['remark']) . '",
             "0",
             "' . $_SESSION['usersno'] . '",
             "' . date("Y-m-d H:i:s") . '",
@@ -360,8 +360,8 @@ if (isset($_POST['submit'])) {
                 `gst_tds_per` ="' . $_POST['gst_tds_per'] . '",
                 `gsttds_deducted` ="' . number_format($gsttds_total, 2, '.', '') . '",
                 `labour_sess` ="' . number_format($labour_total, 2, '.', '') . '",
-                `bank_name` ="' . $_POST['bank_name'] . '",
-                `remark` ="' . $_POST['remark'] . '",
+                `bank_name` ="' . mysqli_real_escape_string($db, $_POST['bank_name']) . '",
+                `remark` ="' . mysqli_real_escape_string($db, $_POST['remark']) . '",
                 `edited_by` ="' . $_SESSION['username'] . '",
                 `edition_time` ="' . date("Y-m-d H:i:s") . '",
                 `voucher_no` = "' . $_POST['voucher_no'] . '"
@@ -639,6 +639,34 @@ if (isset($_GET['delid'])) {
 
 ?>
 <script>
+    function makeSearchable(selectId) {
+        if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
+            console.error('Select2 or jQuery not loaded');
+            return;
+        }
+        var $select = $('#' + selectId);
+        if (!$select.length) return;
+
+        // Initialize Select2
+        $select.select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: '--- Select ---',
+            allowClear: true
+        });
+    }
+
+    $(function () {
+        // Static dropdowns
+        ['fund_receive_type', 'fund_receive_to', 'unit_id', 'installment', 'bank_name', 'bank_name_unit'].forEach(makeSearchable);
+
+        // Initial project rows (if any)
+        var rowCount = parseInt(document.getElementById('add_rows_id')?.value) || 1;
+        for (var i = 1; i <= rowCount; i++) {
+            ['department_id_' + i, 'sub_department_id_' + i, 'district_id_' + i, 'project_id_' + i].forEach(makeSearchable);
+        }
+    });
+
     /* ---------- UI Helpers ---------- */
     function readonly_input() {
         var type = document.getElementById("fund_receive_type");
@@ -685,43 +713,78 @@ if (isset($_GET['delid'])) {
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         const todayStr = yyyy + '-' + mm + '-' + dd;
-        
+
         // Set the receive_date field to today's date
         const receiveDateField = document.getElementById('receive_date');
         if (receiveDateField) {
             receiveDateField.value = todayStr;
-            
+
             // Also update the date picker components
             const monthField = document.getElementById('receive_date_Month_ID');
             const dayField = document.getElementById('receive_date_Day_ID');
             const yearField = document.getElementById('receive_date_Year_ID');
-            
+
             if (monthField) monthField.value = today.getMonth();
             if (dayField) dayField.value = today.getDate();
             if (yearField) yearField.value = today.getFullYear();
         }
     }
 
-    function percent_amt_calc() {
+    function percent_amt_calc(source = null) {
         const toFixed2 = (x) => (isNaN(x) ? '0.00' : (+x).toFixed(2));
         let totamount = parseFloat(document.getElementById('tot_receive_amount').value) || 0;
-        let tdsper = parseFloat(document.getElementById('tds_per').value) || 0;
+
+        let tds_per_el = document.getElementById('tds_per');
         let tdsdeducted = document.getElementById('tds_deducted');
-
-        let gsttdsper = parseFloat(document.getElementById('gst_tds_per').value) || 0;
+        let gsttds_per_el = document.getElementById('gst_tds_per');
         let gsttdsdeducted = document.getElementById('gsttds_deducted');
-
         let laboursess = document.getElementById('labour_sess');
+        let totcreditamount = document.getElementById('tot_credit_amount');
+
+        // TDS
+        if (source === 'tds_per') {
+            let pct = parseFloat(tds_per_el.value) || 0;
+            tdsdeducted.value = toFixed2((totamount * pct) / 100);
+        } else if (source === 'tds_deducted') {
+            let amt = parseFloat(tdsdeducted.value) || 0;
+            if (totamount > 0) {
+                tds_per_el.value = parseFloat(((amt / totamount) * 100).toFixed(4));
+            } else {
+                tds_per_el.value = '0';
+            }
+        }
+
+        // GST TDS
+        if (source === 'gst_tds_per') {
+            let pct = parseFloat(gsttds_per_el.value) || 0;
+            gsttdsdeducted.value = toFixed2((totamount * pct) / 100);
+        } else if (source === 'gsttds_deducted') {
+            let amt = parseFloat(gsttdsdeducted.value) || 0;
+            if (totamount > 0) {
+                gsttds_per_el.value = parseFloat(((amt / totamount) * 100).toFixed(4));
+            } else {
+                gsttds_per_el.value = '0';
+            }
+        }
+
+        // Global recalculation (When base amount changes, or generic call)
+        if (!source || source === true || source === false || typeof source !== 'string') {
+            let activeId = document.activeElement ? document.activeElement.id : '';
+            // Only force calc amount from percentage if we are not actively typing the amount
+            if (activeId !== 'tds_deducted' && activeId !== 'gsttds_deducted') {
+                let tdsper = parseFloat(tds_per_el.value) || 0;
+                let gsttdsper = parseFloat(gsttds_per_el.value) || 0;
+                tdsdeducted.value = toFixed2((totamount * tdsper) / 100);
+                gsttdsdeducted.value = toFixed2((totamount * gsttdsper) / 100);
+            }
+        }
+
+        // Always calculate credit in bank from the actual values in the deduction boxes
+        let tds_ded = parseFloat(tdsdeducted.value) || 0;
+        let gst_ded = parseFloat(gsttdsdeducted.value) || 0;
         let lab = parseFloat(laboursess.value) || 0;
 
-        let totcreditamount = document.getElementById('tot_credit_amount')
-
-        let tdsVal = (totamount * tdsper) / 100;
-        let gstVal = (totamount * gsttdsper) / 100;
-
-        tdsdeducted.value = toFixed2(tdsVal);
-        gsttdsdeducted.value = toFixed2(gstVal);
-        totcreditamount.value = toFixed2(totamount - tdsVal - gstVal - lab);
+        totcreditamount.value = customRound(totamount - tds_ded - gst_ded - lab);
     }
 
     /* ---------- NEW: Per-row CGST/SGST/Net breakdown (display only) ---------- */
@@ -758,9 +821,9 @@ if (isset($_GET['delid'])) {
         // UI text
         const pct = (halfRate * 100).toFixed(0);
         holder.innerHTML =
-            'CGST (' + pct + '%): <b>₹' + cgst.toFixed(2) + '</b> | ' +
-            'SGST (' + pct + '%): <b>₹' + sgst.toFixed(2) + '</b> | ' +
-            'Base: <b>₹' + base.toFixed(2) + '</b>';
+            'CGST (' + pct + '%): <b>₹' + customRound(cgst.toFixed(2)) + '</b> | ' +
+            'SGST (' + pct + '%): <b>₹' + customRound(sgst.toFixed(2)) + '</b> | ' +
+            'Base: <b>₹' + customRound(base.toFixed(2)) + '</b>';
 
         // push values into hidden inputs
         const hc = document.getElementById('cgst_amount_' + rowId);
@@ -771,6 +834,14 @@ if (isset($_GET['delid'])) {
         if (hn) hn.value = base.toFixed(2);
     }
 
+    function customRound(number) {
+        number = Number(number);
+        if (number === 0) return number;
+        var int = Math.floor(number);
+        var decimal = number - int;
+        if (decimal === 0) return int.toFixed(2);
+        return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
+    }
 
 
     function addCalc(line_serial) {
@@ -880,6 +951,9 @@ if (isset($_GET['delid'])) {
 
         // NEW: init tax breakdown on empty value
         renderTaxBreakdown(id);
+
+        // Transform new dropdowns to searchable
+        ['department_id_' + id, 'sub_department_id_' + id, 'district_id_' + id, 'project_id_' + id].forEach(makeSearchable);
     }
 
     var actionUrl = "scripts/ajax_isolated.php";
@@ -896,7 +970,7 @@ if (isset($_GET['delid'])) {
                 $.each(ajaxdata, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.sub_department_hindi + '</option>';
                 });
-                $("#sub_department_id_" + rowId).html(txt);
+                $("#sub_department_id_" + rowId).html(txt).trigger('change');
             }
         });
     }
@@ -911,7 +985,7 @@ if (isset($_GET['delid'])) {
                 $.each(data, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.district_name + '</option>';
                 });
-                $("#district_id_" + rowId).html(txt);
+                $("#district_id_" + rowId).html(txt).trigger('change');
             }
         });
     }
@@ -927,7 +1001,7 @@ if (isset($_GET['delid'])) {
                 $.each(data, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.project_name_hindi + '</option>';
                 });
-                $("#project_id_" + rowId).html(txt);
+                $("#project_id_" + rowId).html(txt).trigger('change');
             }
         });
     }
@@ -944,7 +1018,7 @@ if (isset($_GET['delid'])) {
                 $.each(ajaxdata, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.sub_department_hindi + '</option>';
                 });
-                $("#sub_department_id_" + rowId).html(txt).val(selectedVal);
+                $("#sub_department_id_" + rowId).html(txt).val(selectedVal).trigger('change');
             }
         });
     }
@@ -959,7 +1033,7 @@ if (isset($_GET['delid'])) {
                 $.each(data, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.district_name + '</option>';
                 });
-                $("#district_id_" + rowId).html(txt).val(selectedVal);
+                $("#district_id_" + rowId).html(txt).val(selectedVal).trigger('change');
             }
         });
     }
@@ -974,7 +1048,7 @@ if (isset($_GET['delid'])) {
                 $.each(data, function (key, value) {
                     txt += '<option value="' + value.id + '">' + value.project_name_hindi + '</option>';
                 });
-                $("#project_id_" + rowId).html(txt).val(selectedVal);
+                $("#project_id_" + rowId).html(txt).val(selectedVal).trigger('change');
                 loadProjectInfo(rowId);
             }
         });
@@ -1013,7 +1087,7 @@ if (isset($_GET['delid'])) {
                     if (exclude === 0) { // show Received only in create mode
                         parts.push('Received: <b>₹' + rcvd.toFixed(2) + '</b>');
                     }
-                    parts.push('Installmentssssssss: <b>' + inst_cnt + '</b>');
+                    parts.push('Installments: <b>' + inst_cnt + '</b>');
                     parts.push('Remaining: <b id="remain_' + rowId + '">₹' + remain.toFixed(2) + '</b>');
 
                     $("#proj_info_" + rowId).html(parts.join(' | '));
@@ -1070,29 +1144,29 @@ if (isset($_GET['delid'])) {
             ];
         }
         ?>
-                $(function () {
-                    // ensure first row exists
-                    $('#add_rows_length').first().attr('id', 'row_wrap_1');
+        $(function () {
+            // ensure first row exists
+            $('#add_rows_length').first().attr('id', 'row_wrap_1');
 
-                    // Prefill selects for each row
-                    var pre = <?php echo json_encode($pre); ?>;
-                    for (const k in pre) {
-                        const rowId = parseInt(k);
-                        const d = pre[k];
-                        if ($('#department_id_' + rowId).length) {
-                            $('#department_id_' + rowId).val(d.dept);
-                        }
-                        fill_sub_department_prefill(d.dept, rowId, d.sub);
-                        fill_district_prefill(d.dept, rowId, d.dist);
-                        fill_project_prefill(d.dist, rowId, d.dept, d.proj);
-                    }
+            // Prefill selects for each row
+            var pre = <?php echo json_encode($pre); ?>;
+            for (const k in pre) {
+                const rowId = parseInt(k);
+                const d = pre[k];
+                if ($('#department_id_' + rowId).length) {
+                    $('#department_id_' + rowId).val(d.dept);
+                }
+                fill_sub_department_prefill(d.dept, rowId, d.sub);
+                fill_district_prefill(d.dept, rowId, d.dist);
+                fill_project_prefill(d.dist, rowId, d.dept, d.proj);
+            }
 
-                    // NEW: render tax breakdowns for prefilled amounts
-                    var max = parseInt($("#add_rows_id").val()) || 1;
-                    for (let i = 1; i <= max; i++) {
-                        if ($("#p_receive_amount_" + i).length) { renderTaxBreakdown(i); }
-                    }
-                });
+            // NEW: render tax breakdowns for prefilled amounts
+            var max = parseInt($("#add_rows_id").val()) || 1;
+            for (let i = 1; i <= max; i++) {
+                if ($("#p_receive_amount_" + i).length) { renderTaxBreakdown(i); }
+            }
+        });
     <?php } ?>
 
     $(function () {
@@ -1326,11 +1400,11 @@ if (isset($_GET['delid'])) {
             <div class="card card-custom">
                 <div class="card-header d-flex align-items-center justify-content-center">
                     <i class="fas fa-wallet me-2"></i>
-                    <h5 class="card-title text-white mb-0">Fund Received</h5>
+                    <h5 class="card-title mb-0">Fund Received</h5>
                 </div>
                 <div class="card-body py-4">
                     <?php
-                    if($msg != ''){
+                    if ($msg != '') {
                         echo '<h5>' . alert($msg) . '</h5>';
                     }
                     ?>
@@ -1346,301 +1420,303 @@ if (isset($_GET['delid'])) {
                             </div>
                         </div>
 
-                <div class="col-md-2 mb-3">
-                    <label>Fund Received to</label>
+                        <div class="col-md-2 mb-3">
+                            <label>Fund Received to</label>
 
-                    <?php
-                    $username = $_SESSION['username'];
-                    $isHo = ($username == "headacc") ? 1 : 0;
-                    ?>
-                    <select name="fund_receive_to" id="fund_receive_to" class="form-control form-select"
-                        tabindex="<?php echo $tab++; ?>" onchange="fund_receive_to()" <?php echo $isHo ? '' : 'style="pointer-events: none; background-color: #e9ecef;"'; ?>>
-                        <option value="HO" <?php echo $isHo ? 'selected' : ''; ?>>
-                            HO
-                        </option>
-                        <option value="Unit" <?php echo $isHo ? '' : 'selected'; ?>>
-                            UNIT
-                        </option>
-                    </select>
-                </div>
-
-                <div class="col-md-3 mb-3" id="unit">
-                    <label>Unit Name</label>
-                    <select name="unit_id" id="unit_id" class="form-control form-select">
-                        <option value="">-select-</option>
-                        <?php
-                        if (is_array($_SESSION['divisions'])) {
-                            foreach ($_SESSION['divisions'] as $k => $v) {
-                                $selected = (@$_POST['unit_id'] == $v) ? 'selected' : '';
-                                echo '<option value="' . $v . '" ' . $selected . '>' . get_division($v) . '</option>';
-                            }
-                        }
-                        ?>
-                    </select>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label>Installment</label>
-                    <select name="installment" id="installment" class="form-control form-select"
-                        tabindex="<?php echo $tab++; ?>">
-                        <option value="">Select--</option>
-                        <?php
-                        for ($k = 1; $k <= 10; $k++) {
-                            $sel = (@$_POST['installment'] == $k ? 'selected' : '');
-                            echo '<option value="' . $k . '" ' . $sel . '>' . str_repeat('I', $k) . ' Installment</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label>Order No.(GO)</label>
-                    <input type="text" name="order_no" id="order_no" class="form-control"
-                        onblur="getOrderData(this.value)" value="<?php echo @$_POST['order_no']; ?>"
-                        tabindex="<?php echo $tab++; ?>">
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label>Voucher Number <small class="text-muted"></small></label>
-                    <input type="text" name="voucher_no" id="voucher_no" class="form-control"
-                        value="<?php echo @$_POST['voucher_no'] ?? ''; ?>" tabindex="<?php echo $tab++; ?>"
-                        placeholder="UPRNSS/2025-26/FUND/0001" oninput="setTodayDate()" required>
-                </div>
-                <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
-                    <label>Order Date</label>
-                    <script type="text/javascript" language="javascript">
-                        document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['order_date']; ?>', <?php echo $tab;
-                           $tab += 4; ?>));
-                    </script>
-                </div>
-                <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
-                    <label>Received Date</label>
-                    <script type="text/javascript" language="javascript">
-                        document.writeln(DateInput('receive_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['receive_date']; ?>', <?php echo $tab;
-                           $tab += 4; ?>));
-                    </script>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. Project Details Card -->
-    <div class="card mb-4 shadow-sm" id="hide_project_type"
-        style="display:none; border-radius: 12px; border: 1px solid var(--primary-light);">
-        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-            style="border-bottom: none;">
-            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Project-wise Allocation</h5>
-            <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="add_rows()"
-                style="background-color: var(--primary); border-color: var(--primary); border-radius: 8px;">+ Add
-                Row</button>
-        </div>
-        <div class="card-body p-4">
-            <input type="hidden" name="division_id" id="division_id" class="form-control"
-                value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
-
-            <!-- First row (existing markup adapted with wrapper & remove icon) -->
-            <div id="rows_container">
-                <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
-                    <div id="row_wrap_<?php echo $i; ?>" class="row <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
-                        <div class="col-md-2">
-                            <div class="form-group mb-1">
-                                <label>Department</label>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <select class="form-control" name="department_id_<?php echo $i; ?>"
-                                        id="department_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                        onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
-                                        <option value="">--- Select ---</option>
-                                        <?php
-                                        if (!empty($_SESSION['department'])) {
-                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
-                                        } elseif (!empty($_SESSION['divisions'])) {
-                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
-                                        }
-                                        $run = mysqli_query($db, $query);
-                                        while ($data = mysqli_fetch_array($run)) {
-                                            echo '<option value="' . $data['sno'] . '" ';
-                                            if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
-                                                echo ' selected="Selected"';
-                                            }
-                                            echo '>' . trim($data['department_name_hindi']) . '</option>';
-                                        }
-                                        ?>
-                                    </select>
-                                    <?php if ($i > 1) { ?>
-                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" title="Remove row"
-                                            onclick="remove_row(<?php echo $i; ?>)">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    <?php } ?>
-                                </div>
-                            </div>
+                            <?php
+                            $username = $_SESSION['username'];
+                            $isHo = ($username == "headacc") ? 1 : 0;
+                            ?>
+                            <select name="fund_receive_to" id="fund_receive_to" class="form-control form-select"
+                                tabindex="<?php echo $tab++; ?>" onchange="fund_receive_to()" <?php echo $isHo ? '' : 'style="pointer-events: none; background-color: #e9ecef;"'; ?>>
+                                <option value="HO" <?php echo $isHo ? 'selected' : ''; ?>>
+                                    HO
+                                </option>
+                                <option value="Unit" <?php echo $isHo ? '' : 'selected'; ?>>
+                                    UNIT
+                                </option>
+                            </select>
                         </div>
 
-                                                <div class="col-md-2">
-                                                    <div class="form-group mb-1">
-                                                        <label>sub_department</label>
-                                                        <select class="form-control" name="sub_department_id_<?php echo $i; ?>"
-                                                            id="sub_department_id_<?php echo $i; ?>"
-                                                            value="<?php echo $_POST['sub_department_id_' . $i] ?? ''; ?>"
-                                                            tabindex="<?php echo $tab++; ?>"></select>
-                                                    </div>
-                                                </div>
-
-                        <div class="col-md-2">
-                            <div class="form-group mb-1">
-                                <label>District</label>
-                                <select class="form-control" name="district_id_<?php echo $i; ?>"
-                                    id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                    onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
-                            </div>
+                        <div class="col-md-3 mb-3" id="unit">
+                            <label>Unit Name</label>
+                            <select name="unit_id" id="unit_id" class="form-control form-select"
+                                onchange="fill_bank_details(this.value)">
+                                <option value="">-select-</option>
+                                <?php
+                                if (is_array($_SESSION['divisions'])) {
+                                    foreach ($_SESSION['divisions'] as $k => $v) {
+                                        $selected = (@$_POST['unit_id'] == $v) ? 'selected' : '';
+                                        echo '<option value="' . $v . '" ' . $selected . '>' . get_division($v) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
                         </div>
 
-                        <div class="col-md-3">
-                            <div class="form-group mb-1">
-                                <label>Project<span id="ledger_link_<?php echo $i; ?>"></span></label>
-                                <select class="form-control" name="project_id_<?php echo $i; ?>"
-                                    id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                    onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>)"></select>
-                                <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <div class="form-group mb-1">
-                                <label>ProjectReceivedAmount</label>
-                                <input type="text" name="p_receive_amount_<?php echo $i; ?>"
-                                    id="p_receive_amount_<?php echo $i; ?>" class="form-control"
-                                    value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
-                                    tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
-                                <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
-
-                                <!-- NEW: send displayed values via POST -->
-                                <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
-                                    id="cgst_amount_<?php echo $i; ?>">
-                                <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
-                                    id="sgst_amount_<?php echo $i; ?>">
-                                <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
-                                    id="p_diff_amount_<?php echo $i; ?>">
-
-                            </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Installment</label>
+                            <select name="installment" id="installment" class="form-control form-select"
+                                tabindex="<?php echo $tab++; ?>">
+                                <option value="">Select--</option>
+                                <?php
+                                for ($k = 1; $k <= 10; $k++) {
+                                    $sel = (@$_POST['installment'] == $k ? 'selected' : '');
+                                    echo '<option value="' . $k . '" ' . $sel . '>' . str_repeat('I', $k) . ' Installment</option>';
+                                }
+                                ?>
+                            </select>
                         </div>
                     </div>
-                <?php } ?>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Order No.(GO)</label>
+                            <input type="text" name="order_no" id="order_no" class="form-control"
+                                onblur="getOrderData(this.value)" value="<?php echo @$_POST['order_no']; ?>"
+                                tabindex="<?php echo $tab++; ?>">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Voucher Number <small class="text-muted"></small></label>
+                            <input type="text" name="voucher_no" id="voucher_no" class="form-control"
+                                value="<?php echo @$_POST['voucher_no'] ?? ''; ?>" tabindex="<?php echo $tab++; ?>"
+                                placeholder="UPRNSS/2025-26/FUND/0001" oninput="setTodayDate()" required>
+                        </div>
+                        <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
+                            <label>Order Date</label>
+                            <script type="text/javascript" language="javascript">
+                                document.writeln(DateInput('order_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['order_date']; ?>', <?php echo $tab;
+                                   $tab += 4; ?>));
+                            </script>
+                        </div>
+                        <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
+                            <label>Received Date</label>
+                            <script type="text/javascript" language="javascript">
+                                document.writeln(DateInput('receive_date', 'user_form', true, 'YYYY-MM-DD', '<?php echo @$_POST['receive_date']; ?>', <?php echo $tab;
+                                   $tab += 4; ?>));
+                            </script>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <input type="hidden" name="add_rows_id" id="add_rows_id" value="<?php echo $_POST['add_rows_id']; ?>">
-        </div>
-    </div>
+            <!-- 2. Project Details Card -->
+            <div class="card mb-4 shadow-sm" id="hide_project_type"
+                style="display:none; border-radius: 12px; border: 1px solid var(--primary-light);">
+                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+                    style="border-bottom: none;">
+                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Project-wise Allocation</h5>
+                    <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="add_rows()"
+                        style="background-color: var(--primary); border-color: var(--primary); border-radius: 8px;">+
+                        Add
+                        Row</button>
+                </div>
+                <div class="card-body p-4">
+                    <input type="hidden" name="division_id" id="division_id" class="form-control"
+                        value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
 
+                    <!-- First row (existing markup adapted with wrapper & remove icon) -->
+                    <div id="rows_container">
+                        <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
+                            <div id="row_wrap_<?php echo $i; ?>"
+                                class="row <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
+                                <div class="col-md-2">
+                                    <div class="form-group mb-1">
+                                        <label>Department</label>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select class="form-control" name="department_id_<?php echo $i; ?>"
+                                                id="department_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                                onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
+                                                <option value="">--- Select ---</option>
+                                                <?php
+                                                if (!empty($_SESSION['department'])) {
+                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
+                                                } elseif (!empty($_SESSION['divisions'])) {
+                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
+                                                }
+                                                $run = mysqli_query($db, $query);
+                                                while ($data = mysqli_fetch_array($run)) {
+                                                    echo '<option value="' . $data['sno'] . '" ';
+                                                    if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
+                                                        echo ' selected="Selected"';
+                                                    }
+                                                    echo '>' . trim($data['department_name_hindi']) . '</option>';
+                                                }
+                                                ?>
+                                            </select>
+                                            <?php if ($i > 1) { ?>
+                                                <button type="button" class="btn btn-outline-danger btn-sm ms-2"
+                                                    title="Remove row" onclick="remove_row(<?php echo $i; ?>)">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php } ?>
+                                        </div>
+                                    </div>
+                                </div>
 
-    <!-- 3. Financial Settings Card -->
-    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
-        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-            style="border-bottom: none;">
-            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Financial Settings</h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="row">
-                <div class="col-md-2 mb-3">
-                    <label>TDS (%)</label>
-                    <input type="text" name="tds_per" id="tds_per" class="form-control"
-                        value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                        onInput="percent_amt_calc()">
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label>TDS Deducted</label>
-                    <input type="text" name="tds_deducted" id="tds_deducted" class="form-control"
-                        value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label>GST TDS (%)</label>
-                    <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control"
-                        value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                        onInput="percent_amt_calc()">
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label>GST TDS Deducted</label>
-                    <input type="text" name="gsttds_deducted" id="gsttds_deducted" class="form-control"
-                        value="<?php echo @$_POST['gsttds_deducted']; ?>" tabindex="<?php echo $tab++; ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label>Labour Cess</label>
-                    <input type="text" name="labour_sess" id="labour_sess" class="form-control"
-                        value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
-                        onInput="percent_amt_calc()">
+                                <div class="col-md-2">
+                                    <div class="form-group mb-1">
+                                        <label>sub_department</label>
+                                        <select class="form-control" name="sub_department_id_<?php echo $i; ?>"
+                                            id="sub_department_id_<?php echo $i; ?>"
+                                            value="<?php echo $_POST['sub_department_id_' . $i] ?? ''; ?>"
+                                            tabindex="<?php echo $tab++; ?>"></select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="form-group mb-1">
+                                        <label>District</label>
+                                        <select class="form-control" name="district_id_<?php echo $i; ?>"
+                                            id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                            onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group mb-1">
+                                        <label>Project<span id="ledger_link_<?php echo $i; ?>"></span></label>
+                                        <select class="form-control" name="project_id_<?php echo $i; ?>"
+                                            id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                            onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>)"></select>
+                                        <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group mb-1">
+                                        <label>ProjectReceivedAmount</label>
+                                        <input type="text" name="p_receive_amount_<?php echo $i; ?>"
+                                            id="p_receive_amount_<?php echo $i; ?>" class="form-control"
+                                            value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
+                                            tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
+                                        <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
+
+                                        <!-- NEW: send displayed values via POST -->
+                                        <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
+                                            id="cgst_amount_<?php echo $i; ?>">
+                                        <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
+                                            id="sgst_amount_<?php echo $i; ?>">
+                                        <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
+                                            id="p_diff_amount_<?php echo $i; ?>">
+
+                                    </div>
+                                </div>
+                            </div>
+                        <?php } ?>
+                    </div>
+
+                    <input type="hidden" name="add_rows_id" id="add_rows_id"
+                        value="<?php echo $_POST['add_rows_id']; ?>">
                 </div>
             </div>
-            <div class="row mt-2">
-                <div class="col-md-12 mb-3">
-                    <label>Remark</label>
-                    <textarea name="remark" id="remark" class="form-control" style="height: auto; padding: 6px 12px;"
-                        rows="1" tabindex="<?php echo $tab++; ?>"><?php echo trim(@$_POST['remark']); ?></textarea>
+
+
+            <!-- 3. Financial Settings Card -->
+            <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+                    style="border-bottom: none;">
+                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Financial Settings</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-2 mb-3">
+                            <label>TDS (%)</label>
+                            <input type="text" name="tds_per" id="tds_per" class="form-control"
+                                value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                                onInput="percent_amt_calc('tds_per')">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>TDS Deducted</label>
+                            <input type="text" name="tds_deducted" id="tds_deducted" class="form-control"
+                                value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
+                                onInput="percent_amt_calc('tds_deducted')">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>GST TDS (%)</label>
+                            <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control"
+                                value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                                onInput="percent_amt_calc('gst_tds_per')">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>GST TDS Deducted</label>
+                            <input type="text" name="gsttds_deducted" id="gsttds_deducted" class="form-control"
+                                value="<?php echo @$_POST['gsttds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
+                                onInput="percent_amt_calc('gsttds_deducted')">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Labour Cess</label>
+                            <input type="text" name="labour_sess" id="labour_sess" class="form-control"
+                                value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
+                                onInput="percent_amt_calc()">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12 mb-3">
+                            <label>Remark</label>
+                            <textarea name="remark" id="remark" class="form-control"
+                                style="height: auto; padding: 6px 12px;" rows="1"
+                                tabindex="<?php echo $tab++; ?>"><?php echo trim(@$_POST['remark']); ?></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- 4. Dashboard Totals Card -->
-    <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
-        <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-            style="border-bottom: none;">
-            <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Overview Totals</h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label>Total Received Amount</label>
-                    <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount" id="tot_receive_amount"
-                        class="form-control" value="<?php echo @$_POST['tot_receive_amount']; ?>"
-                        tabindex="<?php echo $tab++; ?>" style="background-color: #fdfaf9;">
+            <!-- 4. Dashboard Totals Card -->
+            <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
+                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
+                    style="border-bottom: none;">
+                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Overview Totals</h5>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label>Total Credit Amount In Bank</label>
-                    <input type="text" name="tot_credit_amount" id="tot_credit_amount" class="form-control"
-                        value="<?php echo @$_POST['tot_credit_amount']; ?>" tabindex="<?php echo $tab++; ?>"
-                        style="background-color: #f6fdf6;">
-                </div>
-                <div class="col-md-4 mb-3" id="bank_ho">
-                    <label>Bank Details (HO)</label>
-                    <select class="form-control form-select" name="bank_name" id="bank_name"
-                        tabindex="<?php echo $tab++; ?>">
-                        <option value="">--- Select ---</option>
-                        <?php
-                        $query = 'select * from billit_customer where parent ="1" and unit_id="53"';
-                        $run = mysqli_query($db, $query);
-                        while ($data = mysqli_fetch_array($run)) {
-                            echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-                <div class="col-md-4 mb-3" id="bank_unit" style="display:none;">
-                    <label>Bank Details (Unit)</label>
-                    <select class="form-control form-select" name="bank_name" id="bank_name_unit"
-                        tabindex="<?php echo $tab++; ?>">
-                        <option value="">--Select--</option>
-                        <?php
-                        $query = "SELECT * FROM billit_customer WHERE unit_id LIKE '%53%'";
-                        $run = mysqli_query($db, $query);
-                        while ($data = mysqli_fetch_assoc($run)) {
-                            echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
-                        }
-                        ?>
-                    </select>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Total Received Amount</label>
+                            <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount"
+                                id="tot_receive_amount" class="form-control"
+                                value="<?php echo @$_POST['tot_receive_amount']; ?>" tabindex="<?php echo $tab++; ?>"
+                                style="background-color: #fdfaf9;">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Total Credit Amount In Bank</label>
+                            <input type="text" name="tot_credit_amount" id="tot_credit_amount" class="form-control"
+                                value="<?php echo @$_POST['tot_credit_amount']; ?>" tabindex="<?php echo $tab++; ?>"
+                                style="background-color: #f6fdf6;">
+                        </div>
+                        <div class="col-md-4 mb-3" id="bank_ho">
+                            <label>Bank Details (HO)</label>
+                            <select class="form-control form-select" name="bank_name" id="bank_name"
+                                tabindex="<?php echo $tab++; ?>">
+                                <option value="">--- Select ---</option>
+                                <?php
+                                $query = 'select * from billit_customer where unit_id="53" and (parent ="1" or (account_no is not null and account_no != "")) order by cus_name';
+                                $run = mysqli_query($db, $query);
+                                while ($data = mysqli_fetch_array($run)) {
+                                    echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="bank_unit" style="display:none;">
+                            <label>Bank Details (Unit)</label>
+                            <select class="form-control form-select" name="bank_name" id="bank_name_unit"
+                                tabindex="<?php echo $tab++; ?>">
+                                <option value="">--Select--</option>
+                                <?php /* Options load via AJAX when Unit Name is selected — fill_bank_details() */ ?>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Submit Section -->
-    <div class="text-center mb-5">
-        <button type="submit" name="submit" class="btn btn-success btn-lg shadow-sm px-5"
-            style="border-radius: 10px; font-weight: 700; font-size: 16px;">
-            <?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
-        </button>
-        <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo @$_POST['edit_sno']; ?>">
-    </div>
+            <!-- Submit Section -->
+            <div class="text-center mb-5">
+                <button type="submit" name="submit" class="btn btn-success btn-lg shadow-sm px-5"
+                    style="border-radius: 10px; font-weight: 700; font-size: 16px;">
+                    <?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
+                </button>
+                <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo @$_POST['edit_sno']; ?>">
+            </div>
 </form>
 
 <div class="row">
@@ -1653,7 +1729,7 @@ if (isset($_GET['delid'])) {
             </div>
             <div class="card-body p-4">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
+                    <table class="table table-bordered table-hover" id="fundReceiveTable" style="width:100%">
                         <thead>
                             <tr>
                                 <th>S.No.</th>
@@ -1669,15 +1745,43 @@ if (isset($_GET['delid'])) {
                         </thead>
                         <tbody>
                             <?php
-                            $sql = 'SELECT * FROM `invoice_fund_receive` ORDER BY sno desc LIMIT 200';
+                            // Unit-wise filter: HO / sadmin see all; unit users see only their unit's records
+                            $isAdmin = (isset($_SESSION['username']) && in_array($_SESSION['username'], ['sadmin', 'headacc']));
+                            if ($isAdmin || empty($_SESSION['divisions'])) {
+                                // HO/sadmin or no division restriction — show all
+                                $sql = 'SELECT ifr.* FROM `invoice_fund_receive` ifr ORDER BY ifr.sno DESC LIMIT 200';
+                            } else {
+                                // Unit user — only show records whose journal entry matches this user's division(s)
+                                $divIds = implode(',', array_map('intval', $_SESSION['divisions']));
+                                $sql = 'SELECT ifr.* 
+                                        FROM `invoice_fund_receive` ifr
+                                        INNER JOIN `billit_invoice_erp_receipt` bier
+                                            ON bier.table_name = "invoice_fund_receive"
+                                           AND bier.table_id = ifr.sno
+                                           AND bier.unit_id IN (' . $divIds . ')
+                                        ORDER BY ifr.sno DESC
+                                        LIMIT 200';
+                            }
                             $result = execute_query($sql);
                             $i = 1;
                             while ($row = mysqli_fetch_assoc($result)) {
                                 $actId = (int) $row['sno'];
+
+                                // Resolve unit name for FundReceivedAt column
+                                if ($row['fund_receive_to'] === 'Unit') {
+                                    $jr2 = mysqli_fetch_assoc(execute_query(
+                                        'SELECT unit_id FROM billit_invoice_erp_receipt 
+                                         WHERE table_name="invoice_fund_receive" AND table_id="' . $actId . '" LIMIT 1'
+                                    ));
+                                    $receivedAtLabel = ($jr2 && $jr2['unit_id']) ? htmlspecialchars(get_division($jr2['unit_id'])) : 'Unit';
+                                } else {
+                                    $receivedAtLabel = htmlspecialchars($row['fund_receive_to']); // HO
+                                }
+
                                 echo '<tr>
                             <td>' . $i++ . '</td>
                             <td>' . htmlspecialchars($row['voucher_no']) . '</td>
-                            <td>' . htmlspecialchars($row['fund_receive_to']) . '</td>
+                            <td>' . $receivedAtLabel . '</td>
                             <td>' . htmlspecialchars($row['order_no']) . '</td>
                             <td>' . htmlspecialchars($row['order_date']) . '</td>
                             <td>' . htmlspecialchars($row['installment']) . '</td>
@@ -1711,94 +1815,171 @@ if (isset($_GET['delid'])) {
     page_footer_start();
     ?>
 
-<script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
-<script>
-    function fill_bank_details(val) {
-        $.ajax({
-            type: "POST",
-            url: "scripts/ajax.php",
-            data: { "term": "b", "id": "unit_bank", "val": val },
-            success: function (ajaxdata) {
-                var txt = '<option value="">--Select--</option>';
-                var data = JSON.parse(ajaxdata);
-                $.each(data, function (key, value) {
-                    txt += '<option value="' + value.id + '">' + value.cus_name + '</option>';
-                });
-                $("#bank_name_unit").html(txt);
-            }
-        });
-    }
-
-    function getOrderData(orderNo) {
-        console.log("getOrderData called with:", orderNo);
-
-        if (!orderNo || orderNo.trim() === '') {
-            console.log("Empty order number, skipping AJAX call");
-            return;
-        }
-
-        $.ajax({
-            type: "POST",
-            url: "scripts/ajax.php",
-            data: {
-                "term": "b",
-                "id": "order_no",
-                "val": orderNo
-            },
-            success: function (ajaxdata) {
-                console.log("Raw AJAX response:", ajaxdata);
-                try {
-                    var data = JSON.parse(ajaxdata);
-                    console.log("Parsed JSON:", data);
-
-                    if(data.status == "success") {
-                        console.log("Success! Order date:", data.order_date);
-                        $("#voucher_no").val(data.voucher_no.trim());
-                        updateDate("order_date", data.order_date);
-                        updateDate("receive_date", "<?php echo date('Y-m-d'); ?>");
-                    } else {
-                        console.log("Error response:", data);
-                        updateDate("order_date", data.order_date || "<?php echo date('Y-m-d'); ?>");
-                        updateDate("receive_date", "<?php echo date('Y-m-d'); ?>");
+    <script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
+    <script>
+        function fill_bank_details(val, preselect) {
+            if (!val) return;
+            console.log('[Bank] fill_bank_details called: unit_id=', val, 'preselect=', preselect);
+            $.ajax({
+                type: "POST",
+                url: "scripts/ajax.php",
+                data: { "term": "b", "id": "unit_bank", "val": val },
+                success: function (ajaxdata) {
+                    console.log('[Bank] AJAX raw response:', ajaxdata);
+                    var txt = '<option value="">--Select--</option>';
+                    try {
+                        var data = JSON.parse(ajaxdata);
+                        if (data && data.length > 0) {
+                            $.each(data, function (key, value) {
+                                var sel = (preselect && String(value.id) === String(preselect)) ? ' selected' : '';
+                                txt += '<option value="' + value.id + '"' + sel + '>' + value.cus_name + '</option>';
+                            });
+                        } else {
+                            console.warn('[Bank] No bank accounts found for unit_id=' + val);
+                        }
+                    } catch (e) {
+                        console.error('[Bank] JSON parse error:', e, 'Response was:', ajaxdata);
                     }
-                } catch (e) {
-                    console.error("JSON parsing error:", e);
-                    console.error("Raw response:", ajaxdata);
+                    $("#bank_name_unit").html(txt).trigger('change');
+                    makeSearchable('bank_name_unit');
+                },
+                error: function (xhr, status, err) {
+                    console.error('[Bank] AJAX error:', status, err);
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error("AJAX error:", status, error);
-                console.error("Response text:", xhr.responseText);
+            });
+        }
+
+        // Auto-load Unit bank on page load (for both create & edit modes)
+        $(function () {
+            var savedUnit = '<?php echo isset($_POST['unit_id']) ? intval($_POST['unit_id']) : ''; ?>';
+            var savedBank = '<?php echo isset($_POST['bank_name']) ? intval($_POST['bank_name']) : ''; ?>';
+            if (savedUnit) {
+                fill_bank_details(savedUnit, savedBank);
             }
         });
-    }
 
-    function updateDate(fieldName, dateValue) {
-        console.log("updateDate called:", fieldName, dateValue);
-        if(!dateValue) {
-            console.log("No date value, returning");
-            return;
+        function getOrderData(orderNo) {
+            console.log("getOrderData called with:", orderNo);
+
+            if (!orderNo || orderNo.trim() === '') {
+                console.log("Empty order number, skipping AJAX call");
+                return;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "scripts/ajax.php",
+                data: {
+                    "term": "b",
+                    "id": "order_no",
+                    "val": orderNo
+                },
+                success: function (ajaxdata) {
+                    console.log("Raw AJAX response:", ajaxdata);
+                    try {
+                        var data = JSON.parse(ajaxdata);
+                        console.log("Parsed JSON:", data);
+
+                        if (data.status == "success") {
+                            console.log("Success! Order date:", data.order_date);
+                            $("#voucher_no").val(data.voucher_no.trim());
+                            updateDate("order_date", data.order_date);
+                            updateDate("receive_date", "<?php echo date('Y-m-d'); ?>");
+                        } else {
+                            console.log("Error response:", data);
+                            updateDate("order_date", data.order_date || "<?php echo date('Y-m-d'); ?>");
+                            updateDate("receive_date", "<?php echo date('Y-m-d'); ?>");
+                        }
+                    } catch (e) {
+                        console.error("JSON parsing error:", e);
+                        console.error("Raw response:", ajaxdata);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX error:", status, error);
+                    console.error("Response text:", xhr.responseText);
+                }
+            });
         }
-        var parts = dateValue.split("-");
-        var year  = parts[0];
-        var month = parseInt(parts[1], 10) - 1;
-        var day   = parseInt(parts[2], 10);
-        
-        console.log("Date parts - Year:", year, "Month:", month, "Day:", day);
-        
-        $("#" + fieldName).val(dateValue);
-        $("#" + fieldName + "_Month_ID").val(month);
-        $("#" + fieldName + "_Day_ID").val(day);
-        $("#" + fieldName + "_Year_ID").val(year);
-        
-        console.log("Updated values:");
-        console.log(fieldName + " field:", $("#" + fieldName).val());
-        console.log(fieldName + "_Month_ID:", $("#" + fieldName + "_Month_ID").val());
-        console.log(fieldName + "_Day_ID:", $("#" + fieldName + "_Day_ID").val());
-        console.log(fieldName + "_Year_ID:", $("#" + fieldName + "_Year_ID").val());
-    }
-</script>
 
-<?php
-page_footer_end();
-?>
+        function updateDate(fieldName, dateValue) {
+            console.log("updateDate called:", fieldName, dateValue);
+            if (!dateValue) {
+                console.log("No date value, returning");
+                return;
+            }
+            var parts = dateValue.split("-");
+            var year = parts[0];
+            var month = parseInt(parts[1], 10) - 1;
+            var day = parseInt(parts[2], 10);
+
+            console.log("Date parts - Year:", year, "Month:", month, "Day:", day);
+
+            $("#" + fieldName).val(dateValue);
+            $("#" + fieldName + "_Month_ID").val(month);
+            $("#" + fieldName + "_Day_ID").val(day);
+            $("#" + fieldName + "_Year_ID").val(year);
+
+            console.log("Updated values:");
+            console.log(fieldName + " field:", $("#" + fieldName).val());
+            console.log(fieldName + "_Month_ID:", $("#" + fieldName + "_Month_ID").val());
+            console.log(fieldName + "_Day_ID:", $("#" + fieldName + "_Day_ID").val());
+            console.log(fieldName + "_Year_ID:", $("#" + fieldName + "_Year_ID").val());
+        }
+    </script>
+    <?php
+    page_footer_end();
+    ?>
+
+    <!-- DataTables Buttons libs are now included globally in settings.php -->
+
+    <script>
+        $(document).ready(function () {
+            if ($.fn.DataTable.isDataTable('#fundReceiveTable')) {
+                $('#fundReceiveTable').DataTable().destroy();
+            }
+            $('#fundReceiveTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[0, 'desc']],
+                dom: '<"d-flex justify-content-between align-items-center mb-2"lB>frtip',
+                buttons: [
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fas fa-columns"></i> Columns',
+                        className: 'btn btn-info btn-sm'
+                    },
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm',
+                        title: 'Fund Receive Report',
+                        exportOptions: { columns: ':visible:not(.no-print)' }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm',
+                        title: 'Fund Receive Report',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: { columns: ':visible:not(.no-print)' }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-secondary btn-sm',
+                        title: 'Fund Receive Report',
+                        exportOptions: { columns: ':visible:not(.no-print)' }
+                    }
+                ],
+                columnDefs: [{ orderable: false, targets: -1 }],
+                language: {
+                    search: 'Search:',
+                    lengthMenu: 'Show _MENU_ entries',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ records',
+                    paginate: { first: 'First', last: 'Last', next: '›', previous: '‹' }
+                }
+            });
+        });
+    </script>

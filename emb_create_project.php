@@ -19,9 +19,7 @@ function post($k,$d=''){ return isset($_POST[$k]) ? $_POST[$k] : $d; }
  */
 function ensure_emb_project_id_column(){
     global $db;
-    $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'uprnss_project_temp' AND COLUMN_NAME = 'emb_project_id'";
-    $res = mysqli_query($db, $sql);
+    $res = mysqli_query($db, "SHOW COLUMNS FROM `uprnss_project_temp` LIKE 'emb_project_id'");
     if (!$res || mysqli_num_rows($res) === 0) {
         @mysqli_query($db, "ALTER TABLE `uprnss_project_temp` ADD COLUMN `emb_project_id` INT NULL DEFAULT NULL AFTER `erp_code`");
     }
@@ -127,16 +125,19 @@ if (isset($_POST['submit'])) {
                 }
             }
 
+            $selected_all_zone = isset($_POST['selected_all_zone']) ? 1 : 0;
+
             // Insert Master Project (job code strictly from POST)
             $master_sql = "
                 INSERT INTO master_projects (
                     master_project_name, master_job_code, master_project_description,
-                    master_sanction_cost, created_by, updated_by, created_at, updated_at
+                    master_sanction_cost, selected_all_zone, created_by, updated_by, created_at, updated_at
                 ) VALUES (
                     '$project_name',
                     '" . q_emb($job_code_input) . "',
                     '" . q_emb(post('project_description')) . "',
-                    '" . q_emb(post('project_cost')) . "',
+                    '" . q_emb(post('project_estimated_cost')) . "',
+                    '$selected_all_zone',
                     '$created_by', '$updated_by', NOW(), NOW()
                 )";
             if (!mysqli_query($db_emb, $master_sql)) {
@@ -148,7 +149,7 @@ if (isset($_POST['submit'])) {
                 $parent_sql = "
                     INSERT INTO parent_projects (
                         project_name, project_description, project_cost,
-                        parent_job_code, master_project_id, created_by, updated_by,
+                        parent_job_code, master_project_id, selected_all_zone, created_by, updated_by,
                         created_at, updated_at
                     ) VALUES (
                         '$project_name',
@@ -156,6 +157,7 @@ if (isset($_POST['submit'])) {
                         '" . q_emb(post('project_cost')) . "',
                         '" . q_emb($job_code_input) . "',
                         '$master_project_id',
+                        '$selected_all_zone',
                         '$created_by', '$updated_by', NOW(), NOW()
                     )";
                 if (!mysqli_query($db_emb, $parent_sql)) {
@@ -164,7 +166,7 @@ if (isset($_POST['submit'])) {
                     $parent_project_id = mysqli_insert_id($db_emb);
 
                     // Insert Project (EMB) — parent_project_id must be from PARENT row
-                    echo $project_sql = "
+                    $project_sql = "
                         INSERT INTO projects (
                             client_id, project_name, parent_project_id, project_cost,
                             project_estimated_cost, agreed_project_cost, project_description,
@@ -198,40 +200,45 @@ if (isset($_POST['submit'])) {
                     } else {
                         $inserted_id = mysqli_insert_id($db_emb);
 
-                        // Generate ERP code and update in EMB projects table
-                        if (function_exists('generate_erp_code')) {
-                            $erp_code = generate_erp_code(post('project_name'), $db);
-                        } else {
-                            $erp_code = '';
+                        // Fetch ERP code from uprnss_project_temp
+                        $erp_code = '';
+                        if ($selected_project_sno !== null) {
+                            $tempQuery = "SELECT erp_code FROM uprnss_project_temp WHERE sno = '" . $selected_project_sno . "' LIMIT 1";
+                            $resTemp = mysqli_query($db, $tempQuery);
+                            if ($resTemp && $rowTemp = mysqli_fetch_assoc($resTemp)) {
+                                $erp_code = trim((string)$rowTemp['erp_code']);
+                            }
                         }
-                        if ($erp_code) {
+                        if ($erp_code === '' && function_exists('generate_erp_code')) {
+                            $erp_code = generate_erp_code(post('project_name'), $db);
+                        }
+
+                        if ($erp_code !== '') {
                             $update_sql = "UPDATE projects SET erp_code = '" . q_emb($erp_code) . "' WHERE id = '$inserted_id'";
                             mysqli_query($db_emb, $update_sql);
                             $msg .= '<p class="alert alert-success">ERP Code Added: <strong>' . htmlspecialchars($erp_code) . '</strong></p>';
                         } else {
-                            $msg .= '<p class="alert alert-warning">ERP Code could not be generated.</p>';
+                            $msg .= '<p class="alert alert-warning">ERP Code could not be found/generated.</p>';
                         }
 
-                        // Map Zone + Zonal Units (kept as-is)
-                        if (!empty($_POST['zone_id']) && !empty($_POST['zonal_unit_id'])) {
-                            $zoneIds = $_POST['zone_id'];
+                        // Map Zonal Units cleanly (avoiding Cartesian product bug)
+                        if ($selected_all_zone !== 1 && !empty($_POST['zonal_unit_id'])) {
                             $zonalUnitIds = $_POST['zonal_unit_id'];
+                            foreach ($zonalUnitIds as $zonalUnitId) {
+                                $zonalUnitId = (int)$zonalUnitId;
+                                $zonal_q = mysqli_query($db_emb, "SELECT zone_master_id FROM zonal_units WHERE id = '$zonalUnitId' LIMIT 1");
+                                if ($zonal_q && $zonal_row = mysqli_fetch_assoc($zonal_q)) {
+                                    $zoneMasterId = (int)$zonal_row['zone_master_id'];
 
-                            foreach ($zoneIds as $zoneId) {
-                                foreach ($zonalUnitIds as $zonalUnitId) {
                                     $insertParentSql = "
                                         INSERT INTO parent_project_zone_units (parent_project_id, zone_master_id, zone_unit_id, created_by, created_at)
-                                        VALUES ('" . $parent_project_id . "', '" . q_emb($zoneId) . "', '" . q_emb($zonalUnitId) . "', '" . $created_by . "', NOW())";
-                                    if (!mysqli_query($db_emb, $insertParentSql)) {
-                                        echo "<p class='alert alert-danger'> Error inserting into parent_project_zone_unit: " . htmlspecialchars(mysqli_error($db_emb)) . "</p>";
-                                    }
+                                        VALUES ('$parent_project_id', '$zoneMasterId', '$zonalUnitId', '$created_by', NOW())";
+                                    mysqli_query($db_emb, $insertParentSql);
 
                                     $insertMasterSql = "
                                         INSERT INTO master_project_zone_units (master_project_id, zone_master_id, zone_unit_id, created_by, created_at)
-                                        VALUES ('" . $master_project_id . "', '" . q_emb($zoneId) . "', '" . q_emb($zonalUnitId) . "', '" . $created_by . "', NOW())";
-                                    if (!mysqli_query($db_emb, $insertMasterSql)) {
-                                        echo "<p class='alert alert-danger'> Error inserting into master_project_zone_unit: " . htmlspecialchars(mysqli_error($db_emb)) . "</p>";
-                                    }
+                                        VALUES ('$master_project_id', '$zoneMasterId', '$zonalUnitId', '$created_by', NOW())";
+                                    mysqli_query($db_emb, $insertMasterSql);
                                 }
                             }
                         }
@@ -331,7 +338,48 @@ if (isset($_GET['id'])) {
         $_POST['division_id'] = $data['division_id'];
         $_POST['district'] = $data['district_id'];
         $_POST['project_name'] = $data['sno'];  // keep dropdown selection by GET id
-        $_POST['client_id'] = $data['client_id']; 
+        
+        // Match client by department name
+        if (isset($data['department_id'])) {
+            $dept_q = mysqli_query($db, "SELECT department_name_english FROM uprnss_department_name WHERE sno = '" . (int)$data['department_id'] . "'");
+            if ($dept_q && $dept_row = mysqli_fetch_assoc($dept_q)) {
+                $dept_name = trim($dept_row['department_name_english']);
+                $client_q = mysqli_query($db_emb, "SELECT id FROM clients WHERE TRIM(name) = '" . mysqli_real_escape_string($db_emb, $dept_name) . "' LIMIT 1");
+                if ($client_q && mysqli_num_rows($client_q) > 0) {
+                    $client_row = mysqli_fetch_assoc($client_q);
+                    $_POST['client_id'] = $client_row['id'];
+                } else {
+                    // Try to match keywords (e.g. Medical Health and Family Welfare -> Health Department)
+                    $words = explode(' ', $dept_name);
+                    $like_conditions = [];
+                    foreach ($words as $word) {
+                        $word = trim($word);
+                        if (strlen($word) > 3 && strtolower($word) !== 'and' && strtolower($word) !== 'the' && strtolower($word) !== 'department') {
+                            $like_conditions[] = "name LIKE '%" . mysqli_real_escape_string($db_emb, $word) . "%'";
+                        }
+                    }
+                    if (!empty($like_conditions)) {
+                        $like_sql = "SELECT id FROM clients WHERE " . implode(' OR ', $like_conditions) . " LIMIT 1";
+                        $client_q = mysqli_query($db_emb, $like_sql);
+                        if ($client_q && mysqli_num_rows($client_q) > 0) {
+                            $client_row = mysqli_fetch_assoc($client_q);
+                            $_POST['client_id'] = $client_row['id'];
+                        }
+                    }
+                }
+            }
+        }
+        
+        $_POST['project_cost'] = $data['sanction_cost'];
+        $_POST['government_order'] = $data['admin_go_no'];
+        $_POST['government_order_date'] = (!empty($data['admin_go_date']) && $data['admin_go_date'] !== '0000-00-00') ? date('Y-m-d', strtotime($data['admin_go_date'])) : '';
+        $_POST['project_estimated_cost'] = $data['financial_go_amount'];
+        $_POST['financial_sanction_date'] = (!empty($data['financial_go_date']) && $data['financial_go_date'] !== '0000-00-00') ? date('Y-m-d', strtotime($data['financial_go_date'])) : '';
+        $_POST['budget_approved_date'] = (!empty($data['sanction_date']) && $data['sanction_date'] !== '0000-00-00') ? date('Y-m-d', strtotime($data['sanction_date'])) : '';
+        $_POST['project_description'] = $data['project_name_hindi'];
+        $_POST['project_requirement'] = 'As per G.O.';
+        $_POST['work_type'] = 'Standard';
+        $_POST['project_type'] = 'E-MB';
     }
 }
 
@@ -564,7 +612,7 @@ page_sidebar();
                             <div class="form-group">
                                 <label>Administrative Sanction Cost</label>
                                 <input type="number" name="project_cost" required id="project_cost" class="form-control"
-                                    placeholder=""
+                                    placeholder="" step="any"
                                     value="<?php echo isset($_POST['project_cost']) ? htmlspecialchars($_POST['project_cost']) : ''; ?>">
                             </div>
                         </div>
@@ -581,8 +629,8 @@ page_sidebar();
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>Financial Sanction Cost(Fund Released)</label>
-                                <input type="text" name="project_estimated_cost" id="project_estimated_cost"
-                                    class="form-control" placeholder=""
+                                <input type="number" name="project_estimated_cost" id="project_estimated_cost"
+                                    class="form-control" placeholder="" step="any"
                                     value="<?php echo isset($_POST['project_estimated_cost']) ? htmlspecialchars($_POST['project_estimated_cost']) : ''; ?>">
                             </div>
                         </div>
@@ -619,7 +667,7 @@ page_sidebar();
                             <div class="form-group" id="agreed_project_cost_sec">
                                 <label>Agreed Poject Cost</label>
                                 <input type="number" name="agreed_project_cost" id="agreed_project_cost"
-                                    class="form-control" placeholder=""
+                                    class="form-control" placeholder="" step="any"
                                     value="<?php echo isset($_POST['agreed_project_cost']) ? htmlspecialchars($_POST['agreed_project_cost']) : ''; ?>">
                             </div>
                         </div>

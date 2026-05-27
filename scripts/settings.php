@@ -77,6 +77,20 @@ if (!function_exists('dbconnect')) {
 	}
 }
 
+if (!function_exists('h')) {
+	function h($text)
+	{
+		return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+	}
+}
+
+if (!function_exists('amount_format')) {
+	function amount_format($amount)
+	{
+		return is_numeric($amount) ? number_format($amount, 2) : $amount;
+	}
+}
+
 function page_header_start($title = 'UPRNSS|AIPPCA')
 {
 	global $software_type;
@@ -119,10 +133,14 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
 	<title>' . $title . '</title>
 	<link rel="icon" type="image/x-icon" href="favicon.ico">
 
+    <!-- 1. jQuery FIRST (Global) -->
+    <script src="js/jquery.3.2.1.min.js" type="text/javascript"></script>
+    <script src="js/jquery-ui.js" type="text/javascript"></script>
+
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
     <meta name="viewport" content="width=device-width" />
 	
-    <!--     Fonts and icons     -->
+    <!-- Fonts and icons -->
     <link href="fa/css/all.min.css" rel="stylesheet" media="screen">
     <script src="fa/js/fontawesome.min.js"></script>
     <link href="css/pe-icon-7-stroke.css" rel="stylesheet" media="screen" />
@@ -131,13 +149,30 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
     <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
 	<link rel="stylesheet" href="css/bootstrap-theme.min.css" media="screen">
 	<link rel="stylesheet" href="dataTables/datatables.min.css" media="screen">
-	<script src="js/jquery.3.2.1.min.js" type="text/javascript"></script>
-	<script src="js/jquery-ui.js" type="text/javascript"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+	
+    <!-- core JS components -->
 	<script src="js/popper.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/bootstrap-switch.js"></script>
 	<script src="js/calendar.js" language="javascript" type="text/javascript"></script>
 	<script src="js/bpopup.js" language="javascript" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+    <!-- DataTables & Buttons (Local Files for reliability) -->
+    <script src="dataTables/datatables.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script src="dataTables/Buttons-1.6.1/js/dataTables.buttons.min.js"></script>
+    <script src="dataTables/Buttons-1.6.1/js/buttons.bootstrap4.min.js"></script>
+    <script src="dataTables/Buttons-1.6.1/js/buttons.html5.min.js"></script>
+    <script src="dataTables/Buttons-1.6.1/js/buttons.print.min.js"></script>
+    <script src="dataTables/Buttons-1.6.1/js/buttons.colVis.min.js"></script>
+    <link rel="stylesheet" href="dataTables/Buttons-1.6.1/css/buttons.bootstrap4.min.css">
+    
 	<script src="jquery/jquery.ba-throttle-debouce.min.js" type="text/javascript"></script>
 	<script src="jquery/jquery.multiselect.js" language="javascript"></script>
 
@@ -239,7 +274,7 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
         }
 
         table thead th {
-            background: linear-gradient(45deg, var(--red-light), var(--red-dark));
+            background: linear-gradient(45deg, var(--red-light), var(--red-dark)) !important;
             text-align: center;
             vertical-align: middle;
             font-size: 14px !important;
@@ -279,7 +314,7 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
         input[type="number"],
         select {
             height: 40px !important;
-            text-align: center !important;
+            text-align: left !important;
             padding: 5px 10px !important;
             font-size: 14px !important;
             font-weight: 600 !important;
@@ -455,101 +490,101 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
 		}
 	</style>';
 	?>
-		<script>
-		$(".dropdown dt a").on('click', function() {
+	<script>
+		$(".dropdown dt a").on('click', function () {
 			$(".dropdown dd ul").slideToggle('fast');
 		});
 
-		$(".dropdown dd ul li a").on('click', function() {
+		$(".dropdown dd ul li a").on('click', function () {
 			$(".dropdown dd ul").hide();
 		});
 
 		function getSelectedValue(id) {
-		  return $("#" + id).find("dt a span.value").html();
+			return $("#" + id).find("dt a span.value").html();
 		}
 
-		$(document).bind('click', function(e) {
-		  var $clicked = $(e.target);
-		  if (!$clicked.parents().hasClass("dropdown")) $(".dropdown dd ul").hide();
+		$(document).bind('click', function (e) {
+			var $clicked = $(e.target);
+			if (!$clicked.parents().hasClass("dropdown")) $(".dropdown dd ul").hide();
 		});
 
-		$('.mutliSelect input[type="checkbox"]').on('click', function() {
+		$('.mutliSelect input[type="checkbox"]').on('click', function () {
 
-		  var title = $(this).closest('.mutliSelect').find('input[type="checkbox"]').val(),
-			title = $(this).val() + ",";
+			var title = $(this).closest('.mutliSelect').find('input[type="checkbox"]').val(),
+				title = $(this).val() + ",";
 
-		  if ($(this).is(':checked')) {
-			var html = '<span title="' + title + '">' + title + '</span>';
-			$('.multiSel').append(html);
-			$(".hida").hide();
-		  } else {
-			$('span[title="' + title + '"]').remove();
-			var ret = $(".hida");
-			$('.dropdown dt a').append(ret);
-
-		  }
-		});		
-		
-
-	// defining flags
-	var isCtrl = false;
-	var isAlt = false;
-	// helpful function that outputs to the container
-	// the magic :)
-
-	<?php
-	$current_file_name = basename($_SERVER['PHP_SELF']);
-	if (isset($_SESSION['username'])) {
-		$user = $_SESSION['username'];
-		$sql = 'select * from session where user="' . $user . '" order by s_start_date desc, s_start_time desc';
-		$last = execute_query($sql);
-		if ($last && mysqli_num_rows($last) != 0) {
-			$last = mysqli_fetch_array($last);
-			$last = $last['s_start_date'] . ' ' . $last['s_start_time'];
-		} else {
-			$last = '';
-		}
-		$sql = 'select * from general_settings where `desc`="session_timeout"';
-		$timeout = mysqli_fetch_array(execute_query($sql));
-		if ($timeout['rate'] > 0) {
-			$timeout = $timeout['rate'] * 60;
-			$difference = time() - $timeout;
-			$sql = 'select * from session where user!="' . $_SESSION['username'] . '" and last_active>' . $difference;
-			$session = execute_query($sql);
-			if ($session && mysqli_num_rows($session) != 0) {
-				$other = mysqli_num_rows($session);
+			if ($(this).is(':checked')) {
+				var html = '<span title="' + title + '">' + title + '</span>';
+				$('.multiSel').append(html);
+				$(".hida").hide();
 			} else {
-				$other = 0;
+				$('span[title="' + title + '"]').remove();
+				var ret = $(".hida");
+				$('.dropdown dt a').append(ret);
+
 			}
+		});
+
+
+		// defining flags
+		var isCtrl = false;
+		var isAlt = false;
+		// helpful function that outputs to the container
+		// the magic :)
+
+		<?php
+		$current_file_name = basename($_SERVER['PHP_SELF']);
+		if (isset($_SESSION['username'])) {
+			$user = $_SESSION['username'];
+			$sql = 'select * from session where user="' . $user . '" order by s_start_date desc, s_start_time desc';
+			$last = execute_query($sql);
+			if ($last && mysqli_num_rows($last) != 0) {
+				$last = mysqli_fetch_array($last);
+				$last = $last['s_start_date'] . ' ' . $last['s_start_time'];
+			} else {
+				$last = '';
+			}
+			$sql = 'select * from general_settings where `desc`="session_timeout"';
+			$timeout = mysqli_fetch_array(execute_query($sql));
+			if ($timeout['rate'] > 0) {
+				$timeout = $timeout['rate'] * 60;
+				$difference = time() - $timeout;
+				$sql = 'select * from session where user!="' . $_SESSION['username'] . '" and last_active>' . $difference;
+				$session = execute_query($sql);
+				if ($session && mysqli_num_rows($session) != 0) {
+					$other = mysqli_num_rows($session);
+				} else {
+					$other = 0;
+				}
+			}
+
+		} else {
+			$user = 'Guest';
+			$last = '';
+			$other = '';
 		}
 
-	} else {
-		$user = 'Guest';
-		$last = '';
-		$other = '';
-	}
+		if ($current_file_name == 'index.php') {
+			?>
+			$(document).ready(function () {
 
-	if ($current_file_name == 'index.php') {
-		?>
-					$(document).ready(function(){
+				demo.initChartist();
 
-						demo.initChartist();
+				$.notify({
+					icon: 'pe-7s-gift',
+					message: "Welcome <b><?php echo $user; ?></b>. Last Login: <b><?php echo $last; ?></b>. Currently active at <b><?php echo $other; ?></b> other location"
 
-						$.notify({
-							icon: 'pe-7s-gift',
-							message: "Welcome <b><?php echo $user; ?></b>. Last Login: <b><?php echo $last; ?></b>. Currently active at <b><?php echo $other; ?></b> other location"
+				}, {
+					type: 'success',
+					timer: 2000
+				});
 
-						},{
-							type: 'success',
-							timer: 2000
-						});
-
-					});
+			});
 
 			<?php
-	}
-	?>
-		</script>
+		}
+		?>
+	</script>
 
 	<?php
 }
@@ -572,7 +607,7 @@ function page_header_end()
 }
 function page_sidebar($id = '')
 {
-	?>	
+	?>
 	<?php
 	echo $_SESSION['usertype'];
 	if ($_SESSION['usertype'] == 'sadmin') {
@@ -670,73 +705,81 @@ function page_sidebar($id = '')
 
 
 
-				<div class="main-panel">
-					<nav class="navbar navbar-expand-lg ">
-						<div class="container-fluid">
-							<div class="navbar-wrapper">
-								<a class="navbar-brand page-title" href="#" style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
-							</div>
-							<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-							</button>
-							<div class="collapse navbar-collapse justify-content-end">
-								<ul class="nav navbar-nav mr-auto">
-									<li><form class="navbar-form navbar-left navbar-search-form" role="search">
-										<div class="input-group">
-											<i class="fab fa-sistrix"></i>
-											<input type="text" value="" class="form-control" placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
-										</div>
-										</form></li>
-								</ul>
-								<ul class="navbar-nav">
-									   <li class="nav-item dropdown"> 
-										<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="#"><button class="btn btn-info"><i class="fa fa-user-lock"></i> <?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp; 
-										<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-											<a class="dropdown-item" href="#">Profile</a>
-											<a class="dropdown-item" href="#">Activity Log</a>
-											<div class="divider"></div>
-											<a class="dropdown-item" href="signout.php"><i class="fas fa-sign-out-alt"></i>Signout</a>
-										</div>
-									</li>
-									<li class="nav-item">
-										<a href="<?php echo returnlink("index.php", false); ?>"><button class="btn btn-danger"><i class="fa fa-backward"></i> Back</button></a>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</nav>
-					<div class="content">
-						<div class="container-fluid">
-		<?php
+		<div class="main-panel">
+			<nav class="navbar navbar-expand-lg ">
+				<div class="container-fluid">
+					<div class="navbar-wrapper">
+						<a class="navbar-brand page-title" href="#"
+							style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
+					</div>
+					<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse"
+						aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-bar burger-lines"></span>
+						<span class="navbar-toggler-bar burger-lines"></span>
+						<span class="navbar-toggler-bar burger-lines"></span>
+					</button>
+					<div class="collapse navbar-collapse justify-content-end">
+						<ul class="nav navbar-nav mr-auto">
+							<li>
+								<form class="navbar-form navbar-left navbar-search-form" role="search">
+									<div class="input-group">
+										<i class="fab fa-sistrix"></i>
+										<input type="text" value="" class="form-control"
+											placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
+									</div>
+								</form>
+							</li>
+						</ul>
+						<ul class="navbar-nav">
+							<li class="nav-item dropdown">
+								<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+									aria-expanded="false" href="#"><button class="btn btn-info"><i class="fa fa-user-lock"></i>
+										<?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp;
+								<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+									<a class="dropdown-item" href="#">Profile</a>
+									<a class="dropdown-item" href="#">Activity Log</a>
+									<div class="divider"></div>
+									<a class="dropdown-item" href="signout.php"><i class="fas fa-sign-out-alt"></i>Signout</a>
+								</div>
+							</li>
+							<li class="nav-item">
+								<a href="<?php echo returnlink("index.php", false); ?>"><button class="btn btn-danger"><i
+											class="fa fa-backward"></i> Back</button></a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+			<div class="content">
+				<div class="container-fluid">
+					<?php
 	} else {
-		?>	
-				<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
-				<!--
+		?>
+					<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
+						<!--
 
 			Tip 1: you can change the color of the sidebar using: data-color="blue | azure | green | orange | red | purple"
 			Tip 2: you can also add an image using data-image tag
 		-->
-					<div class="sidebar-wrapper">
-						<div class="logo">
-							<a href="#" class="simple-text logo-mini"><span class="nc-icon nc-send"></span></a>
-							<a href="#" class="simple-text  logo-normal">Project Tracker&trade;</a>
-						</div>
+						<div class="sidebar-wrapper">
+							<div class="logo">
+								<a href="#" class="simple-text logo-mini"><span class="nc-icon nc-send"></span></a>
+								<a href="#" class="simple-text  logo-normal">Project Tracker&trade;</a>
+							</div>
 
-						<ul class="nav">
-							<li class="nav-item active">
-								<a class="nav-link" href="index.php">
-									<i class="fa fa-chart-pie"></i>
-									<p>Dashboard</p>
-								</a>
-							</li>
+							<ul class="nav">
+								<li class="nav-item active">
+									<a class="nav-link" href="index.php">
+										<i class="fa fa-chart-pie"></i>
+										<p>Dashboard</p>
+									</a>
+								</li>
 
-							<?php
-							$userId = $_SESSION['usertype'];
+								<?php
+								$userId = $_SESSION['usertype'];
 
-							/* -------- MAIN LEVEL -------- */
-							$sql = "
+								/* -------- MAIN LEVEL -------- */
+								$sql = "
 					SELECT * FROM navigation 
 					WHERE parent!='P' 
 					AND parent!='PA' 
@@ -745,82 +788,82 @@ function page_sidebar($id = '')
 					ORDER BY ABS(sort_no)
 					";
 
-							$result = execute_query($sql);
+								$result = execute_query($sql);
 
-							while ($row = mysqli_fetch_assoc($result)) {
+								while ($row = mysqli_fetch_assoc($result)) {
 
-								$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
+									$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
 
-								/* -------- STANDALONE MENU -------- */
-								if ($row['admin_parent'] != 'P') {
+									/* -------- STANDALONE MENU -------- */
+									if ($row['admin_parent'] != 'P') {
 
-									$sqlAccess = "
+										$sqlAccess = "
 							SELECT 1 FROM user_access 
 							WHERE user_id='$userId' 
 							AND file_name='{$row['sno']}'
 							";
-									if (mysqli_num_rows(execute_query($sqlAccess))) {
+										if (mysqli_num_rows(execute_query($sqlAccess))) {
 
-										echo '
+											echo '
 								<li class="nav-item' . $active . '">
 									<a class="nav-link" href="' . $row['hyper_link'] . '">
 										<i class="' . $row['icon_image'] . '"></i>
 										<p>' . $row['link_description'] . '</p>
 									</a>
 								</li>';
+										}
+
 									}
+									/* -------- PARENT MENU -------- */ else {
 
-								}
-								/* -------- PARENT MENU -------- */ else {
-
-									/* ---- FIRST LEVEL CHILDREN ---- */
-									$sqlSub = "
+										/* ---- FIRST LEVEL CHILDREN ---- */
+										$sqlSub = "
 							SELECT * FROM navigation 
 							WHERE admin_parent='{$row['sno']}'
 							ORDER BY ABS(sort_no)
 							";
-									$resSub = execute_query($sqlSub);
+										$resSub = execute_query($sqlSub);
 
-									$visibleChildren = [];
+										$visibleChildren = [];
 
-									while ($sub = mysqli_fetch_assoc($resSub)) {
+										while ($sub = mysqli_fetch_assoc($resSub)) {
 
-										/* ---- CHECK DIRECT ACCESS ---- */
-										$sqlCheck = "
+											/* ---- CHECK DIRECT ACCESS ---- */
+											$sqlCheck = "
 								SELECT 1 FROM user_access 
 								WHERE user_id='$userId' 
 								AND file_name='{$sub['sno']}'
 								";
-										if (mysqli_num_rows(execute_query($sqlCheck))) {
-											$visibleChildren[] = $sub;
-											continue;
-										}
+											if (mysqli_num_rows(execute_query($sqlCheck))) {
+												$visibleChildren[] = $sub;
+												continue;
+											}
 
-										/* ---- CHECK GRAND CHILD ACCESS ---- */
-										$sqlSubSub = "
+											/* ---- CHECK GRAND CHILD ACCESS ---- */
+											$sqlSubSub = "
 								SELECT sno FROM navigation 
 								WHERE admin_sub_parent='{$sub['sno']}'
 								ORDER BY ABS(sort_no) ";
-										$resSubSub = execute_query($sqlSubSub);
+											$resSubSub = execute_query($sqlSubSub);
 
-										while ($ss = mysqli_fetch_assoc($resSubSub)) {
-											$sqlGC = "
+											while ($ss = mysqli_fetch_assoc($resSubSub)) {
+												$sqlGC = "
 									SELECT 1 FROM user_access 
 									WHERE user_id='$userId' 
 									AND file_name='{$ss['sno']}'
 									";
-											if (mysqli_num_rows(execute_query($sqlGC))) {
-												$visibleChildren[] = $sub;
-												break;
+												if (mysqli_num_rows(execute_query($sqlGC))) {
+													$visibleChildren[] = $sub;
+													break;
+												}
 											}
 										}
-									}
 
-									/* ---- IF NO ACCESSIBLE CHILD → SKIP PARENT ---- */
-									if (empty($visibleChildren))
-										continue;
+										/* ---- IF NO ACCESSIBLE CHILD → SKIP PARENT ---- */
+										if (empty($visibleChildren))
+											continue;
 
-									echo '
+										echo '
 							<li class="nav-item' . $active . '">
 								<a data-toggle="collapse" href="#parent' . $row['sno'] . '" class="nav-link">
 									<i class="' . $row['icon_image'] . '"></i>
@@ -829,35 +872,35 @@ function page_sidebar($id = '')
 								<div class="collapse" id="parent' . $row['sno'] . '">
 									<ul class="nav">';
 
-									/* -------- RENDER FIRST LEVEL -------- */
-									foreach ($visibleChildren as $row_sub) {
+										/* -------- RENDER FIRST LEVEL -------- */
+										foreach ($visibleChildren as $row_sub) {
 
-										echo '<li class="nav-item">';
+											echo '<li class="nav-item">';
 
-										/* ---- CHECK SECOND LEVEL ---- */
-										$sqlSubSub = "
+											/* ---- CHECK SECOND LEVEL ---- */
+											$sqlSubSub = "
 								SELECT * FROM navigation 
 								WHERE admin_sub_parent='{$row_sub['sno']}'
 								";
-										$resSubSub = execute_query($sqlSubSub);
+											$resSubSub = execute_query($sqlSubSub);
 
-										$subSubVisible = [];
+											$subSubVisible = [];
 
-										while ($row_sub_sub = mysqli_fetch_assoc($resSubSub)) {
-											$sqlGC = "
+											while ($row_sub_sub = mysqli_fetch_assoc($resSubSub)) {
+												$sqlGC = "
 									SELECT 1 FROM user_access 
 									WHERE user_id='$userId' 
 									AND file_name='{$row_sub_sub['sno']}'
 									";
-											if (mysqli_num_rows(execute_query($sqlGC))) {
-												$subSubVisible[] = $row_sub_sub;
+												if (mysqli_num_rows(execute_query($sqlGC))) {
+													$subSubVisible[] = $row_sub_sub;
+												}
 											}
-										}
 
-										/* ---- HAS GRAND CHILDREN ---- */
-										if (!empty($subSubVisible)) {
+											/* ---- HAS GRAND CHILDREN ---- */
+											if (!empty($subSubVisible)) {
 
-											echo '
+												echo '
 									<a data-toggle="collapse" href="#sub' . $row_sub['sno'] . '" class="nav-link">
 										<i class="' . $row_sub['icon_image'] . '" style="margin-left:15px;font-size:20px;"></i>
 										<p>' . $row_sub['link_description'] . ' <b class="caret"></b></p>
@@ -865,245 +908,255 @@ function page_sidebar($id = '')
 									<div class="collapse" id="sub' . $row_sub['sno'] . '">
 										<ul class="nav">';
 
-											foreach ($subSubVisible as $gc) {
-												echo '
+												foreach ($subSubVisible as $gc) {
+													echo '
 										<li class="nav-item">
 											<a class="nav-link" href="' . $gc['hyper_link'] . '">
 												<i class="' . $gc['icon_image'] . '" style="margin-left:30px;font-size:20px;"></i>
 												<p>' . $gc['link_description'] . '</p>
 											</a>
 										</li>';
+												}
+
+												echo '</ul></div>';
+
 											}
-
-											echo '</ul></div>';
-
-										}
-										/* ---- NO GRAND CHILD ---- */ else {
-											echo '
+											/* ---- NO GRAND CHILD ---- */ else {
+												echo '
 									<a class="nav-link" href="' . $row_sub['hyper_link'] . '">
 										<i class="' . $row_sub['icon_image'] . '" style="margin-left:15px;font-size:20px;"></i>
 										<p>' . $row_sub['link_description'] . '</p>
 									</a>';
+											}
+
+											echo '</li>';
 										}
 
-										echo '</li>';
-									}
-
-									echo '
+										echo '
 									</ul>
 								</div>
 							</li>';
-								}
-							}
-							?>
-
-
-
-							<?php
-							/*
-							$sql = "
-							SELECT * FROM navigation 
-							WHERE (parent IS NULL OR parent='' OR parent='P') 
-							AND hyper_link!='index.php'
-							ORDER BY ABS(sort_no), sub_parent, link_description
-							";
-
-							$result = execute_query($sql);
-
-							while ($row = mysqli_fetch_assoc($result)) {
-
-								$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
-
-								// ---------- PARENT MENU ----------
-								if ($row['parent'] == 'P') {
-
-									// child sno list
-									$sqlChild = "
-									SELECT sno FROM navigation 
-									WHERE parent='{$row['sno']}'
-									";
-									$resChild = execute_query($sqlChild);
-
-									$childIds = [];
-									while ($c = mysqli_fetch_assoc($resChild)) {
-										$childIds[] = $c['sno'];
 									}
+								}
+								?>
 
-									// agar child hi nahi → skip
-									if (empty($childIds)) continue;
 
-									// access check
-									$ids = implode(',', $childIds);
-									$sqlAccess = "
-									SELECT 1 FROM user_access 
-									WHERE user_id='{$_SESSION['usertype']}'
-									AND file_name IN ($ids)
-									";
-									$resAccess = execute_query($sqlAccess);
 
-									if (mysqli_num_rows($resAccess) == 0) continue;
+								<?php
+								/*
+								$sql = "
+								SELECT * FROM navigation 
+								WHERE (parent IS NULL OR parent='' OR parent='P') 
+								AND hyper_link!='index.php'
+								ORDER BY ABS(sort_no), sub_parent, link_description
+								";
 
-									echo '
-									<li class="nav-item'.$active.'">
-										<a class="nav-link" data-toggle="collapse" href="#parent'.$row['sno'].'">
-											<i class="'.$row['icon_image'].'"></i>
-											<p>'.$row['link_description'].' <b class="caret"></b></p>
-										</a>
-										<div class="collapse" id="parent'.$row['sno'].'">
-											<ul class="nav">';
+								$result = execute_query($sql);
 
-									// child menus
-									$sqlSub = "
-									SELECT * FROM navigation 
-									WHERE parent='{$row['sno']}'
-									ORDER BY ABS(sort_no), sub_parent, link_description
-									";
-									$resSub = execute_query($sqlSub);
+								while ($row = mysqli_fetch_assoc($result)) {
 
-									while ($sub = mysqli_fetch_assoc($resSub)) {
+									$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
 
-										$sqlCheck = "
+									// ---------- PARENT MENU ----------
+									if ($row['parent'] == 'P') {
+
+										// child sno list
+										$sqlChild = "
+										SELECT sno FROM navigation 
+										WHERE parent='{$row['sno']}'
+										";
+										$resChild = execute_query($sqlChild);
+
+										$childIds = [];
+										while ($c = mysqli_fetch_assoc($resChild)) {
+											$childIds[] = $c['sno'];
+										}
+
+										// agar child hi nahi → skip
+										if (empty($childIds)) continue;
+
+										// access check
+										$ids = implode(',', $childIds);
+										$sqlAccess = "
 										SELECT 1 FROM user_access 
 										WHERE user_id='{$_SESSION['usertype']}'
-										AND file_name='{$sub['sno']}'
+										AND file_name IN ($ids)
 										";
-										$resCheck = execute_query($sqlCheck);
+										$resAccess = execute_query($sqlAccess);
 
-										if (mysqli_num_rows($resCheck)) {
+										if (mysqli_num_rows($resAccess) == 0) continue;
+
+										echo '
+										<li class="nav-item'.$active.'">
+											<a class="nav-link" data-toggle="collapse" href="#parent'.$row['sno'].'">
+												<i class="'.$row['icon_image'].'"></i>
+												<p>'.$row['link_description'].' <b class="caret"></b></p>
+											</a>
+											<div class="collapse" id="parent'.$row['sno'].'">
+												<ul class="nav">';
+
+										// child menus
+										$sqlSub = "
+										SELECT * FROM navigation 
+										WHERE parent='{$row['sno']}'
+										ORDER BY ABS(sort_no), sub_parent, link_description
+										";
+										$resSub = execute_query($sqlSub);
+
+										while ($sub = mysqli_fetch_assoc($resSub)) {
+
+											$sqlCheck = "
+											SELECT 1 FROM user_access 
+											WHERE user_id='{$_SESSION['usertype']}'
+											AND file_name='{$sub['sno']}'
+											";
+											$resCheck = execute_query($sqlCheck);
+
+											if (mysqli_num_rows($resCheck)) {
+												echo '
+												<li class="nav-item">
+													<a class="nav-link" href="'.$sub['hyper_link'].'">
+														<i class="'.$sub['icon_image'].'" style="font-size:20px;margin-left:15px;"></i>
+														<span class="sidebar-normal">'.$sub['link_description'].'</span>
+													</a>
+												</li>';
+											}
+										}
+
+										echo '
+												</ul>
+											</div>
+										</li>';
+									}
+
+									// ---------- SINGLE MENU ----------
+									else {
+										$sqlAccess = "
+										SELECT 1 FROM user_access 
+										WHERE user_id='{$_SESSION['usertype']}'
+										AND file_name='{$row['sno']}'
+										";
+										$resAccess = execute_query($sqlAccess);
+
+										if (mysqli_num_rows($resAccess)) {
 											echo '
-											<li class="nav-item">
-												<a class="nav-link" href="'.$sub['hyper_link'].'">
-													<i class="'.$sub['icon_image'].'" style="font-size:20px;margin-left:15px;"></i>
-													<span class="sidebar-normal">'.$sub['link_description'].'</span>
+											<li class="nav-item'.$active.'">
+												<a class="nav-link" href="'.$row['hyper_link'].'">
+													<i class="'.$row['icon_image'].'"></i>
+													<p>'.$row['link_description'].'</p>
 												</a>
 											</li>';
 										}
 									}
-
-									echo '
-											</ul>
-										</div>
-									</li>';
 								}
-
-								// ---------- SINGLE MENU ----------
-								else {
-									$sqlAccess = "
-									SELECT 1 FROM user_access 
-									WHERE user_id='{$_SESSION['usertype']}'
-									AND file_name='{$row['sno']}'
-									";
-									$resAccess = execute_query($sqlAccess);
-
-									if (mysqli_num_rows($resAccess)) {
-										echo '
-										<li class="nav-item'.$active.'">
-											<a class="nav-link" href="'.$row['hyper_link'].'">
-												<i class="'.$row['icon_image'].'"></i>
-												<p>'.$row['link_description'].'</p>
-											</a>
-										</li>';
-									}
-								}
-							}
-							*/
-							?>
+								*/
+								?>
 
 
-						</ul>
-					</div>
-				</div>
-				<div class="main-panel">
-					<nav class="navbar navbar-expand-lg ">
-						<div class="container-fluid">
-							<div class="navbar-wrapper">
-								<a class="navbar-brand page-title" href="#" style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
-							</div>
-							<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-							</button>
-							<div class="collapse navbar-collapse justify-content-end">
-								<ul class="nav navbar-nav mr-auto">
-									<li><form class="navbar-form navbar-left navbar-search-form" role="search">
-										<div class="input-group">
-											<i class="fab fa-sistrix"></i>
-											<input type="text" value="" class="form-control" placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
-										</div>
-										</form></li>
-								</ul>
-								<ul class="navbar-nav">
-									   <li class="nav-item dropdown"> 
-										<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="#"><button class="btn btn-info"><i class="fa fa-user-lock"></i> <?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp; 
-										<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-											<a class="dropdown-item" href="#">Profile</a>
-											<a class="dropdown-item" href="#">Activity Log</a>
-											<div class="divider"></div>
-											<a class="dropdown-item" href="signout.php"><i class="fas fa-sign-out-alt"></i>Signout</a>
-										</div>
-									</li>
-									<li class="nav-item">
-										<a href="<?php echo returnlink("index.php", false); ?>"><button class="btn btn-danger"><i class="fa fa-backward"></i> Back</button></a>
-									</li>
-								</ul>
-							</div>
+							</ul>
 						</div>
-					</nav>
-					<div class="content">
-						<div class="container-fluid">
+					</div>
+					<div class="main-panel">
+						<nav class="navbar navbar-expand-lg ">
+							<div class="container-fluid">
+								<div class="navbar-wrapper">
+									<a class="navbar-brand page-title" href="#"
+										style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
+								</div>
+								<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse"
+									aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+									<span class="navbar-toggler-bar burger-lines"></span>
+									<span class="navbar-toggler-bar burger-lines"></span>
+									<span class="navbar-toggler-bar burger-lines"></span>
+								</button>
+								<div class="collapse navbar-collapse justify-content-end">
+									<ul class="nav navbar-nav mr-auto">
+										<li>
+											<form class="navbar-form navbar-left navbar-search-form" role="search">
+												<div class="input-group">
+													<i class="fab fa-sistrix"></i>
+													<input type="text" value="" class="form-control"
+														placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
+												</div>
+											</form>
+										</li>
+									</ul>
+									<ul class="navbar-nav">
+										<li class="nav-item dropdown">
+											<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+												aria-expanded="false" href="#"><button class="btn btn-info"><i
+														class="fa fa-user-lock"></i>
+													<?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp;
+											<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+												<a class="dropdown-item" href="#">Profile</a>
+												<a class="dropdown-item" href="#">Activity Log</a>
+												<div class="divider"></div>
+												<a class="dropdown-item" href="signout.php"><i
+														class="fas fa-sign-out-alt"></i>Signout</a>
+											</div>
+										</li>
+										<li class="nav-item">
+											<a href="<?php echo returnlink("index.php", false); ?>"><button
+													class="btn btn-danger"><i class="fa fa-backward"></i> Back</button></a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</nav>
+						<div class="content">
+							<div class="container-fluid">
 
-	
-	<?php
+
+								<?php
 	}
-	?>		
-	<?php
+	?>
+							<?php
 
-	$time_track[] = microtime(true);
+							$time_track[] = microtime(true);
 }
 
 function page_sidebar_old($id = '')
 {
-	?>	
-	<?php
+	?>
+							<?php
 
-	if ($_SESSION['usertype'] == 'sadmin') {
-		?>
+							if ($_SESSION['usertype'] == 'sadmin') {
+								?>
 
-		<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
-			<div class="sidebar-wrapper">
-				<div class="logo">
-					<a href="#" class="simple-text logo-mini"><span class="nc-icon nc-send"></span></a>
-					<a href="#" class="simple-text logo-normal">Project Tracker&trade;</a>
-				</div>
+								<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
+									<div class="sidebar-wrapper">
+										<div class="logo">
+											<a href="#" class="simple-text logo-mini"><span class="nc-icon nc-send"></span></a>
+											<a href="#" class="simple-text logo-normal">Project Tracker&trade;</a>
+										</div>
 
-				<ul class="nav">
-					<li routerlinkactive="active" class="nav-item active">
-						<a class="nav-link" href="index.php">
-							<i class="fa fa-chart-pie"></i>
-							<p>Dashboard</p>
-						</a>
-					</li>
-					<?php
-					// Fetch all main navigation items
-					$sql = 'SELECT * FROM navigation WHERE parent!="P" AND parent!="PA" AND admin_sub_parent is NULL AND hyper_link!="index.php" ORDER BY ABS(sort_no), sub_parent, link_description';
-					$result = execute_query($sql);
+										<ul class="nav">
+											<li routerlinkactive="active" class="nav-item active">
+												<a class="nav-link" href="index.php">
+													<i class="fa fa-chart-pie"></i>
+													<p>Dashboard</p>
+												</a>
+											</li>
+											<?php
+											// Fetch all main navigation items
+											$sql = 'SELECT * FROM navigation WHERE parent!="P" AND parent!="PA" AND admin_sub_parent is NULL AND hyper_link!="index.php" ORDER BY ABS(sort_no), sub_parent, link_description';
+											$result = execute_query($sql);
 
-					while ($row = mysqli_fetch_array($result)) {
-						$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
+											while ($row = mysqli_fetch_array($result)) {
+												$active = ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) ? ' active' : '';
 
-						// Check if this item is a standalone link or a parent
-						if ($row['admin_parent'] != "P") {
-							// Render standalone navigation item
-							echo '<li routerlinkactive="active" class="nav-item' . $active . '">
+												// Check if this item is a standalone link or a parent
+												if ($row['admin_parent'] != "P") {
+													// Render standalone navigation item
+													echo '<li routerlinkactive="active" class="nav-item' . $active . '">
                                 <a class="nav-link" href="' . $row['hyper_link'] . '">
                                     <i class="' . $row['icon_image'] . '"></i>
                                     <p>' . $row['link_description'] . '</p>
                                 </a>
                               </li>';
-						} else {
-							// This item has sub-items
-							echo '<li routerlinkactive="active" class="nav-item' . $active . '">
+												} else {
+													// This item has sub-items
+													echo '<li routerlinkactive="active" class="nav-item' . $active . '">
                                 <a data-toggle="collapse" data-target="#parent' . $row['sno'] . '" class="nav-link" href="#parent' . $row['sno'] . '">
                                     <i class="' . $row['icon_image'] . '"></i>
                                     <p>' . $row['link_description'] . '<b class="caret"></b></p>
@@ -1111,356 +1164,379 @@ function page_sidebar_old($id = '')
                                 <div class="collapse" id="parent' . $row['sno'] . '">
                                     <ul class="nav">';
 
-							// Fetch first-level children
-							$sql_sub = 'SELECT * FROM navigation WHERE admin_parent="' . $row['sno'] . '" ORDER BY ABS(sort_no), sub_parent, link_description';
-							$result_sub = execute_query($sql_sub);
-							while ($row_sub = mysqli_fetch_assoc($result_sub)) {
-								// Render second-level items
-								echo '<li routerlinkactive="active" class="nav-item">';
+													// Fetch first-level children
+													$sql_sub = 'SELECT * FROM navigation WHERE admin_parent="' . $row['sno'] . '" ORDER BY ABS(sort_no), sub_parent, link_description';
+													$result_sub = execute_query($sql_sub);
+													while ($row_sub = mysqli_fetch_assoc($result_sub)) {
+														// Render second-level items
+														echo '<li routerlinkactive="active" class="nav-item">';
 
-								// Check if this second-level item has further children
-								$sql_sub_sub = 'SELECT * FROM navigation WHERE admin_sub_parent="' . $row_sub['sno'] . '"';
-								$result_sub_sub = execute_query($sql_sub_sub);
-								if (mysqli_num_rows($result_sub_sub) > 0) {
-									// If there are further children, create a collapsible item
-									echo '<a data-toggle="collapse" data-target="#sub' . $row_sub['sno'] . '" class="nav-link" href="#sub' . $row_sub['sno'] . '">
+														// Check if this second-level item has further children
+														$sql_sub_sub = 'SELECT * FROM navigation WHERE admin_sub_parent="' . $row_sub['sno'] . '"';
+														$result_sub_sub = execute_query($sql_sub_sub);
+														if (mysqli_num_rows($result_sub_sub) > 0) {
+															// If there are further children, create a collapsible item
+															echo '<a data-toggle="collapse" data-target="#sub' . $row_sub['sno'] . '" class="nav-link" href="#sub' . $row_sub['sno'] . '">
                                         <i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px;"></i>
                                         <p>' . $row_sub['link_description'] . '<b class="caret"></b></p>
                                       </a>
                                       <div class="collapse" id="sub' . $row_sub['sno'] . '">
                                           <ul class="nav">';
 
-									// Fetch second-level children
-									while ($row_sub_sub = mysqli_fetch_assoc($result_sub_sub)) {
-										echo '<li routerlinkactive="active" class="nav-item">
+															// Fetch second-level children
+															while ($row_sub_sub = mysqli_fetch_assoc($result_sub_sub)) {
+																echo '<li routerlinkactive="active" class="nav-item">
                                             <a class="nav-link" href="' . $row_sub_sub['hyper_link'] . '">
                                                 <i class="' . $row_sub_sub['icon_image'] . '" style="font-size:20px; margin-left:30px;"></i>
                                                 <p>' . $row_sub_sub['link_description'] . '</p>
                                             </a>
                                           </li>';
-									}
+															}
 
-									echo '</ul></div>'; // Close second-level children list
-								} else {
-									// No further children, render as a hyperlink
-									echo '<a class="nav-link" href="' . $row_sub['hyper_link'] . '">
+															echo '</ul></div>'; // Close second-level children list
+														} else {
+															// No further children, render as a hyperlink
+															echo '<a class="nav-link" href="' . $row_sub['hyper_link'] . '">
                                         <i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px;"></i>
                                         <p>' . $row_sub['link_description'] . '</p>
                                       </a>';
-								}
+														}
 
-								echo '</li>'; // Close second-level item
-							}
+														echo '</li>'; // Close second-level item
+													}
 
-							echo '</ul></div></li>'; // Close first-level item
-						}
-					}
-					?>
-				</ul>
-			</div>
-		</div>
+													echo '</ul></div></li>'; // Close first-level item
+												}
+											}
+											?>
+										</ul>
+									</div>
+								</div>
 
 
 
-				<div class="main-panel">
-					<nav class="navbar navbar-expand-lg ">
-						<div class="container-fluid">
-							<div class="navbar-wrapper">
-								<a class="navbar-brand page-title" href="#" style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
-							</div>
-							<span style="margin-left:15px; font-weight:bold; position: relative; top: -35px;">
-									<button class="navbar-toggler navbar-toggler-right text-end" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation" style="text-align:right;">
-										<span class="navbar-toggler-bar burger-lines"></span>
-										<span class="navbar-toggler-bar burger-lines"></span>
-										<span class="navbar-toggler-bar burger-lines"></span>
-									</button>
-								</span>
-							<div class="collapse navbar-collapse justify-content-end">
-								<ul class="nav navbar-nav mr-auto">
-									<li><form class="navbar-form navbar-left navbar-search-form" role="search">
-										<div class="input-group">
-											<i class="fab fa-sistrix"></i>
-											<input type="text" value="" class="form-control" placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
+								<div class="main-panel">
+									<nav class="navbar navbar-expand-lg ">
+										<div class="container-fluid">
+											<div class="navbar-wrapper">
+												<a class="navbar-brand page-title" href="#"
+													style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
+											</div>
+											<span style="margin-left:15px; font-weight:bold; position: relative; top: -35px;">
+												<button class="navbar-toggler navbar-toggler-right text-end" type="button"
+													data-toggle="collapse" aria-controls="navigation-index"
+													aria-expanded="false" aria-label="Toggle navigation"
+													style="text-align:right;">
+													<span class="navbar-toggler-bar burger-lines"></span>
+													<span class="navbar-toggler-bar burger-lines"></span>
+													<span class="navbar-toggler-bar burger-lines"></span>
+												</button>
+											</span>
+											<div class="collapse navbar-collapse justify-content-end">
+												<ul class="nav navbar-nav mr-auto">
+													<li>
+														<form class="navbar-form navbar-left navbar-search-form" role="search">
+															<div class="input-group">
+																<i class="fab fa-sistrix"></i>
+																<input type="text" value="" class="form-control"
+																	placeholder="Search... (Shortcut : Ctrl+/)"
+																	id="shortcut_command">
+															</div>
+														</form>
+													</li>
+												</ul>
+												<ul class="navbar-nav">
+													<li class="nav-item dropdown">
+														<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown"
+															aria-haspopup="true" aria-expanded="false" href="#"><button
+																class="btn btn-info"><i class="fa fa-user-lock"></i>
+																<?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp;
+														<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+															<a class="dropdown-item" href="#">Profile</a>
+															<a class="dropdown-item" href="#">Activity Log</a>
+															<div class="divider"></div>
+															<a class="dropdown-item" href="signout.php"><i
+																	class="fas fa-sign-out-alt"></i>Signout</a>
+														</div>
+													</li>
+													<li class="nav-item">
+														<a href="<?php echo returnlink("index.php", false); ?>"><button
+																class="btn btn-danger"><i class="fa fa-backward"></i>
+																Back</button></a>
+													</li>
+												</ul>
+											</div>
 										</div>
-										</form></li>
-								</ul>
-								<ul class="navbar-nav">
-									   <li class="nav-item dropdown"> 
-										<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="#"><button class="btn btn-info"><i class="fa fa-user-lock"></i> <?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp; 
-										<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-											<a class="dropdown-item" href="#">Profile</a>
-											<a class="dropdown-item" href="#">Activity Log</a>
-											<div class="divider"></div>
-											<a class="dropdown-item" href="signout.php"><i class="fas fa-sign-out-alt"></i>Signout</a>
-										</div>
-									</li>
-									<li class="nav-item">
-										<a href="<?php echo returnlink("index.php", false); ?>"><button class="btn btn-danger"><i class="fa fa-backward"></i> Back</button></a>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</nav>
-					<div class="content">
-						<div class="container-fluid">
-		<?php
-	} else {
-		?>	
-				<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
-				<!--
+									</nav>
+									<div class="content">
+										<div class="container-fluid">
+											<?php
+							} else {
+								?>
+											<div class="sidebar" data-color="red" data-image="images/sidebar-5.jpg">
+												<!--
 
 			Tip 1: you can change the color of the sidebar using: data-color="blue | azure | green | orange | red | purple"
 			Tip 2: you can also add an image using data-image tag
 		-->
-					<div class="sidebar-wrapper">
-						<div class="logo">
-							<a href="#" class="simple-text logo-mini"><span class="nc-icon nc-send"></span></a>
-							<a href="#" class="simple-text  logo-normal">Project Tracker&trade;</a>
-						</div>
+												<div class="sidebar-wrapper">
+													<div class="logo">
+														<a href="#" class="simple-text logo-mini"><span
+																class="nc-icon nc-send"></span></a>
+														<a href="#" class="simple-text  logo-normal">Project Tracker&trade;</a>
+													</div>
 
-						<ul class="nav">
-							<li routerlinkactive="active" class="nav-item active"><a class="nav-link" href="index.php"><i class="fa fa-chart-pie"></i><p>Dashboard</p></a>
-						<?php
-						$sql = 'select * from navigation where (parent is null or parent="" or parent="P") and hyper_link!="index.php" order by abs(sort_no), sub_parent, link_description';
-						$result = execute_query($sql);
-						$sub_parent = '';
-						while ($row = mysqli_fetch_array($result)) {
-							if ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) {
-								$active = ' active';
-							} else {
-								$active = '';
-							}
-							if ($_SESSION['username'] != 'sadmin') {
-								if ($row['parent'] == 'P') {
-									$sql = 'select group_concat(sno) as sno from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
-									// echo $sql.'<br>';
-									$row_sub = mysqli_fetch_assoc(execute_query($sql));
+													<ul class="nav">
+														<li routerlinkactive="active" class="nav-item active"><a
+																class="nav-link" href="index.php"><i
+																	class="fa fa-chart-pie"></i>
+																<p>Dashboard</p>
+															</a>
+															<?php
+															$sql = 'select * from navigation where (parent is null or parent="" or parent="P") and hyper_link!="index.php" order by abs(sort_no), sub_parent, link_description';
+															$result = execute_query($sql);
+															$sub_parent = '';
+															while ($row = mysqli_fetch_array($result)) {
+																if ($row['hyper_link'] == basename($_SERVER['PHP_SELF'])) {
+																	$active = ' active';
+																} else {
+																	$active = '';
+																}
+																if ($_SESSION['username'] != 'sadmin') {
+																	if ($row['parent'] == 'P') {
+																		$sql = 'select group_concat(sno) as sno from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
+																		// echo $sql.'<br>';
+																		$row_sub = mysqli_fetch_assoc(execute_query($sql));
 
-									$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name in (' . $row_sub['sno'] . ')';
-									//echo $sql.'<br><br>';
-									$result_child_count = execute_query($sql);
+																		$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name in (' . $row_sub['sno'] . ')';
+																		//echo $sql.'<br><br>';
+																		$result_child_count = execute_query($sql);
 
-									if (mysqli_num_rows($result_child_count) != 0) {
-										echo '
+																		if (mysqli_num_rows($result_child_count) != 0) {
+																			echo '
 									<li routerlinkactive="active" class="nav-item' . $active . '">
 										<!----><a data-toggle="collapse" data-target="#parent' . $row['sno'] . '" class="nav-link" href="#parent' . $row['sno'] . '" ><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '<b class="caret"></b></p></a>
 										<!---->
 										<div class="collapse" id="parent' . $row['sno'] . '">
 											<ul class="nav">';
 
-										$sql = 'select * from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
-										$result_sub = execute_query($sql);
-										while ($row_sub = mysqli_fetch_assoc($result_sub)) {
-											$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name="' . $row_sub['sno'] . '"';
-											//echo $sql;
-											$result_access = execute_query($sql);
-											if (mysqli_num_rows($result_access) == 1) {
-												echo '<li routerlinkactive="active' . $active . '" class="nav-item"><a class="nav-link" href="' . $row_sub['hyper_link'] . '"><i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px; margin-right:0px;"></i><span class="sidebar-mini"></span><span class="sidebar-normal">' . $row_sub['link_description'] . '</span></a>
+																			$sql = 'select * from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
+																			$result_sub = execute_query($sql);
+																			while ($row_sub = mysqli_fetch_assoc($result_sub)) {
+																				$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name="' . $row_sub['sno'] . '"';
+																				//echo $sql;
+																				$result_access = execute_query($sql);
+																				if (mysqli_num_rows($result_access) == 1) {
+																					echo '<li routerlinkactive="active' . $active . '" class="nav-item"><a class="nav-link" href="' . $row_sub['hyper_link'] . '"><i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px; margin-right:0px;"></i><span class="sidebar-mini"></span><span class="sidebar-normal">' . $row_sub['link_description'] . '</span></a>
 											</li>';
-											}
-										}
-										echo '
+																				}
+																			}
+																			echo '
 											</ul>
 										</div>
 										<!---->
 									</li>';
-									}
+																		}
 
-								} else {
-									$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name="' . $row['sno'] . '"';
-									//echo $sql;
-									$result_access = execute_query($sql);
-									if (mysqli_num_rows($result_access) == 1) {
-										echo '<li routerlinkactive="active" class="nav-item' . $active . '"><a class="nav-link" href="' . $row['hyper_link'] . '"><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '</p></a></li>';
-									}
-								}
-							} else {
-								if ($row['parent'] != "P") {
-									echo '<li routerlinkactive="active" class="nav-item' . $active . '"><a class="nav-link" href="' . $row['hyper_link'] . '"><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '</p></a></li>';
-								} else {
-									echo '
+																	} else {
+																		$sql = 'select * from user_access where user_id="' . $_SESSION['usertype'] . '" and file_name="' . $row['sno'] . '"';
+																		//echo $sql;
+																		$result_access = execute_query($sql);
+																		if (mysqli_num_rows($result_access) == 1) {
+																			echo '<li routerlinkactive="active" class="nav-item' . $active . '"><a class="nav-link" href="' . $row['hyper_link'] . '"><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '</p></a></li>';
+																		}
+																	}
+																} else {
+																	if ($row['parent'] != "P") {
+																		echo '<li routerlinkactive="active" class="nav-item' . $active . '"><a class="nav-link" href="' . $row['hyper_link'] . '"><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '</p></a></li>';
+																	} else {
+																		echo '
 								<li routerlinkactive="active" class="nav-item' . $active . '">
 									<!----><a data-toggle="collapse" data-target="#parent' . $row['sno'] . '" class="nav-link" href="#parent' . $row['sno'] . '" ><i class="' . $row['icon_image'] . '"></i><p>' . $row['link_description'] . '<b class="caret"></b></p></a>
 									<!---->
 									<div class="collapse" id="parent' . $row['sno'] . '">
 										<ul class="nav">';
 
-									$sql = 'select * from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
-									$result_sub = execute_query($sql);
-									while ($row_sub = mysqli_fetch_assoc($result_sub)) {
-										echo '<li routerlinkactive="active' . $active . '" class="nav-item"><a class="nav-link" href="' . $row_sub['hyper_link'] . '"><i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px; margin-right:0px;"></i><span class="sidebar-mini"></span><span class="sidebar-normal">' . $row_sub['link_description'] . '</span></a>
+																		$sql = 'select * from navigation where parent="' . $row['sno'] . '" order by abs(sort_no), sub_parent, link_description';
+																		$result_sub = execute_query($sql);
+																		while ($row_sub = mysqli_fetch_assoc($result_sub)) {
+																			echo '<li routerlinkactive="active' . $active . '" class="nav-item"><a class="nav-link" href="' . $row_sub['hyper_link'] . '"><i class="' . $row_sub['icon_image'] . '" style="font-size:20px; margin-left:15px; margin-right:0px;"></i><span class="sidebar-mini"></span><span class="sidebar-normal">' . $row_sub['link_description'] . '</span></a>
 											</li>';
-									}
-									echo '
+																		}
+																		echo '
 										</ul>
 									</div>
 									<!---->
 								</li>';
-								}
+																	}
 
+																}
+															}
+
+															?>
+													</ul>
+												</div>
+											</div>
+											<div class="main-panel">
+												<nav class="navbar navbar-expand-lg ">
+													<div class="container-fluid">
+														<div class="navbar-wrapper">
+															<a class="navbar-brand page-title" href="#"
+																style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
+														</div>
+														<button class="navbar-toggler navbar-toggler-right" type="button"
+															data-toggle="collapse" aria-controls="navigation-index"
+															aria-expanded="false" aria-label="Toggle navigation">
+															<span class="navbar-toggler-bar burger-lines"></span>
+															<span class="navbar-toggler-bar burger-lines"></span>
+															<span class="navbar-toggler-bar burger-lines"></span>
+														</button>
+														<div class="collapse navbar-collapse justify-content-end">
+															<ul class="nav navbar-nav mr-auto">
+																<li>
+																	<form class="navbar-form navbar-left navbar-search-form"
+																		role="search">
+																		<div class="input-group">
+																			<i class="fab fa-sistrix"></i>
+																			<input type="text" value="" class="form-control"
+																				placeholder="Search... (Shortcut : Ctrl+/)"
+																				id="shortcut_command">
+																		</div>
+																	</form>
+																</li>
+															</ul>
+															<ul class="navbar-nav">
+																<li class="nav-item dropdown">
+																	<a class="" id="navbarDropdownMenuLink"
+																		data-toggle="dropdown" aria-haspopup="true"
+																		aria-expanded="false" href="#"><button
+																			class="btn btn-info"><i class="fa fa-user-lock"></i>
+																			<?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp;
+																	<div class="dropdown-menu"
+																		aria-labelledby="navbarDropdownMenuLink">
+																		<a class="dropdown-item" href="#">Profile</a>
+																		<a class="dropdown-item" href="#">Activity Log</a>
+																		<div class="divider"></div>
+																		<a class="dropdown-item" href="signout.php"><i
+																				class="fas fa-sign-out-alt"></i>Signout</a>
+																	</div>
+																</li>
+																<li class="nav-item">
+																	<a href="<?php echo returnlink("index.php", false); ?>"><button
+																			class="btn btn-danger"><i
+																				class="fa fa-backward"></i> Back</button></a>
+																</li>
+															</ul>
+														</div>
+													</div>
+												</nav>
+												<div class="content">
+													<div class="container-fluid">
+
+
+														<?php
 							}
-						}
+							?>
+													<?php
 
-						?>
-						</ul>
-					</div>
-				</div>
-				<div class="main-panel">
-					<nav class="navbar navbar-expand-lg ">
-						<div class="container-fluid">
-							<div class="navbar-wrapper">
-								<a class="navbar-brand page-title" href="#" style="font-size:24px; color:#F83A3D"><?php echo $GLOBALS['title']; ?></a>
-							</div>
-							<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-								<span class="navbar-toggler-bar burger-lines"></span>
-							</button>
-							<div class="collapse navbar-collapse justify-content-end">
-								<ul class="nav navbar-nav mr-auto">
-									<li><form class="navbar-form navbar-left navbar-search-form" role="search">
-										<div class="input-group">
-											<i class="fab fa-sistrix"></i>
-											<input type="text" value="" class="form-control" placeholder="Search... (Shortcut : Ctrl+/)" id="shortcut_command">
-										</div>
-										</form></li>
-								</ul>
-								<ul class="navbar-nav">
-									   <li class="nav-item dropdown"> 
-										<a class="" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="#"><button class="btn btn-info"><i class="fa fa-user-lock"></i> <?php echo $_SESSION['unit_name']; ?></button></a>&nbsp;|&nbsp; 
-										<div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-											<a class="dropdown-item" href="#">Profile</a>
-											<a class="dropdown-item" href="#">Activity Log</a>
-											<div class="divider"></div>
-											<a class="dropdown-item" href="signout.php"><i class="fas fa-sign-out-alt"></i>Signout</a>
-										</div>
-									</li>
-									<li class="nav-item">
-										<a href="<?php echo returnlink("index.php", false); ?>"><button class="btn btn-danger"><i class="fa fa-backward"></i> Back</button></a>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</nav>
-					<div class="content">
-						<div class="container-fluid">
-
-	
-	<?php
-	}
-	?>		
-	<?php
-
-	$time_track[] = microtime(true);
+													$time_track[] = microtime(true);
 }
 function page_footer_start()
 {
 
 	?>
-					</div>
-				</div>
-				<footer class="footer">
-					<div class="container-fluid">
-						<nav class="pull-left">
-							<ul>
-								<li>
-									<a href="#">
-										Home
-									</a>
-								</li>
-							</ul>
-						</nav>
-						<p class="copyright text-center">
-							©
-							<script>
-								document.write(new Date().getFullYear())
-							</script>
-							<a href="http://www.weknowtech.in" target="_blank"><img src="images/logo-15.png" class="img-rounded"> Weknow Technologies</a>
-						</p>
-					</div>
-				</footer>
-			</div>
-		</div>
-	<?php
+												</div>
+											</div>
+											<footer class="footer">
+												<div class="container-fluid">
+													<nav class="pull-left">
+														<ul>
+															<li>
+																<a href="#">
+																	Home
+																</a>
+															</li>
+														</ul>
+													</nav>
+													<p class="copyright text-center">
+														©
+														<script>
+															document.write(new Date().getFullYear())
+														</script>
+														<a href="http://www.weknowtech.in" target="_blank"><img
+																src="images/logo-15.png" class="img-rounded"> Weknow
+															Technologies</a>
+													</p>
+												</div>
+											</footer>
+										</div>
+									</div>
+									<?php
 }
 function page_footer_end()
 {
 	global $client_details;
 	?>
-		<!--  Notifications Plugin    -->
-		<script src="js/bootstrap-notify.js"></script>
-		<script src="js/light-bootstrap-dashboard.js"></script>
-		<script src="dataTables/datatables.min.js"></script>
-		<script src="js/demo.js"></script>
-	
-		<!--  Google Maps Plugin    -->
-	   <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>-->
+									<!--  Notifications Plugin    -->
+									<script src="js/bootstrap-notify.js"></script>
+									<script src="js/light-bootstrap-dashboard.js"></script>
+									<!-- dataTables inclusion removed to prevent clobbering global head scripts -->
+									<script src="js/demo.js"></script>
+
+									<!--  Google Maps Plugin    -->
+									<!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>-->
 
 
-	<script>
-		$(document).ready(function() {
-			// action on key up
-			$(document).keyup(function(e) {
-				if(e.which == 17) {
-					isCtrl = false;
-				}
-			});
-			$(document).keyup(function(e) {
-				if(e.which == 18) {
-					isAlt = false;
-				}
-			});
-			// action on key down 17, 18, 82
-			$(document).keydown(function(e) {
-				if(e.which == 17) {
-					isCtrl = true; 
-				}
-				if(e.which == 18) {
-					isAlt = true; 
-				}
-				if(e.which == 191 && isCtrl) { 
-					//console.log($("#shortcut_command"));
-					$("#shortcut_command").focus();				
-				} 
-				if(e.which == 89 && isCtrl && isAlt) {
-					if(form_type=='sale'){
-						if($("#supplier_sno").val()==''){
-							alert("Please select a customer.");
-							$("#supplier").focus();
-							return;
-						}
-						var current = $("#current").val();
-						var part = "part_desc"+current;
-						var parent_tr = $("input[name="+part+"_product]").closest('tr');
-						if(parent_tr.css("background-color")=='rgb(255, 0, 0)'){
-							parent_tr.css("background-color", "#cccccc");
-							$("#part_desc"+current+"_return_flag").val("0");
-						}
-						else{
-							parent_tr.css("background-color", "#FF0000");
-							$("#part_desc"+current+"_return_flag").val("1");
-						}
-					}
-				} 
-			});
+									<script>
+										$(document).ready(function () {
+											// action on key up
+											$(document).keyup(function (e) {
+												if (e.which == 17) {
+													isCtrl = false;
+												}
+											});
+											$(document).keyup(function (e) {
+												if (e.which == 18) {
+													isAlt = false;
+												}
+											});
+											// action on key down 17, 18, 82
+											$(document).keydown(function (e) {
+												if (e.which == 17) {
+													isCtrl = true;
+												}
+												if (e.which == 18) {
+													isAlt = true;
+												}
+												if (e.which == 191 && isCtrl) {
+													//console.log($("#shortcut_command"));
+													$("#shortcut_command").focus();
+												}
+												if (e.which == 89 && isCtrl && isAlt) {
+													if (form_type == 'sale') {
+														if ($("#supplier_sno").val() == '') {
+															alert("Please select a customer.");
+															$("#supplier").focus();
+															return;
+														}
+														var current = $("#current").val();
+														var part = "part_desc" + current;
+														var parent_tr = $("input[name=" + part + "_product]").closest('tr');
+														if (parent_tr.css("background-color") == 'rgb(255, 0, 0)') {
+															parent_tr.css("background-color", "#cccccc");
+															$("#part_desc" + current + "_return_flag").val("0");
+														}
+														else {
+															parent_tr.css("background-color", "#FF0000");
+															$("#part_desc" + current + "_return_flag").val("1");
+														}
+													}
+												}
+											});
 
-		});
-		</script>
-	<?php
-	echo '
-	<div class="clear" class="no-print"></div>
-        <div id="footerstick" class="no-print">
-            <div id="footercontent">
-				<div id="support">
-                    <strong>Helpdesk : <a href="http://www.weknowtech.in">Weknow Technologies</a></strong><br/>
-                    M : +91-9554969771 to 779<br />
-                </div>
-            </div>
-        </div>
-    </div>
-	
-</body>
-</html>';
+										});
+									</script>
+									<?php
 }
 
 function pagecount($sql, $script, $active)
@@ -1840,7 +1916,7 @@ function logvalidate($fileid = '')
 	$sql = 'select * from navigation where sno="' . $fileid . '"';
 	$result_parent = execute_query($sql);
 	$row_parent = mysqli_fetch_array($result_parent);
-	if ($row_parent['parent'] == "P") {
+	if ($row_parent && isset($row_parent['parent']) && $row_parent['parent'] == "P") {
 		$sql = 'update session set last_active="' . time() . '" where s_id="' . $_SESSION['session_id'] . '"';
 		execute_query($sql);
 		return true;
@@ -1903,7 +1979,7 @@ function int_to_words($x)
 			if ($r > 0) {
 				$w .= ' ';
 				if ($r < 100) {
-					$word .= 'and ';
+					$w .= 'and ';
 				}
 				$w .= int_to_words($r);
 			}
@@ -2023,4 +2099,16 @@ function get_department($id)
 	}
 }
 
+function customRound($number)
+{
+	if ((float) $number == 0) {
+		return $number;
+	}
+	$int = floor($number);
+	$decimal = (float) $number - $int;
+	if ($decimal == 0) {
+		return number_format($int, 2, '.', '');
+	}
+	return ($decimal < 0.50) ? number_format($int + 0.50, 2, '.', '') : number_format($int + 1, 2, '.', '');
+}
 ?>

@@ -145,9 +145,10 @@ page_sidebar();
                     <tbody>
                     <?php
                     
+                    $divisions_list = !empty($_SESSION['divisions']) ? implode(",", $_SESSION['divisions']) : "0";
                     $sql = "SELECT * 
 						FROM cloudice_uprnss.uprnss_project_temp 
-						WHERE division_id IN (".implode(",", $_SESSION['divisions']).")  
+						WHERE division_id IN ($divisions_list)  
 						  AND status != '5' 
 						  AND erp_code IS NOT NULL 
 						  AND erp_code != ''";
@@ -178,12 +179,7 @@ page_sidebar();
 								//    echo $sqlEmb;
 						$resEmb = mysqli_query($db_emb, $sqlEmb);
 
-						if (mysqli_error($db_emb)) {
-							echo "<p style='color:red;'>Error: " . mysqli_error($db_emb) . "</p>";
-						}
-						// echo '@@@@@@@@'.mysqli_num_rows($resEmb).'<br>';
 						if (mysqli_num_rows($resEmb) > 0) {
-							echo "<p style='color:red;'>Skip</p>";
 							goto skip;
 						}
 

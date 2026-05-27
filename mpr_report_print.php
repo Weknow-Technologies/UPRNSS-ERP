@@ -20,9 +20,23 @@ else{
     
 </head>
 <style>
-	table, th, td{
-		border:1px solid black;
+	table, th, td {
+		border: 1px solid black;
 		border-collapse: collapse;
+		font-size: 12px;
+	}
+	@media print {
+		@page {
+			size: A3 landscape;
+			margin: 10mm;
+		}
+		body {
+			zoom: 110%;
+			-webkit-print-color-adjust: exact;
+		}
+		table {
+			width: 100%;
+		}
 	}
 </style>
 <body>
@@ -87,15 +101,13 @@ else{
 						$sql .= ' and '.$_POST['date_type'].'>="'.$_POST['date_from'].'" and '.$_POST['date_type'].'<"'.date('Y-m-d', strtotime($_POST['date_to'].'+1 day')).'"';
 						}
 					}
-					$sql .= '
-
-					order by abs(uprnss_project_temp.division_id)';
-					// echo $sql;
+					$sql .= ' order by abs(uprnss_project_temp.division_id)';
+					
 					$result_div = execute_query($sql);
-					//echo '<br><br>'.mysqli_error($db);
 					$div = '';
-					$final_txt = '';
 					$a=1;
+					$table_started = false;
+
 					while($row_project = mysqli_fetch_assoc($result_div)){
 						$sql = 'select * from master_projoect_status_1 where sno="'.$row_project['project_status_1'].'"';
 						$invoice_project_status  = execute_query($sql);
@@ -107,8 +119,7 @@ else{
 							$invoice_project_status['status_1'] = '';
 						}
 					
-						if($div == ''){
-							echo '<h4>'.$row_project['division_name'].'</h4>';
+						if(!$table_started){
 							echo '<table class="table table-striped table-bordered table-hover">
 							<thead>
 								<tr>
@@ -147,93 +158,37 @@ else{
 							echo '</tr>
 							</thead>
 							<tbody>';
-							$div = $row_project['division_id'];
+							$table_started = true;
 						}
 						if($div != $row_project['division_id']){
 							$div = $row_project['division_id'];
-							echo $final_txt.'</tbody>
-							</table>';
-							echo '<h4>'.$row_project['division_name'].'</h4>';
-							echo '<table class="table table-striped table-bordered table-hover">
-							<thead>
-								<tr>
-									<th rowspan="2">क्रम.</th>
-									<th rowspan="2">जनपद का नाम</th>
-									<th rowspan="2">विभाग का नाम</th>
-									<th rowspan="2">परियोजना का नाम</th>
-									<th rowspan="2">स्वीकृति की तिथि/शासनादेश संख्या </th>
-									<th rowspan="2">भूमि प्राप्त एवं कार्य प्रारम्भ की तिथि</th>
-									<th rowspan="2">योजना की मूल लागत</th>
-									<th rowspan="2">तकनीकी स्वीकृति का क्रमांक एवं दिनांक </th>
-									<th rowspan="2">पुनरीक्षित आगणन की लागत </th>
-									<th rowspan="2">माह प्राप्त धनराशि व दिनांक </th>
-									<th rowspan="2">कुल प्राप्त धनराशि</th>
-									<th rowspan="2">अवशेष धनराशि (परियोजना लागत के सापेक्ष)</th>
-									<th colspan="3">व्यय धनराशि </th>
-									<th rowspan="2">परियोजना पर शेष धनराशि (अवमुक्त के सापेक्ष)</th>
-									<th colspan="2">भौतिक प्रगति </th>
-									<th rowspan="2">कार्य पूर्णतः की तिथि </th>
-									<th rowspan="2">भौतिक प्रगति प्रतिशत में</th>
-									<th rowspan="2">उपयोगिता प्रमाण पत्र की अद्यतन स्थिति दिनांक सहित </th>
-									<th rowspan="2">पुनरीक्षित की स्थिति धनराशि दिनांक सहित </th>
-									<th rowspan="2">परियोजना की स्थिति </th>
-									<th rowspan="2">अभ्युक्ति </th>
-								</tr>
-								<tr>
-									<th>परियोजना पर माह मे व्यय </th>
-									<th>परियोजना पर कुल व्यय </th>
-									<th>वित्तीय वर्ष मे व्यय </th>
-									<th>भवन की इकाई (विस्तृत)</th>
-									<th>कार्य का स्तर</th>
-								</tr><tr>';
-							for($i=1; $i<=24; $i++){
-								echo '<td>'.$i.'</td>';
-							}
-							echo '</tr>
-							</thead>
-							<tbody>';
-							$final_txt = '';
+							echo '<tr class="group-header" style="background-color: #f1f1f1;"><td colspan="24" style="text-align: left; font-weight: bold; font-size: 16px;">'.$row_project['division_name'].'</td></tr>';
 						}
 						$tot_rcpt = 0;
-						$tot_exp = 0;
 						$row_project['sanction_cost'] = (float)($row_project['sanction_cost']!=''?$row_project['sanction_cost'].' (लाख)':'');
+						
 						$sql = 'select * from transaction_civil_receipts where invoice_id="'.$row_project['sno'].'"';
-						//echo $sql.'<br>';
 						$result_rcpt = execute_query($sql);
 						$rcpt_txt = '<td><table>';
 						if(mysqli_num_rows($result_rcpt)!=0){
-							$count_rcpt = mysqli_num_rows($result_rcpt);
 							while($row_rcpt = mysqli_fetch_assoc($result_rcpt)){
 								$rcpt_txt .= '<tr><td>'.$row_rcpt['transaction_date'].'</td><td>'.$row_rcpt['transaction_amount'].'</td></tr>';
 								$tot_rcpt += (float)$row_rcpt['transaction_amount'];
-
 							}
-
 						}
+						$rcpt_txt .= '</table></td>';
 
-						else{
-
-							$count_rcpt=0;
-
-						}
-
-						$rcpt_txt .= '</table></td>
-						<td>'.$tot_rcpt.'</td>
-						<td>'.$row_project['balance_amt_cost'].'</td>';
 						$sql = 'select * from transaction_civil_activities where invoice_id="'.$row_project['sno'].'"';
 						$result_act = execute_query($sql);
 						$act_txt = '<td colspan="2"><table>';
 						if(mysqli_num_rows($result_act)!=0){
-							$count_act = mysqli_num_rows($result_act);
 							while($row_act = mysqli_fetch_assoc($result_act)){
 								$act_txt .= '<tr><td>'.$row_act['activity'].'</td><td>'.$row_act['cummulative_physical_progress'].'</td></tr>';
 							}
 						}
-						else{
-							$count_act = 0;
-						}
 						$act_txt .= '</table></td>';
-						$final_txt .= '<tr>
+						
+						echo '<tr>
 						<td>'.$a++.'</td>
 						<td>'.$row_project['district_name_hindi'].'</td>
 						<td>'.$row_project['department_name_hindi'].'</td>
@@ -243,22 +198,25 @@ else{
 						<td>'.$row_project['sanction_cost'].'</td>
 						<td>'.$row_project['technical_sanction_date'].' '.$row_project['technical_sanction_no'].'</td>
 						<td>'.$row_project['revised_date'].' '.$row_project['revised_cost'].'</td>';
-						$final_txt .= $rcpt_txt;
-						$final_txt .= '<td>'.$row_project['current_month_exp'].'</td>';
-						$final_txt .= '<td>'.$row_project['tot_exp_project'].'</td>';
-						$final_txt .= '<td>'.$row_project['current_fy_tot_exp'].'</td>';
-						$final_txt .= '<td>'.$row_project['balance_amt_project'].'</td>';
-						$final_txt .= $act_txt;
-						$final_txt .= '<td>'.$row_project['work_completion_date'].'</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>'.$invoice_project_status['status_1'].'</td>';
-						$final_txt .= '<td>'.$row_project['remark'].'</td>';
-						$final_txt .= '</tr>';
+						echo $rcpt_txt;
+						echo '<td>'.$tot_rcpt.'</td>';
+						echo '<td>'.$row_project['balance_amt_cost'].'</td>';
+						echo '<td>'.$row_project['current_month_exp'].'</td>';
+						echo '<td>'.$row_project['tot_exp_project'].'</td>';
+						echo '<td>'.$row_project['current_fy_tot_exp'].'</td>';
+						echo '<td>'.$row_project['balance_amt_project'].'</td>';
+						echo $act_txt;
+						echo '<td>'.$row_project['work_completion_date'].'</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>'.$invoice_project_status['status_1'].'</td>';
+						echo '<td>'.$row_project['remark'].'</td>';
+						echo '</tr>';
 					}
-				echo $final_txt.'</tbody>
-							</table>';
+					if($table_started){
+						echo '</tbody></table>';
+					}
 				}
 				break;
 				case '2':{
@@ -319,16 +277,14 @@ else{
 						}
 					}
 					
-				
-					$sql .= '
-					and (uprnss_project_temp.status="0" or uprnss_project_temp.status is null or uprnss_project_temp.status="1")
-					order by (department_id)';
-					//echo $sql;
+					$sql .= ' and (uprnss_project_temp.status="0" or uprnss_project_temp.status is null or uprnss_project_temp.status="1")
+							order by (department_id)';
+					
 					$result_depart = execute_query($sql);
-					// echo '<br><br>'.mysqli_error($db);
 					$dep = '';
-					$final_txt = '';
 					$a=1;
+					$table_started = false;
+
 					while($row_project = mysqli_fetch_assoc($result_depart)){
 						$sql = 'select * from master_projoect_status_1 where sno="'.$row_project['project_status_1'].'"';
 						$invoice_project_status  = execute_query($sql);
@@ -340,8 +296,7 @@ else{
 							$invoice_project_status['status_1'] = '';
 						}
 						
-						if($dep == ''){
-							echo '<h4>'.$row_project['department_name_hindi'].'</h4>';
+						if(!$table_started){
 							echo '<table class="table table-striped table-bordered table-hover">
 							<thead>
 								<tr>
@@ -378,133 +333,72 @@ else{
 							for($i=1; $i<=24; $i++){
 								echo '<td>'.$i.'</td>';
 							}
-
 							echo '</tr>
-
 							</thead>
 							<tbody>';
-							$dep = $row_project['department_id'];
+							$table_started = true;
 						}
+						
 						if($dep != $row_project['department_id']){
 							$dep = $row_project['department_id'];
-							echo $final_txt.'</tbody>
-							</table>';
-							echo '<h4>'.$row_project['department_name_hindi'].'</h4>';
-							echo '<table class="table table-striped table-bordered table-hover">
-							<thead>
-								<tr>
-									<th rowspan="2">क्रम.</th>
-									<th rowspan="2">प्रखण्ड का नाम</th>
-									<th rowspan="2">जनपद का नाम</th>
-									
-									<th rowspan="2">परियोजना का नाम</th>
-									<th rowspan="2">स्वीकृति की तिथि/शासनादेश संख्या </th>
-									<th rowspan="2">भूमि प्राप्त एवं कार्य प्रारम्भ की तिथि</th>
-									<th rowspan="2">योजना की मूल लागत</th>
-									<th rowspan="2">तकनीकी स्वीकृति का क्रमांक एवं दिनांक </th>
-									<th rowspan="2">पुनरीक्षित आगणन की लागत </th>
-									<th rowspan="2">माह प्राप्त धनराशि व दिनांक </th>
-									<th rowspan="2">कुल प्राप्त धनराशि</th>
-									<th rowspan="2">अवशेष धनराशि (परियोजना लागत के सापेक्ष)</th>
-									<th colspan="3">व्यय धनराशि </th>
-									<th rowspan="2">परियोजना पर शेष धनराशि (अवमुक्त के सापेक्ष)</th>
-									<th colspan="2">भौतिक प्रगति </th>
-									<th rowspan="2">कार्य पूर्णतः की तिथि </th>
-									<th rowspan="2">भौतिक प्रगति प्रतिशत में</th>
-									<th rowspan="2">उपयोगिता प्रमाण पत्र की अद्यतन स्थिति दिनांक सहित </th>
-									<th rowspan="2">पुनरीक्षित की स्थिति धनराशि दिनांक सहित </th>
-									<th rowspan="2">परियोजना की स्थिति </th>
-									<th rowspan="2">अभ्युक्ति </th>
-								</tr>
-								<tr>
-									<th>परियोजना पर माह मे व्यय </th>
-									<th>परियोजना पर कुल व्यय </th>
-									<th>वित्तीय वर्ष मे व्यय </th>
-									<th>भवन की इकाई (विस्तृत)</th>
-									<th>कार्य का स्तर</th>
-								</tr><tr>';
-							for($i=1; $i<=24; $i++){
-								echo '<td>'.$i.'</td>';
-							}
-
-							echo '</tr>
-
-							</thead>
-							<tbody>';
-							$final_txt = '';
-
+							echo '<tr class="group-header" style="background-color: #f1f1f1;"><td colspan="24" style="text-align: left; font-weight: bold; font-size: 16px;">'.$row_project['department_name_hindi'].'</td></tr>';
 						}
+						
 						$tot_rcpt = 0;
-						$tot_exp = 0;
-
 						$row_project['sanction_cost'] = (float)($row_project['sanction_cost']!=''?$row_project['sanction_cost'].' (लाख)':'');
 
-
 						$sql = 'select * from transaction_civil_receipts where invoice_id="'.$row_project['sno'].'"';
-						//echo $sql.'<br>';
 						$result_rcpt = execute_query($sql);
 						$rcpt_txt = '<td><table>';
 						if(mysqli_num_rows($result_rcpt)!=0){
-							$count_rcpt = mysqli_num_rows($result_rcpt);
 							while($row_rcpt = mysqli_fetch_assoc($result_rcpt)){
 								$rcpt_txt .= '<tr><td>'.$row_rcpt['transaction_date'].'</td><td>'.$row_rcpt['transaction_amount'].'</td></tr>';
 								$tot_rcpt += (float)$row_rcpt['transaction_amount'];
 							}
 						}
-						else{
-							$count_rcpt=0;
-						}
-						$rcpt_txt .= '</table></td>
-						<td>'.$tot_rcpt.'</td>
-						<td>'.$row_project['balance_amt_cost'].'</td>';
+						$rcpt_txt .= '</table></td>';
 
 						$sql = 'select * from transaction_civil_activities where invoice_id="'.$row_project['sno'].'"';
 						$result_act = execute_query($sql);
 						$act_txt = '<td colspan="2"><table>';
 						if(mysqli_num_rows($result_act)!=0){
-							$count_act = mysqli_num_rows($result_act);
 							while($row_act = mysqli_fetch_assoc($result_act)){
 								$act_txt .= '<tr><td>'.$row_act['activity'].'</td><td>'.$row_act['cummulative_physical_progress'].'</td></tr>';
 							}
 						}
-						else{
-							$count_act = 0;
-						}
 						$act_txt .= '</table></td>';
 
-
-						$final_txt .= '<tr>
+						echo '<tr>
 						<td>'.$a++.'</td>
 						<td>'.$row_project['division_name'].'</td>
 						<td>'.$row_project['district_name_hindi'].'</td>
-						
 						<td>'.$row_project['project_name_hindi'].'</td>
 						<td>'.$row_project['admin_go_date'].' '.$row_project['admin_go_no'].'</td>
 						<td>'.$row_project['land_receive_date'].'</td>
 						<td>'.$row_project['sanction_cost'].'</td>
 						<td>'.$row_project['technical_sanction_date'].' '.$row_project['technical_sanction_no'].'</td>
 						<td>'.$row_project['revised_date'].' '.$row_project['revised_cost'].'</td>';
-						$final_txt .= $rcpt_txt;
-
-						$final_txt .= '<td>'.$row_project['current_month_exp'].'</td>';
-						$final_txt .= '<td>'.$row_project['tot_exp_project'].'</td>';
-						$final_txt .= '<td>'.$row_project['current_fy_tot_exp'].'</td>';
-						$final_txt .= '<td>'.$row_project['balance_amt_project'].'</td>';
-
-						$final_txt .= $act_txt;
-						$final_txt .= '<td>'.$row_project['work_completion_date'].'</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>&nbsp;</td>';
-						$final_txt .= '<td>'.$invoice_project_status['status_1'].'</td>';
-						$final_txt .= '<td>'.$row_project['remark'].'</td>';
-						$final_txt .= '</tr>';
-
-						$final_txt .= '</tr>';
+						echo $rcpt_txt;
+						echo '<td>'.$tot_rcpt.'</td>';
+						echo '<td>'.$row_project['balance_amt_cost'].'</td>';
+						echo '<td>'.$row_project['current_month_exp'].'</td>';
+						echo '<td>'.$row_project['tot_exp_project'].'</td>';
+						echo '<td>'.$row_project['current_fy_tot_exp'].'</td>';
+						echo '<td>'.$row_project['balance_amt_project'].'</td>';
+						echo $act_txt;
+						echo '<td>'.$row_project['work_completion_date'].'</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>&nbsp;</td>';
+						echo '<td>'.$invoice_project_status['status_1'].'</td>';
+						echo '<td>'.$row_project['remark'].'</td>';
+						echo '</tr>';
 
 					}
-				echo $final_txt.'</tbody>
-							</table>';	
+					if($table_started){
+						echo '</tbody></table>';
+					}
+	
 				}
 					break;
 			}

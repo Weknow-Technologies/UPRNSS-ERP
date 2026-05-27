@@ -15,10 +15,10 @@ if (isset($_REQUEST['id'])) {
 }
 $data = array();
 
-if ($id == 'get_ledger'){
-    $sno = $_POST['sno'];
-    echo get_ledger($sno);
-    exit;
+if ($id == 'get_ledger') {
+	$sno = $_POST['sno'];
+	echo get_ledger($sno);
+	exit;
 }
 
 if ($id == 'villages') {
@@ -130,7 +130,7 @@ if ($id == 'villages') {
 
 } elseif ($id == 'unit_bank') {
 
-	$sql = 'select * from billit_customer where parent ="1" and unit_id="' . $_POST['val'] . '"';
+	$sql = 'select * from billit_customer where unit_id="' . $_POST['val'] . '" and (parent ="1" or (account_no is not null and account_no != ""))';
 	// echo $sql;
 	$result = execute_query($sql);
 	while ($row = mysqli_fetch_assoc($result)) {

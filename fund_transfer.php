@@ -785,7 +785,7 @@ if (isset($_GET['id'])) {
 								</select>
 							</div>
 						</div>
-						<div class="col-md-1">
+						<!-- <div class="col-md-1">
 							<div class="form-group">
 								<label>Add/Ded. </label>
 								<select class="form-control" name="other_add_ded" id="other_add_ded"
@@ -795,7 +795,7 @@ if (isset($_GET['id'])) {
 									<option value="Deducted">Deducted</option>
 								</select>
 							</div>
-						</div>
+						</div> -->
 						<div class="col-md-2">
 							<div class="form-group">
 								<label>Other Amount</label>
@@ -953,6 +953,16 @@ if (isset($_GET['id'])) {
 		return true;
 	}
 
+	/* ---------- 50 paise rounding rule (same as fund_recive.php) ---------- */
+	function customRound(number) {
+		number = Number(number);
+		if (number === 0) return number;
+		var int = Math.floor(number);
+		var decimal = number - int;
+		if (decimal === 0) return int.toFixed(2);
+		return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
+	}
+
 	//calculation of fund transfer
 	function findcalculation() {
 
@@ -1020,11 +1030,7 @@ if (isset($_GET['id'])) {
 		if (!security_per) {
 			security_per = 0;
 		}
-		let otherAmount = parseFloat(document.getElementById("other_amount").value);
-		otherAmount = parseFloat(otherAmount);
-		if (!otherAmount) {
-			otherAmount = 0;
-		}
+		// otherAmount will be read after the percentage block below
 
 		let royalty = parseFloat(document.getElementById("royalty").value);
 		royalty = parseFloat(royalty);
@@ -1049,8 +1055,8 @@ if (isset($_GET['id'])) {
 		document.getElementById('gstdeduction').value = gstdeductionres;
 
 		// Split GST into CGST and SGST (50% each)
-		var cgst_amount = (gstdeductionres / 2).toFixed();
-		var sgst_amount = (gstdeductionres / 2).toFixed();
+		var cgst_amount = (gstdeductionres / 2).toFixed(2);
+		var sgst_amount = (gstdeductionres / 2).toFixed(2);
 		document.getElementById('cgst_amount').value = cgst_amount;
 		document.getElementById('sgst_amount').value = sgst_amount;
 
@@ -1074,13 +1080,19 @@ if (isset($_GET['id'])) {
 		if (otherPer === 'amt') {
 			// Enable manual entry
 			otherAmountInput.readOnly = false;
-		} else {
+		} else if (otherPer !== '' && !isNaN(parseFloat(otherPer))) {
 			// Auto-calculate percentage of transferAmount
 			var percent = parseFloat(otherPer);
 			var calculatedAmount = (transafer_amount * percent) / 100;
 			otherAmountInput.value = calculatedAmount.toFixed();
 			otherAmountInput.readOnly = true;
+		} else {
+			// No percentage selected - allow manual entry
+			otherAmountInput.readOnly = false;
 		}
+
+		// Read final value of Other Amount for deduction
+		var otherAmount = parseFloat(otherAmountInput.value) || 0;
 
 		var abcd = parseFloat(royalty) + parseFloat(incometaxres) + parseFloat(securityres) + parseFloat(gsttdsres) + parseFloat(leborsesres);
 		abcd = abcd.toFixed(2);
@@ -1088,18 +1100,6 @@ if (isset($_GET['id'])) {
 		var total_withgst_amt = parseFloat(transafer_amount) + parseFloat(gstdeductionres);
 		total_withgst_amt = total_withgst_amt.toFixed();
 		document.getElementById('total_withgst').value = total_withgst_amt;
-
-		// NET Payment calculation
-		var type = document.getElementById('other_add_ded').value;
-		if (type === 'Add') {
-			var prakhand_ko_preshit_amount = (transafer_amount - abcd + otherAmount).toFixed();
-		} else if (type === 'Deducted') {
-			var prakhand_ko_preshit_amount = (transafer_amount - abcd - otherAmount).toFixed();
-		} else {
-			var prakhand_ko_preshit_amount = (transafer_amount - abcd).toFixed();
-		}
-
-		document.getElementById('praposemoney').value = prakhand_ko_preshit_amount;
 
 		// Total expenditure calculation (without centage and contingency)
 		var total_expenses = (
@@ -1109,17 +1109,22 @@ if (isset($_GET['id'])) {
 		);
 		document.getElementById('total_expen').value = parseFloat(total_expenses).toFixed();
 
+		// NET Payment calculation — customRound applies 50 paise rule
+		var prakhand_ko_preshit_amount = customRound(total_expenses - abcd - otherAmount);
+
+		document.getElementById('praposemoney').value = prakhand_ko_preshit_amount;
+
 		// Update Summary Section
-		updateSummary(transafer_amount, gstdeductionres, other_additions, abcd, otherAmount, type, total_expenses, prakhand_ko_preshit_amount, total_withgst_amt);
+		updateSummary(transafer_amount, gstdeductionres, other_additions, abcd, otherAmount, 'Deducted', total_expenses, prakhand_ko_preshit_amount, total_withgst_amt);
 	}
 
 	// Update Summary Section
 	function updateSummary(billAmount, gstAmount, otherAdditions, totalDeductions, otherAmount, otherType, totalExpenses, netPayment, totalWithGst) {
-		document.getElementById('summary_bill_amount').textContent = parseFloat(billAmount || 0).toFixed(2);
+		document.getElementById('summary_bill_amount').textContent = customRound(parseFloat(billAmount || 0));
 
 		// Total Additions
 		var totalAdditions = parseFloat(gstAmount || 0) + parseFloat(otherAdditions || 0);
-		document.getElementById('summary_additions').textContent = totalAdditions.toFixed(2);
+		document.getElementById('summary_additions').textContent = customRound(totalAdditions);
 
 		// Total Deductions
 		var totalDed = parseFloat(totalDeductions || 0);
@@ -1128,11 +1133,11 @@ if (isset($_GET['id'])) {
 		} else if (otherType === 'Deducted') {
 			totalDed += parseFloat(otherAmount || 0);
 		}
-		document.getElementById('summary_deductions').textContent = totalDed.toFixed(2);
+		document.getElementById('summary_deductions').textContent = customRound(totalDed);
 
-		document.getElementById('summary_total_expen').textContent = parseFloat(totalExpenses || 0).toFixed(2);
-		document.getElementById('summary_net_payment').textContent = parseFloat(netPayment || 0).toFixed(2);
-		document.getElementById('summary_total_withgst').textContent = parseFloat(totalWithGst || 0).toFixed(2);
+		document.getElementById('summary_total_expen').textContent = customRound(parseFloat(totalExpenses || 0));
+		document.getElementById('summary_net_payment').textContent = customRound(parseFloat(netPayment || 0));
+		document.getElementById('summary_total_withgst').textContent = customRound(parseFloat(totalWithGst || 0));
 	}
 
 </script>
@@ -1270,16 +1275,24 @@ page_footer_end();
 					$("#bank_name_unit").html(txt);
 				}
 
+				// Add those fetched unit-bank options into From Account dropdown if they don't exist
+				$.each(ajaxdata, function (key, value) {
+					if ($("#from_account_no option[value='" + value.id + "']").length === 0) {
+						var newOption = new Option(value.cus_name, value.id, false, false);
+						$('#from_account_no').append(newOption);
+					}
+				});
+
 				// Auto-sync: To Account ki selected value ko From Account mein set karo
 				var toVal = selected ? selected : (ajaxdata.length > 0 ? ajaxdata[0].id : '');
-				if (toVal && $("#from_account_no option[value='" + toVal + "']").length) {
-					$("#from_account_no").val(toVal);
+
+				if (toVal) {
+					// Use .trigger('change') for Select2 support
+					$("#from_account_no").val(toVal).trigger('change');
 				} else if (!selected && ajaxdata.length > 0 && !isVendorSelected) {
 					// Agar selected nahi tha to pehla option auto-select karo
 					$("#bank_name_unit").val(ajaxdata[0].id);
-					if ($("#from_account_no option[value='" + ajaxdata[0].id + "']").length) {
-						$("#from_account_no").val(ajaxdata[0].id);
-					}
+					$("#from_account_no").val(ajaxdata[0].id).trigger('change');
 				}
 
 				if (isVendorSelected) {
@@ -1293,7 +1306,7 @@ page_footer_end();
 	$(document).on('change', '#bank_name_unit', function () {
 		var toVal = $(this).val();
 		if (toVal && $("#from_account_no option[value='" + toVal + "']").length) {
-			$("#from_account_no").val(toVal);
+			$("#from_account_no").val(toVal).trigger('change');
 		}
 	});
 
@@ -1400,4 +1413,40 @@ page_footer_end();
 		<?php
 	}
 	?>
+
+	/* ---------- Select2 Searchable Dropdowns ---------- */
+	function makeSearchable(selectId) {
+		if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
+			console.error('Select2 or jQuery not loaded');
+			return;
+		}
+		var $select = $('#' + selectId);
+		if (!$select.length) return;
+
+		// Only apply to select elements
+		if (!$select.is('select')) return;
+
+		if ($select.data('select2')) $select.select2('destroy');
+		$select.select2({
+			theme: 'bootstrap4',
+			width: '100%',
+			placeholder: '--- Select ---',
+			allowClear: true
+		});
+	}
+
+	$(function () {
+		var dropdowns = [
+			'department', 'sub_department_id', 'district', 'project_name',
+			'vendor_name', 'gst_per', 'it_per', 'gsttdspercentage',
+			'security_per', 'leborses_per', 'other_title', 'other_per',
+			'from_account_no'
+		];
+		dropdowns.forEach(makeSearchable);
+	});
+
+	// Re-apply Select2 after AJAX loads new option data
+	$(document).ajaxComplete(function () {
+		['sub_department_id', 'district', 'project_name'].forEach(makeSearchable);
+	});
 </script>

@@ -3,11 +3,33 @@ include("scripts/settings.php");
 $msg='';
 $msg1='';
 $tab=1;
+
+list($start_year, $end_year) = explode('-', $_POST['attendance_session']);
+$month = $_POST['for_month'];
+if((int)$month >= 4 && (int)$month <= 12){
+    $attendance_year = $start_year;
+}else{
+    $attendance_year = $end_year;
+}
+$attendance_date = date("Y-m-t", strtotime($attendance_year . '-' . $month . '-01'));
+
 if(isset($_POST['submit'])){
 		$qryemp='SELECT * FROM `employee` WHERE `company_id`="'.$_POST['company_id'].'" AND `working_status`!="1"';
-			if($_POST['employee_category_id']!=''){
-				$qryemp .= ' and employee_category_id="'.$_POST['employee_category_id'].'"';
-			}
+			if($_POST['employee_category_id'] != ''){
+    
+                if($_POST['employee_category_id'] == '2'){
+                    
+                    $qryemp .= ' AND employee_category_id="'.$_POST['employee_category_id'].'"';
+                    
+                    $qryemp .= " AND agmt_ending_date IS NOT NULL 
+                                 AND agmt_ending_date >= '$attendance_date' ";
+                
+                }else{
+                    
+                    $qryemp .= ' AND employee_category_id="'.$_POST['employee_category_id'].'"';
+                    
+                }    
+            }
 	//echo $qryemp;
 		$resemp=execute_query($qryemp);
 		$emp_sno = array();
@@ -199,11 +221,18 @@ navigation($_SERVER['PHP_SELF']);
 									$sql_employee = 'SELECT * FROM `employee` WHERE `company_id`="'.$_POST['company_id'].'" AND `working_status`!="1"';
 									
 									if($_POST['employee_category_id']!=''){
-										$sql_employee .= ' and employee_category_id="'.$_POST['employee_category_id'].'"';
+										if($_POST['employee_category_id'] == '2'){
+											$sql_employee .= ' and employee_category_id="'.$_POST['employee_category_id'].'"';
+											$sql_employee .= ' AND agmt_ending_date IS NOT NULL 
+                                         AND agmt_ending_date >= "'.$attendance_date.'" ';
+										}else{
+											$sql_employee .= ' and employee_category_id="'.$_POST['employee_category_id'].'"';
+											
+										}	
 									}
 									
 									$result_employee = execute_query($sql_employee);
-									//echo $sql_employee;
+								// 	echo $sql_employee;
 									while($row_employee = mysqli_fetch_array($result_employee)){
 										?>
 										<div class="row">

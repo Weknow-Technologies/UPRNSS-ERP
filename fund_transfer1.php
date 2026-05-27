@@ -1,5 +1,6 @@
 <?php
 include("scripts/settings.php");
+include("scripts/alerts.php");
 $msg = '';
 $msg1 = '';
 $tab = 1;
@@ -56,7 +57,7 @@ if (isset($_GET['delh']) && !isset($_POST['submit'])) {
     execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id="' . q($jid) . '"');
     execute_query('DELETE FROM billit_invoice_erp_payment WHERE sno="' . q($jid) . '"');
   }
-  $msg1 .= '<div class="alert alert-danger">Successfully deleted.</div>';
+  $msg1 .= 'Successfully deleted.';
 }
 
 /* ---------------- Prefill EDIT mode (GET) ---------------- */
@@ -101,7 +102,7 @@ if (isset($_GET['edit_header_id']) && !isset($_POST['submit'])) {
     // seed for JS
     $seed_rows_js = json_encode($rows, JSON_UNESCAPED_UNICODE);
   } else {
-    $msg .= '<div class="alert alert-warning">Header not found or deleted.</div>';
+    $msg .= 'Header not found or deleted.';
   }
 }
 
@@ -120,7 +121,7 @@ if (isset($_POST['submit'])) {
 
   $rows_in = $_POST['rows'] ?? [];
   if (empty($rows_in)) {
-    $msg .= '<p class="alert alert-danger">Please add at least one row.</p>';
+    $msg .= 'Please add at least one row.';
   }
 
   // If edit: remove old voucher/payment lines and transaction rows (we will recreate)
@@ -215,12 +216,12 @@ if (isset($_POST['submit'])) {
       $T_prop += $proposed;
     }
     if (empty($prepared)) {
-      $msg .= '<p class="alert alert-danger">No valid rows (all have zero Remaining).</p>';
+      $msg .= 'No valid rows (all have zero Remaining).';
     }
   }
 
   if ($clamped_any) {
-    $msg .= '<p class="alert alert-warning">Some rows exceeded Remaining; amounts were clamped to Remaining.</p>';
+    $msg .= 'Some rows exceeded Remaining; amounts were clamped to Remaining.';
   }
 
   // Check if this is a single large amount that should be one row
@@ -246,7 +247,7 @@ if (isset($_POST['submit'])) {
            "invoice_fund_transfer", "0")';
   execute_query($sql);
   if (mysqli_error($db)) {
-    $msg .= '<p class="alert alert-danger">Voucher error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+    $msg .= 'Voucher error: ' . mysqli_error($db) . ' >> ' . $sql;
     goto postblank;
   } else {
     $journal_id = mysqli_insert_id($db);
@@ -292,9 +293,9 @@ if (isset($_POST['submit'])) {
       $total_debits += (float) $cgst_amt + (float) $sgst_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($cgst['sno']) . '", "", "' . $cgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($cgst['rate']) . '", "", "' . $cgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($sgst['sno']) . '", "", "' . $sgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($sgst['rate']) . '", "", "' . $sgst_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Advance Centage Deduction
@@ -302,7 +303,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['advcen']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($advcen['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($advcen['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // GST-TDS Deduction (CGST-TDS + SGST-TDS) — split 50-50
@@ -312,9 +313,9 @@ if (isset($_POST['submit'])) {
       $total_debits += (float) $cgst_tds_amt + (float) $sgst_tds_amt;
 
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                   VALUES ("' . q($journal_id) . '", "' . q($cgsttds['sno']) . '", "", "' . $cgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                   VALUES ("' . q($journal_id) . '", "' . q($cgsttds['rate']) . '", "", "' . $cgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                   VALUES ("' . q($journal_id) . '", "' . q($sgsttds['sno']) . '", "", "' . $sgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                   VALUES ("' . q($journal_id) . '", "' . q($sgsttds['rate']) . '", "", "' . $sgst_tds_amt . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Labour Cess Deduction
@@ -322,7 +323,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['labour']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($labourw['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($labourw['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
 
     // Income Tax Deduction
@@ -330,7 +331,7 @@ if (isset($_POST['submit'])) {
       $amt_str = money($r['itax']);
       $total_debits += (float) $amt_str;
       $debit_inserts[] = 'INSERT INTO billit_stock_erp_payment (`journal_id`, `by`, `to`, amount, timestamp, unit_id, status)
-                     VALUES ("' . q($journal_id) . '", "' . q($ittds['sno']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
+                     VALUES ("' . q($journal_id) . '", "' . q($ittds['rate']) . '", "", "' . $amt_str . '", "' . q($_POST['transafer_date']) . '", "' . q($division_id) . '", "")';
     }
   }
 
@@ -345,7 +346,7 @@ if (isset($_POST['submit'])) {
 
   // check for DB errors after voucher lines
   if (mysqli_error($db)) {
-    $msg .= '<div class="alert alert-danger">Voucher lines error >> ' . mysqli_error($db) . '</div>';
+    $msg .= 'Voucher lines error >> ' . mysqli_error($db);
     goto postblank;
   }
 
@@ -377,7 +378,7 @@ if (isset($_POST['submit'])) {
           WHERE sno='" . q($edit_header_id) . "' AND status!='5'";
     execute_query($up);
     if (mysqli_error($db)) {
-      $msg .= '<p class="alert alert-danger">Header update error: ' . mysqli_error($db) . ' >> ' . $up . '</p>';
+      $msg .= 'Header update error: ' . mysqli_error($db) . ' >> ' . $up;
       goto postblank;
     }
     $invoice_header_id = $edit_header_id;
@@ -395,7 +396,7 @@ if (isset($_POST['submit'])) {
        " . ($journal_id ? "'" . $journal_id . "'" : "NULL") . ", 0, '" . $_SESSION['username'] . "', '" . date("Y-m-d H:i:s") . "')";
     execute_query($sql);
     if (mysqli_error($db)) {
-      $msg .= '<p class="alert alert-danger">Header insert error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+      $msg .= 'Header insert error: ' . mysqli_error($db) . ' >> ' . $sql;
       goto postblank;
     } else {
       $invoice_header_id = mysqli_insert_id($db);
@@ -413,14 +414,14 @@ if (isset($_POST['submit'])) {
       creation_time=NOW()";
       execute_query($sql);
       if (mysqli_error($db)) {
-        $msg .= '<p class="alert alert-danger">Line insert error: ' . mysqli_error($db) . ' >> ' . $sql . '</p>';
+        $msg .= 'Line insert error: ' . mysqli_error($db) . ' >> ' . $sql;
         break;
       }
     }
   }
 
   if ($msg == '') {
-    $msg .= '<p class="alert alert-success">' . ($is_edit ? 'Successfully edited' : 'Successfully added') . '.</p>';
+    $msg .= ($is_edit ? 'Successfully edited' : 'Successfully added');
     // Clear form data for new entry but keep success message
     $_POST = [];
     goto postblank;
@@ -447,7 +448,13 @@ if (isset($_POST['submit'])) {
 
 <form id="sale_form" name="sale_form" autocomplete="off" method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
   <div class="container-fluid px-0">
-    <div class="px-3 pt-2"><?php echo $msg; ?></div>
+    <div class="px-3 pt-2">
+      <?php
+      if ($msg != '') {
+        echo '<h5>' . alert($msg) . '</h5>';
+      }
+      ?>
+    </div>
 
     <!-- 1. Basic Information Card -->
     <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
@@ -465,7 +472,7 @@ if (isset($_POST['submit'])) {
               tabindex="<?php echo $tab++; ?>">
               <option value="">--- Select ---</option>
               <?php
-              $run = mysqli_query($db, 'select * from billit_customer where parent ="1" order by cus_name');
+              $run = mysqli_query($db, 'select * from billit_customer where parent ="1" or (account_no is not null and account_no != "") order by cus_name');
               while ($d = mysqli_fetch_array($run)) {
                 echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['fund_transfer_to'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
               }
@@ -478,7 +485,7 @@ if (isset($_POST['submit'])) {
               tabindex="<?php echo $tab++; ?>" required>
               <option value="">--- Select ---</option>
               <?php
-              $run = mysqli_query($db, 'select * from billit_customer where parent ="1" and unit_id="53"');
+              $run = mysqli_query($db, 'select * from billit_customer where unit_id="53" and (parent ="1" or (account_no is not null and account_no != ""))');
               while ($d = mysqli_fetch_array($run)) {
                 echo '<option value="' . $d['sno'] . '" ' . ((@$_POST['from_account_no'] == $d['sno']) ? 'selected' : '') . '>' . trim($d['cus_name']) . '</option>';
               }
@@ -717,7 +724,11 @@ if (isset($_POST['submit'])) {
         <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Recent Fund Transfers</h5>
       </div>
       <div class="card-body p-4 table-full-width table-responsive">
-        <?php echo $msg1; ?>
+        <?php
+        if ($msg1 != '') {
+          echo '<h5>' . alert($msg1) . '</h5>';
+        }
+        ?>
         <table class="table table-hover table-striped table-bordered" style="min-width: 1000px;">
           <thead style="background-color: #fffafb; color: var(--primary); font-size: 12px; text-transform: uppercase;">
             <tr>
@@ -945,6 +956,34 @@ if (isset($_POST['submit'])) {
   function rate(id) { const el = document.getElementById(id); const v = parseFloat(el && el.value); return isFinite(v) ? v : 0; }
   function val(id) { const el = document.getElementById(id); const v = parseFloat(el && el.value); return isFinite(v) ? v : 0; }
 
+  /* ---------- 50 paise rounding rule ---------- */
+  function customRound(number) {
+    number = Number(number);
+    if (!isFinite(number) || number === 0) return '0.00';
+    var int = Math.floor(number);
+    var decimal = number - int;
+    if (decimal === 0) return int.toFixed(2);
+    return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
+  }
+
+
+  /* ---- Select2 Helpers ---- */
+  function makeSearchable(selectId) {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') return;
+    var $sel = $('#' + selectId);
+    if (!$sel.length) return;
+    if ($sel.data('select2')) $sel.select2('destroy');
+    $sel.select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true });
+  }
+
+  function initSelect2Row(tr) {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') return;
+    $(tr).find('select').each(function () {
+      if ($(this).data('select2')) $(this).select2('destroy');
+      $(this).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(this).parent() });
+    });
+  }
+
   function addRow(prefill = null) {
     const idx = rowIdx++;
     const tb = document.querySelector('#rows_table tbody');
@@ -1017,6 +1056,9 @@ if (isset($_POST['submit'])) {
       });
     });
 
+    // Apply Select2 to all selects in this row after all options are loaded
+    setTimeout(function() { initSelect2Row(tr); }, 400);
+
     bindRowEvents(tr);
     recalcTotals();
   }
@@ -1047,11 +1089,11 @@ if (isset($_POST['submit'])) {
     seed.dataset.options = JSON.stringify(<?php echo json_encode($deptOptions); ?>);
     document.body.appendChild(seed);
   }
-  function fillDeptOptions(sel, cb) { ensureDeptSeed(); sel.innerHTML = '<option value="">--Select--</option>'; const opts = JSON.parse(document.getElementById('hidden_dept_seed').dataset.options || '[]'); opts.forEach(o => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; sel.appendChild(op); }); if (cb) cb(); }
-  function fillDistrictOptions(deptId, sel, cb) { sel.innerHTML = '<option value="">--Select--</option>'; if (!deptId) { cb && cb(); return; } $.post(actionUrl, { term: 'b', id: 'dist', val: deptId }, function (d) { try { d = JSON.parse(d || '[]'); d.forEach(v => sel.innerHTML += `<option value="${v.id}">${v.district_name}</option>`); } catch (e) { } cb && cb(); }); }
-  function fillProjectOptions(deptId, distId, sel, cb) { sel.innerHTML = '<option value="">--Select--</option>'; if (!deptId || !distId) { if (cb) cb(); return; } $.post(actionUrl, { term: 'b', id: 'proj', val: distId, dept: deptId }, function (d) { try { d = JSON.parse(d || '[]'); d.forEach(v => sel.innerHTML += `<option value="${v.id}">${v.project_name_hindi}</option>`); } catch (e) { } if (cb) cb(); }); }
+  function fillDeptOptions(sel, cb) { ensureDeptSeed(); sel.innerHTML = '<option value="">--Select--</option>'; const opts = JSON.parse(document.getElementById('hidden_dept_seed').dataset.options || '[]'); opts.forEach(o => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; sel.appendChild(op); }); if ($(sel).data('select2')) { $(sel).select2('destroy'); } $(sel).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(sel).parent() }); if (cb) cb(); }
+  function fillDistrictOptions(deptId, sel, cb) { sel.innerHTML = '<option value="">--Select--</option>'; if (!deptId) { cb && cb(); return; } $.post(actionUrl, { term: 'b', id: 'dist', val: deptId }, function (d) { try { d = JSON.parse(d || '[]'); d.forEach(v => sel.innerHTML += `<option value="${v.id}">${v.district_name}</option>`); } catch (e) { } if ($(sel).data('select2')) { $(sel).select2('destroy'); } $(sel).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(sel).parent() }); cb && cb(); }); }
+  function fillProjectOptions(deptId, distId, sel, cb) { sel.innerHTML = '<option value="">--Select--</option>'; if (!deptId || !distId) { if (cb) cb(); return; } $.post(actionUrl, { term: 'b', id: 'proj', val: distId, dept: deptId }, function (d) { try { d = JSON.parse(d || '[]'); d.forEach(v => sel.innerHTML += `<option value="${v.id}">${v.project_name_hindi}</option>`); } catch (e) { } if ($(sel).data('select2')) { $(sel).select2('destroy'); } $(sel).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(sel).parent() }); if (cb) cb(); }); }
 
-  function loadDivisionAndBanksForProject(tr, projId, cb) { if (!projId) { cb && cb(); return; } $.post(actionUrl, { term: 'b', id: 'proj_div', val: projId }, function (res) { const j = JSON.parse(res || '{}'); const divId = j.division_id || ''; tr.querySelector('.r-div').value = divId; const bankSel = tr.querySelector('.r-bank'); $(bankSel).html('<option value="">--</option>'); if (divId) { $.post(actionUrl, { term: 'b', id: 'unit_bank', val: divId }, function (banks) { banks = JSON.parse(banks || '[]'); let opt = '<option value="">--</option>'; banks.forEach(b => opt += `<option value="${b.id}">${b.cus_name}</option>`); $(bankSel).html(opt); cb && cb(); }); } else { cb && cb(); } }); }
+  function loadDivisionAndBanksForProject(tr, projId, cb) { if (!projId) { cb && cb(); return; } $.post(actionUrl, { term: 'b', id: 'proj_div', val: projId }, function (res) { const j = JSON.parse(res || '{}'); const divId = j.division_id || ''; tr.querySelector('.r-div').value = divId; const bankSel = tr.querySelector('.r-bank'); if ($(bankSel).data('select2')) $(bankSel).select2('destroy'); $(bankSel).html('<option value="">--</option>'); if (divId) { $.post(actionUrl, { term: 'b', id: 'unit_bank', val: divId }, function (banks) { banks = JSON.parse(banks || '[]'); let opt = '<option value="">--</option>'; banks.forEach(b => opt += `<option value="${b.id}">${b.cus_name}</option>`); $(bankSel).html(opt); $(bankSel).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(bankSel).parent() }); cb && cb(); }); } else { $(bankSel).select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select ---', allowClear: true, dropdownParent: $(bankSel).parent() }); cb && cb(); } }); }
 
   // Load balances and set remaining; returns remaining via cb
   function loadProjectBalance(tr, deptId, projId, cb) {
@@ -1150,8 +1192,8 @@ if (isset($_POST['submit'])) {
             $('#gst_per').val(gstPer.toFixed(2));
 
             // Update CGST/SGST display fields
-            $('#cgst_amount').val(cgstAmt.toFixed(2));
-            $('#sgst_amount').val(sgstAmt.toFixed(2));
+            $('#cgst_amount').val(customRound(cgstAmt));
+            $('#sgst_amount').val(customRound(sgstAmt));
 
             console.log('GST % set to:', gstPer.toFixed(2) + '%');
             console.log('CGST field set to:', cgstAmt.toFixed(2));
@@ -1172,8 +1214,8 @@ if (isset($_POST['submit'])) {
             $('#gst_per').val(gstPer.toFixed(2));
 
             // Update CGST/SGST display fields (split from GST-TDS)
-            $('#cgst_amount').val(cgstAmt.toFixed(2));
-            $('#sgst_amount').val(sgstAmt.toFixed(2));
+            $('#cgst_amount').val(customRound(cgstAmt));
+            $('#sgst_amount').val(customRound(sgstAmt));
 
             console.log('GST % (from GST-TDS) set to:', gstPer.toFixed(2) + '%');
             console.log('CGST field (split) set to:', cgstAmt.toFixed(2));
@@ -1295,8 +1337,8 @@ if (isset($_POST['submit'])) {
         });
         if (per > 0 && total_row_amt > 0) {
           const total_gst = (total_row_amt * per) / (100 + per);
-          document.getElementById('cgst_amount').value = (total_gst / 2).toFixed(2);
-          document.getElementById('sgst_amount').value = (total_gst / 2).toFixed(2);
+          document.getElementById('cgst_amount').value = customRound(total_gst / 2);
+          document.getElementById('sgst_amount').value = customRound(total_gst / 2);
         }
       }
       recalcTotals();
@@ -1341,7 +1383,7 @@ if (isset($_POST['submit'])) {
     $(tr).find('.r-gsttds').text(money(gsttds));
     $(tr).find('.r-lab').text(money(lab));
     $(tr).find('.r-it').text(money(itx));
-    $(tr).find('.r-prop').text(money(prop));
+    $(tr).find('.r-prop').text(customRound(prop));
     recalcTotals();
   }
 
@@ -1367,9 +1409,9 @@ if (isset($_POST['submit'])) {
 
       // Check if it matches 12% or 18% (with a small buffer for rounding)
       if (Math.abs(calculated_per - 12) < 0.5) {
-        gst_sel.value = "12";
+        gst_sel.value = "12"; if ($(gst_sel).data('select2')) $(gst_sel).trigger('change.select2');
       } else if (Math.abs(calculated_per - 18) < 0.5) {
-        gst_sel.value = "18";
+        gst_sel.value = "18"; if ($(gst_sel).data('select2')) $(gst_sel).trigger('change.select2');
       } else {
         // If it doesn't match standard rates, we can optionally clear it or keep last
         // gst_sel.value = ""; 
@@ -1416,7 +1458,7 @@ if (isset($_POST['submit'])) {
     document.getElementById('T_gsttds').textContent = money(T_gsttds);
     document.getElementById('T_lab').textContent = money(T_lab);
     document.getElementById('T_it').textContent = money(T_it);
-    document.getElementById('T_prop').textContent = money(T_prop);
+    document.getElementById('T_prop').textContent = customRound(T_prop);
 
     document.getElementById('transafer_amount').value = money(T_amt);
     document.getElementById('gstdeduction').value = money(T_gst);
@@ -1425,7 +1467,7 @@ if (isset($_POST['submit'])) {
     document.getElementById('gsttds').value = money(T_gsttds);
     document.getElementById('incometax').value = money(T_it);
     document.getElementById('labourcess_total').value = money(T_lab);
-    document.getElementById('praposemoney').value = money(T_prop);
+    document.getElementById('praposemoney').value = customRound(T_prop);
 
     // Update GST-TDS split into CGST-TDS and SGST-TDS footer mirrors
     const gsttds_cgst_split = (parseFloat(T_gsttds || 0) / 2).toFixed(2);
@@ -1436,6 +1478,12 @@ if (isset($_POST['submit'])) {
 
   $(document).ready(function () {
     console.log('Page loaded, initializing...');
+
+    // Initialize Select2 on static header dropdowns
+    ['fund_transfer_to', 'from_account_no', 'gst_per'].forEach(makeSearchable);
+
+    // When Select2 changes value on gst_per, trigger recalcTotals (Select2 fires 'change')
+    $('#gst_per').on('change', function() { recalcTotals(); });
 
     // Remove all complex validation - just basic submit
     $('#sale_form').on('submit', function (e) {
