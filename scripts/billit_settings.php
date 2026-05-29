@@ -348,7 +348,7 @@ function get_group_hierarchy_options($selected_id = '', $default_id = 32, $exclu
         $hierarchy = [];
         $current = $sno;
         while (isset($heads_map[$current])) {
-            $hierarchy[] = $heads_map[$current]['description'];
+            $hierarchy[] = ucwords(strtolower(trim($heads_map[$current]['description'])));
             $parent = $heads_map[$current]['parent'];
             if ($parent == 0 || $parent == '' || $parent == $current) {
                 break;

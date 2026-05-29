@@ -103,9 +103,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             'fname' => $row['fname'],
             'mobile' => $row['mobile'],
             'parent_type' => $parentType,
-            'opening_balance' => abs($ownBal),
-            'child_balance' => abs($childBal),
-            'total_balance' => abs($ownBal + $childBal),
+            'opening_balance' => $ownBal,
+            'child_balance' => $childBal,
+            'total_balance' => ($ownBal + $childBal),
             'has_children' => has_ledger_children($db, $headSno, $sno, $selected_division),
             'head_sno' => $headSno
         ];
@@ -224,7 +224,7 @@ function fetch_heads_by_type($db, $fund_type, $selected_division, $only_public =
         $heads[] = [
             'sno' => $hid,
             'description' => $row['description'],
-            'total_balance' => abs(get_head_total_balance($db, $hid, $selected_division))
+            'total_balance' => get_head_total_balance($db, $hid, $selected_division)
         ];
     }
     return $heads;
@@ -266,7 +266,7 @@ if (abs($net_pl_balance) > 0.001) {
     $pl_node = [
         'sno' => 'pl',
         'description' => '► (Sch-C) Profit & Loss',
-        'total_balance' => abs($net_pl_balance),
+        'total_balance' => $net_pl_balance,
         'is_pl_node' => true
     ];
     if ($net_pl_balance < 0) {
@@ -296,7 +296,7 @@ function render_heads($heads)
     foreach ($heads as $h) {
         $sno = $h['sno'];
         $desc = htmlspecialchars($h['description']);
-        $total = number_format($h['total_balance'], 2);
+        $total = number_format(abs((float) $h['total_balance']), 2);
 
         if (isset($h['is_pl_node']) && $h['is_pl_node']) {
             $div_param = isset($_GET['division_id']) ? '?division_id=' . urlencode($_GET['division_id']) : '';
@@ -739,7 +739,7 @@ page_sidebar();
                     if (row.mobile) html += ' <span style="font-size:11px;color:#999;">| ' + esc(row.mobile) + '</span>';
                     html += '</div>';
                     html += '<div class="amt-col"' + (hasCh ? ' onclick="' + (isPlHead ? 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'head\',' + row.sno + ')' : 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'customer\',' + hSno + ')') + '"' : '') + '><div class="bal-lbl">Total</div>';
-                    html += '<strong class="text-primary">' + fmt(row.total_balance) + '</strong></div>';
+                    html += '<strong class="text-primary">' + fmt(Math.abs(row.total_balance)) + '</strong></div>';
                     html += '</div></div>';
                     html += '<div class="child-container" id="cc-' + nKey + '"></div>';
                     html += '</div>';
