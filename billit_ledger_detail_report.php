@@ -263,6 +263,8 @@ foreach ($pl_sno_list as $pl_sno) {
 }
 
 if (abs($net_pl_balance) > 0.001) {
+    // If net_pl_balance is negative (Credit > Debit), it means PROFIT. 
+    // Profit is a Source of Funds. We show it as positive on Source side.
     $pl_node = [
         'sno' => 'pl',
         'description' => '► (Sch-C) Profit & Loss',
@@ -276,19 +278,25 @@ if (abs($net_pl_balance) > 0.001) {
     }
 }
 
-$source_total = array_sum(array_column($source_heads, 'total_balance'));
-$application_total = array_sum(array_column($application_heads, 'total_balance'));
+$source_total_abs = abs(array_sum(array_column($source_heads, 'total_balance')));
+$application_total_abs = abs(array_sum(array_column($application_heads, 'total_balance')));
+
+$source_total = $source_total_abs;
+$application_total = $application_total_abs;
 
 $diff_source = 0;
 $diff_application = 0;
 
 if ($source_total > $application_total) {
     $diff_application = $source_total - $application_total;
-    $application_total += $diff_application;
+    $application_total_abs += $diff_application;
 } elseif ($application_total > $source_total) {
     $diff_source = $application_total - $source_total;
-    $source_total += $diff_source;
+    $source_total_abs += $diff_source;
 }
+
+$source_total = $source_total_abs;
+$application_total = $application_total_abs;
 
 function render_heads($heads)
 {
@@ -335,14 +343,14 @@ function render_heads($heads)
 
         $html .= '
         <div class="ledger-node">
-            <div class="ledger-card head-card clickable">
+            <div class="ledger-card head-card clickable" onclick="toggleNode(\'h-' . $sno . '\',' . $sno . ',\'head\',' . $sno . ')">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div onclick="toggleNode(\'h-' . $sno . '\',' . $sno . ',\'head\',' . $sno . ')">
+                    <div>
                         <i class="chev" id="chev-h-' . $sno . '">&#9658;</i>
                         <strong>' . $desc . '</strong>
                         <a href="billit_edit_head.php?id=' . $sno . '" class="edit-link ml-2" title="Edit Head" onclick="event.stopPropagation();"><i class="fa fa-edit text-muted"></i></a>
                     </div>
-                    <div class="amt-col" onclick="toggleNode(\'h-' . $sno . '\',' . $sno . ',\'head\',' . $sno . ')">
+                    <div class="amt-col">
                         <div class="bal-lbl">Total</div>
                         <strong class="text-primary">' . $total . '</strong>
                     </div>
@@ -715,9 +723,9 @@ page_sidebar();
                     var nKey = isPlHead ? ('ph-' + row.sno) : ('c-' + row.sno);
 
                     html += '<div class="ledger-node">';
-                    html += '<div class="ledger-card' + (hasCh ? ' clickable' : '') + '">';
+                    html += '<div class="ledger-card' + (hasCh ? ' clickable' : '') + '"' + (hasCh ? ' onclick="' + (isPlHead ? 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'head\',' + row.sno + ')' : 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'customer\',' + hSno + ')') + '"' : '') + '>';
                     html += '<div class="d-flex justify-content-between align-items-center">';
-                    html += '<div' + (hasCh ? ' onclick="' + (isPlHead ? 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'head\',' + row.sno + ')' : 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'customer\',' + hSno + ')') + '"' : '') + '>';
+                    html += '<div>';
                     html += hasCh
                         ? '<i class="chev" id="chev-' + nKey + '">&#9658;</i>'
                         : '<span class="no-dot"></span>';
@@ -738,7 +746,7 @@ page_sidebar();
                     if (row.fname) html += ' <span style="font-size:11px;color:#999;">| ' + esc(row.fname) + '</span>';
                     if (row.mobile) html += ' <span style="font-size:11px;color:#999;">| ' + esc(row.mobile) + '</span>';
                     html += '</div>';
-                    html += '<div class="amt-col"' + (hasCh ? ' onclick="' + (isPlHead ? 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'head\',' + row.sno + ')' : 'toggleNode(\'' + nKey + '\',' + row.sno + ',\'customer\',' + hSno + ')') + '"' : '') + '><div class="bal-lbl">Total</div>';
+                    html += '<div class="amt-col"><div class="bal-lbl">Total</div>';
                     html += '<strong class="text-primary">' + fmt(Math.abs(row.total_balance)) + '</strong></div>';
                     html += '</div></div>';
                     html += '<div class="child-container" id="cc-' + nKey + '"></div>';
@@ -755,9 +763,11 @@ page_sidebar();
 
     function expandAll() {
         ['sourceTree', 'applicationTree'].forEach(function (id) {
-            document.querySelectorAll('#' + id + ' > .ledger-node > .head-card.clickable').forEach(function (card) {
+            document.querySelectorAll('#' + id + ' .ledger-card.clickable').forEach(function (card) {
                 var chev = card.querySelector('.chev');
-                if (chev && !chev.classList.contains('open')) card.click();
+                if (chev && !chev.classList.contains('open')) {
+                    card.click();
+                }
             });
         });
     }
