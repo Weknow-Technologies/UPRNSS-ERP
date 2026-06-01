@@ -229,142 +229,72 @@ page_sidebar();
 			switch ($response) {
 				case 1: {
 					?>
-						<div class="row">
-							<div class="col-12">
-
-								<table class=" table table-striped table-hover table-bordered">
-									<tr>
-										<td colspan="4">
-											<ul>
-												<?php
-												if ($msg != '') {
-													echo '<h5>' . alert($msg) . '</h5>';
-												}
-												?>
-											</ul>
-										</td>
-									</tr>
-									<tr>
-										<td>Unit Name : </td>
-										<td>
-											<?php
-											//print_r($_SESSION);
-											$options = '';
-											if (is_array($_SESSION['divisions'])) {
-												foreach ($_SESSION['divisions'] as $k => $v) {
-													$options .= '<option value="' . $v . '">' . get_division($v) . '</option>';
-												}
+					<?php if ($msg != ''): ?>
+							<div class="row mb-2">
+								<div class="col-12"><?php echo alert($msg); ?></div>
+							</div>
+					<?php endif; ?>
+						<div class="card mb-3">
+							<div class="card-body py-2">
+								<div class="row align-items-center">
+									<div class="col-md-1 font-weight-bold text-nowrap">Unit Name</div>
+									<div class="col-md-3">
+										<?php
+										$options = '';
+										if (is_array($_SESSION['divisions'])) {
+											foreach ($_SESSION['divisions'] as $k => $v) {
+												$options .= '<option value="' . $v . '">' . get_division($v) . '</option>';
 											}
-											?>
-											<select name="unit_id" id="unit_id" class="form-control">
-											<?php echo $options; ?>
-
-											</select>
-
-										</td>
-
-										<td>Treat as Final : <input type="checkbox" name="treat_as_final" <?php if (isset($old_data['status']) && $old_data['status'] == 1) {
+										}
+										?>
+										<select name="unit_id" id="unit_id" class="form-control form-control-sm">
+										<?php echo $options; ?>
+										</select>
+									</div>
+									<div class="col-md-1 font-weight-bold">Date</div>
+									<div class="col-md-2">
+										<script type="text/javascript" language="javascript">
+											document.writeln(DateInput('sale_date', 'purchase_form', false, 'YYYY-MM-DD', '<?php if (isset($_GET['id'])) {
+												echo $old_data['timestamp'];
+											} else {
+												echo $_POST['sale_date'];
+											} ?>', <?php echo $tab++;
+											 $tab += 3; ?>));
+										</script>
+									</div>
+									<div class="col-md-1 font-weight-bold text-nowrap">Voucher No.</div>
+									<div class="col-md-2">
+										<input id="challan_no" name="challan_no" class="form-control form-control-sm" maxlength="18"
+											tabindex="<?php echo $tab++; ?>" type="text" value="<?php if (isset($old_data['voucher_no']))
+												   echo $old_data['voucher_no']; ?>">
+									</div>
+									<div class="col-md-1 text-center">
+										<label class="mb-0 font-weight-bold">Final</label><br>
+										<input type="checkbox" name="treat_as_final" <?php if (isset($old_data['status']) && $old_data['status'] == 1) {
 											echo "checked='checked'";
 										} elseif (!isset($_GET['id'])) {
 											echo 'checked="checked"';
-										} ?>></td>
-										<td class="text-right">
-											<a href="billit_journal.php?view=view"><button type="button"
-													class="btn btn-warning">View Vouchers (Journal Report)</button></a>
-										</td>
-									</tr>
-									<tr>
-										<td>Date</td>
-										<td>
-											<script type="text/javascript" language="javascript">
-												document.writeln(DateInput('sale_date', 'purchase_form', false, 'YYYY-MM-DD', '<?php if (isset($_GET['id'])) {
-													echo $old_data['timestamp'];
-												} else {
-													echo $_POST['sale_date'];
-												} ?>', <?php echo $tab++;
-												 $tab += 3; ?>));
-											</script>
-										</td>
-										<td>Voucher No.</td>
-										<td><input id="challan_no" name="challan_no" class="field text" size="12" maxlength="18"
-												tabindex="<?php echo $tab++; ?>" type="text" value="<?php if (isset($old_data['voucher_no'])) {
-													   echo $old_data['voucher_no'];
-												   } ?>">
-										</td>
-									</tr>
-								</table>
+										} ?>>
+									</div>
+									<div class="col-md-1 text-right">
+										<a href="billit_journal.php?view=view">
+											<button type="button" class="btn btn-warning btn-sm">View Vouchers</button>
+										</a>
+									</div>
+								</div>
 							</div>
 						</div>
 						<div class="card pb-5 px-2">
 							<div class="row">
 								<div class="col-12">
-									<div class="alert alert-primary">Particulars</div>
+									<div class="alert alert-primary mb-3">Particulars</div>
 								</div>
 							</div>
 
 							<div class="legend" id="legend_container">
-								<div class="row" id="row_1">
-									<!-- Vendor Dropdown Commented Out
-							<div class="col-md-3 mb-2" style="display:none;">
-								<?#php
-										// Fetch all vendors from vendor table
-										$vendor_list_html = '';
-										$vendor_map = [];
-										$vendor_sql = "SELECT sno, firm_name FROM vendor WHERE firm_name IS NOT NULL AND firm_name != '' ORDER BY firm_name ASC";
-										$vendor_result = mysqli_query($db, $vendor_sql);
-										if ($vendor_result) {
-											while ($v_row = mysqli_fetch_assoc($vendor_result)) {
-												$name = htmlspecialchars(trim($v_row['firm_name']));
-												$id = $v_row['sno'];
-												$vendor_list_html .= '<option value="' . $name . '">';
-												$vendor_map[$name] = $id;
-											}
-										}
-										# ?>
-								<datalist id="vendor_list">
-									<?#php echo $vendor_list_html; # ?>
-								</datalist>
-								<script>
-									var vendorMap = <?#php echo json_encode($vendor_map); # ?>;
-									function updateVendorId(id) {
-										var name = $('#vendor_name_' + id).val();
-										if (vendorMap[name]) {
-											$('#vendor_' + id).val(vendorMap[name]);
-										} else {
-											$('#vendor_' + id).val('');
-										}
-									}
-								</script>
-								<label for="vendor_name_1" class="form-label">Vendor</label>
-								<input type="text" name="vendor_name_1" id="vendor_name_1" list="vendor_list" class="form-control" onFocus="set_current(1)" onInput="updateVendorId(1)" placeholder="Select or Search Vendor..." value="<?#php echo isset($old_data['vendor_name']) ? $old_data['vendor_name'] : ''; # ?>">
-								<input type="hidden" name="vendor_1" id="vendor_1">
-								<script>
-									$(document).ready(function(){
-										if($("#vendor_name_1").val() != ""){
-											updateVendorId(1);
-										}
-									});
-								</script>
-							</div>
-							-->
-
-									<!-- Remark -->
-									<!-- <div class="col-md-3 mb-2">
-								<label for="remark_1" class="form-label">Remark</label>
-								<input type="text" name="remark_1" id="remark_1" class="form-control"
-									placeholder="Enter Remark" onFocus="set_current(1)">
-							</div> -->
-
-
-									<div class="col-md-3 mb-2">
-										<label>&nbsp;</label>
-										<button type="button" class="btn btn-danger btn-sm" onclick="remove_row(1)"
-											id="remove_btn_1" style="display:none;">Remove</button>
-									</div>
-								</div>
-								<div class="row" id="row_ledger_1">
+								<div class="row align-items-end mb-2" id="row_ledger_1">
 									<div class="col-1">
-										<label for="">By</label>
+										<label>By/To</label>
 										<select name="voucher_type_1" id="voucher_type_1" class="form-control"
 											onFocus="set_current(1)" onChange="update_voucher(1);">
 											<option value="by">By</option>
@@ -372,37 +302,44 @@ page_sidebar();
 										</select>
 									</div>
 									<div class="col-4">
-										<label for="">Ledger</label>
+										<div class="d-flex justify-content-between align-items-center">
+											<label class="mb-0">Ledger</label>
+											<div id="balance_1" style="font-size:11px;color:blue;font-weight:bold;"></div>
+										</div>
 										<input type="text" name="account_1" id="account_1" class="form-control"
 											onFocus="set_current(1)">
-										<div id="balance_1"
-											style="font-size: 11px; color: blue; font-weight: bold; margin-top: 2px; height: 15px;">
-										</div>
-										<input type="hidden" name="account_1_sno" id="account_1_sno" class="form-control">
-										<input type="hidden" name="ledger_type_1" id="ledger_type_1" class="form-control">
+										<input type="hidden" name="account_1_sno" id="account_1_sno">
+										<input type="hidden" name="ledger_type_1" id="ledger_type_1">
 										<input type="hidden" name="orig_balance_1" id="orig_balance_1" value="0">
 									</div>
-									<div class="col-2">
-										<label for="">Debit Amount</label>
+									<div class="col-3">
+										<label>Debit</label>
 										<input type="text" name="debit_1" id="debit_1" class="form-control" placeholder="Amount"
 											onFocus="set_current(1)">
 									</div>
-									<div class="col-2">
-										<label for="">Credit Amount</label>
+									<div class="col-3">
+										<label>Credit</label>
 										<input type="text" name="credit_1" id="credit_1" class="form-control" placeholder="Amount"
 											disabled onFocus="set_current(1)">
 									</div>
-									<div class="col-3">
-										<label for="">Description</label>
-										<input type="text" name="description_1" id="description_1" class="form-control"
-											placeholder="Description" onFocus="set_current(1)">
+									<div class="col-1">
+										<button type="button" class="btn btn-danger btn-sm" onclick="remove_row(1)"
+											id="remove_btn_1" style="display:none;">✕</button>
 									</div>
 								</div>
 							</div>
 							<div class="row mt-3">
 								<div class="col-12">
+									<label for="common_description"><strong>Description / Narration</strong></label>
+									<textarea type="text" name="description_1" id="common_description"
+										class="form-control form-control-sm" style="width: 40%;"
+										placeholder="Enter narration for this voucher"></textarea>
+								</div>
+							</div>
+							<div class="row mt-3">
+								<div class="col-12">
 									<button type="button" class="btn btn-success" onclick="add_new_row()">Add Row</button>
-									<button type="button" class="btn btn-info" data-toggle="modal" data-target="#createModal">New
+									<button type="button" class="btn btn-info" onclick="window.open('billit_ledgers.php')">New
 										Ledger <i class="far fa-plus-square"></i></button>
 									<button type="button" class="btn btn-warning" data-toggle="modal" data-target="#editModal"
 										onclick="edit_client();">Edit Ledger <i class="far fa-edit"></i></button>
@@ -466,11 +403,10 @@ page_sidebar();
 									<th>S.No.</th>
 									<th>Date</th>
 									<th>Unit Name</th>
-									<th>Parent</th>
 									<th>Voucher No.</th>
 									<th>Particulars</th>
 									<th>Amount</th>
-									<th></th>
+									<th>Actions</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -488,7 +424,6 @@ page_sidebar();
                             <td>' . $i++ . '</td>
                             <td>' . $row['timestamp'] . '</td>
                             <td>' . get_division($row['unit_id']) . '</td>
-                            <td>' . get_ledger($row['first_by']) . '</td>
                             <td>' . $row['voucher_no'] . '</td>
                             <td>' . get_ledger($row['first_to']) . '</td>
                             <td>' . $row['tot_debit'] . '</td>
@@ -523,208 +458,18 @@ page_sidebar();
 			?>
 
 </div>
-
-<div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-	aria-hidden="true">
-	<div class="modal-dialog modal-lg" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="exampleModalLabel">Create New Ledger</h5>
-				<button type="button" class="close btn btn-danger" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-			</div>
-
-
-			<div class="modal-body">
-				<form name="create_ledger" id="create_ledger" action="scripts/billit_ajax.php?id=create_ledger"
-					method="get">
-					<p>Enter Details</p>
-					<div class="col-md-6">
-						<td>
-							<label>Parent :</label>
-							<select id="parent" name="parent" tabindex="1" class="form-control">
-								<option value="1">BANK ACCOUNTS</option>
-								<option value="2">BANK OCC A/C</option>
-								<option value="3">BANK OD A/C</option>
-								<option value="4">BRANCH/DIVISIONS</option>
-								<option value="5">CAPITAL ACCOUNT</option>
-								<option value="6">CASH IN HAND</option>
-								<option value="7">CURRENT ASSETS</option>
-								<option value="8">CURRENT LIABILITIES</option>
-								<option value="9">DEPOSITS (ASSET)</option>
-								<option value="10">DIRECT EXPENSES</option>
-								<option value="11">DIRECT INCOMES</option>
-								<option value="12">DUTIES & TAXES</option>
-								<option value="15">FIXED ASSETS</option>
-								<option value="18">INDIRECT EXPENSES</option>
-								<option value="19">INDIRECT INCOMES</option>
-								<option value="20">INVESTMENTS</option>
-								<option value="21">LOAN & ADVANCES (ASSET)</option>
-								<option value="22">LOANS (LIABILITY)</option>
-								<option value="23">MISC. EXPENSES (ASSET)</option>
-								<option value="24">PROVISIONS</option>
-								<option value="25">PURCHASE ACCOUNTS</option>
-								<option value="26">RESERVES & SURPLUS</option>
-								<option value="27">RETAINED EARNINGS</option>
-								<option value="28">SALES ACCOUNTS</option>
-								<option value="29">SECURED LOANS</option>
-								<option value="30">STOCK IN HAND</option>
-								<option value="31">SUNDRY CREDITORS</option>
-								<option value="32" selected="selected">SUNDRY DEBTORS</option>
-								<option value="33">SUSPENSE A/C</option>
-								<option value="34">UNSECURED LOANS</option>
-							</select>
-						</td>
-					</div>
-					<div class="row">
-						<div class="col-md-6">
-							<label>Company Name</label>
-							<input id="cus_name" name="cus_name" tabindex="21" value="" type="text"
-								class="form-control">
-						</div>
-						<div class="col-md-6">
-							<label>State</label>
-							<select id="state" name="state" tabindex="22" class="form-control">
-								<?php
-								$sql = 'select * from general_settings where `desc`="state"';
-								$default_state = mysqli_fetch_assoc(execute_query($sql));
-
-								$sql = 'select * from billit_state_name';
-								$res_state = execute_query($sql);
-								while ($row_state = mysqli_fetch_array($res_state)) {
-									echo '<option value="' . $row_state['state_code'] . '" ';
-									if (isset($ledger['state'])) {
-										if (strtoupper(trim($row_state['state_code'])) == strtoupper(trim($ledger['state']))) {
-											echo ' selected="selected" ';
-										}
-									} elseif (isset($old_data['state'])) {
-										if (strtoupper(trim($row_state['state_code'])) == strtoupper(trim($old_data['state']))) {
-											echo ' selected="selected" ';
-										}
-									} else {
-										if (strtoupper(trim($row_state['state_code'])) == $default_state['rate']) {
-											echo ' selected="selected"';
-										}
-									}
-									echo '>' . $row_state['indian_states'] . '</option>';
-								}
-								?>
-							</select></td>
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-md-6">
-							<label>Mobile</label>
-							<input id="mobile" name="mobile" tabindex="23" value="" type="text" class="form-control">
-						</div>
-						<div class="col-md-6">
-							<label>GSTIN</label>
-							<input id="tin" name="tin" tabindex="24" value="" type="text" class="form-control">
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-md-6">
-							<label>Address</label>
-							<input id="address" name="address" tabindex="25" value="" type="text" class="form-control">
-						</div>
-						<div class="col-md-6">
-							<label>Address 2</label>
-							<input id="add_2" name="add_2" tabindex="26" value="" type="text" class="form-control">
-						</div>
-					</div>
-				</form>
-			</div>
-			<div class="modal-footer">
-				<div class="col-md-12 text-center" id="ajax_loader" style="display:none;"><img
-						src="images/loading_transparent.gif"></div>
-				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-				<button type="submit" form="create_ledger" class="btn btn-primary" id="save">Save changes</button>
-			</div>
-		</div>
-	</div>
-</div>
 <?php page_footer_start(); ?>
 <script src="js/core/bootstrap.min.js"></script>
 
 <script>
-	function create_new() {
-		var parent = $('#parent').val();
-		var cus_name_val = $('#cus_name').val();
-		var cus_name = encodeURIComponent(cus_name_val);
-		var state = $('#state').val();
-		var mobile = $('#mobile').val();
-		var tin = $('#tin').val();
-		var address = $('#address').val();
-		var address2 = $('#add_2').val();
-
-		var unit_id = $('#unit_id').val();
-		var finaldata = 'id=create_ledger' +
-			'&unit_id=' + unit_id +
-			'&parent=' + parent +
-			'&term=t' +
-			'&cus_name=' + cus_name +
-			'&state=' + state +
-			'&mobile=' + mobile +
-			'&tin=' + tin +
-			'&address=' + address +
-			'&add_2=' + address2;
-
-		console.log("Creating new ledger with data:", finaldata);
-		document.getElementById('ajax_loader').style.display = 'block';
-
-		$.ajax({
-			type: "GET",
-			url: "scripts/billit_ajax.php", // Simplified URL
-			data: finaldata,
-			dataType: 'json',
-			cache: false,
-			success: function (response) {
-				console.log("Ledger creation response:", response);
-				document.getElementById('ajax_loader').style.display = 'none';
-				if (response.success) {
-					alert('✅ Ledger "' + response.name + '" created successfully!');
-
-					// Hide modal and remove backdrop robustly
-					$('#createModal').modal('hide');
-					$('body').removeClass('modal-open');
-					$('.modal-backdrop').remove();
-
-					var current_row = $("#current").val();
-
-					// Populate the ledger field in the main journal form
-					if (current_row) {
-						$("#account_" + current_row).val(response.name);
-						$("#account_" + current_row + "_sno").val(response.id);
-
-						// Clear the modal form for next time
-						$('#create_ledger')[0].reset();
-
-						// Use setTimeout to ensure focus happens after modal is gone
-						setTimeout(function () {
-							$("#debit_" + current_row).focus();
-						}, 500);
-					}
-				} else {
-					alert("❌ Error: " + response.message);
-				}
-			},
-			error: function (xhr, status, error) {
-				console.error("AJAX Error:", error, status, xhr.responseText);
-				document.getElementById('ajax_loader').style.display = 'none';
-				alert("❌ Something went wrong while creating the ledger. Check console for details.");
-			}
-		});
-	}
 	function edit_client() {
-		var id = $("#supplier1_sno").val();
+		var current_row = $("#current").val();
+		var id = $("#account_" + current_row + "_sno").val();
 		if (id == '') {
-			alert('Please select a customer.');
+			alert('Please select a ledger first.');
 			return;
 		}
-		else {
-			window.open("ledgers.php?id=" + id);
-		}
+		window.open("billit_ledgers.php?id=" + id);
 	}
 	$(function () {
 		var options = {
@@ -800,7 +545,7 @@ page_sidebar();
 	function add_new_row() {
 		var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
 		var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
-		if (tot_damt > 0 && tot_camt > 0 && tot_damt === tot_camt) {
+		if (tot_damt > 0 && tot_camt > 0 && Math.abs(tot_damt - tot_camt) < 0.001) {
 			$('#saveForm').focus();
 			return false;
 		}
@@ -808,26 +553,35 @@ page_sidebar();
 		var max_id = parseInt($("#id").val());
 		var new_id = max_id + 1;
 
-		var txt = '<div class="row" id="row_ledger_' + new_id + '"><div class="col-1"><label>&nbsp;</label><select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')"><option value="by">By</option><option value="to">To</option></select></div><div class="col-3"><label for="">Ledger</label><input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')"><div id="balance_' + new_id + '" style="font-size: 11px; color: blue; font-weight: bold; margin-top: 2px; height: 15px;"></div><input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno" class="form-control"><input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '" class="form-control"><input type="hidden" name="orig_balance_' + new_id + '" id="orig_balance_' + new_id + '" value="0"></div><div class="col-2"><label for="">Debit</label><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Amount" onFocus="set_current(' + new_id + ')"></div><div class="col-2"><label for="">Credit</label><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Amount" disabled onFocus="set_current(' + new_id + ')"></div><div class="col-3"><label for="">Description</label><input type="text" name="description_' + new_id + '" id="description_' + new_id + '" class="form-control" placeholder="Description" onFocus="set_current(' + new_id + ')"></div><div class="col-1"><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">Remove</button></div></div>';
+		var txt = '<div class="row align-items-end mb-2" id="row_ledger_' + new_id + '">' +
+			'<div class="col-1">' +
+			'<select name="voucher_type_' + new_id + '" id="voucher_type_' + new_id + '" class="form-control" onFocus="set_current(' + new_id + ')" onChange="update_voucher(' + new_id + ')">' +
+			'<option value="by">By</option><option value="to">To</option></select></div>' +
+			'<div class="col-4">' +
+			'<div class="d-flex justify-content-between align-items-center">' +
+			'<span style="font-size:14px;">Ledger</span>' +
+			'<div id="balance_' + new_id + '" style="font-size:11px;color:blue;font-weight:bold;"></div>' +
+			'</div>' +
+			'<input type="text" name="account_' + new_id + '" id="account_' + new_id + '" class="form-control" placeholder="Ledger" onFocus="set_current(' + new_id + ')">' +
+			'<input type="hidden" name="account_' + new_id + '_sno" id="account_' + new_id + '_sno">' +
+			'<input type="hidden" name="ledger_type_' + new_id + '" id="ledger_type_' + new_id + '">' +
+			'<input type="hidden" name="orig_balance_' + new_id + '" id="orig_balance_' + new_id + '" value="0"></div>' +
+			'<div class="col-3"><input type="text" name="debit_' + new_id + '" id="debit_' + new_id + '" class="form-control" placeholder="Debit" onFocus="set_current(' + new_id + ')"></div>' +
+			'<div class="col-3"><input type="text" name="credit_' + new_id + '" id="credit_' + new_id + '" class="form-control" placeholder="Credit" disabled onFocus="set_current(' + new_id + ')"></div>' +
+			'<div class="col-1"><button type="button" class="btn btn-danger btn-sm" onclick="remove_row(' + new_id + ')" id="remove_btn_' + new_id + '">✕</button></div>' +
+			'</div>';
 
 		$("#legend_container").append(txt);
 		$("#id").val(new_id);
-
-		// Show remove button for first row if more than 1 row exists
-		if (new_id > 1) {
-			$("#remove_btn_1").show();
-		}
+		$("#remove_btn_1").show();
 	}
 
 	function remove_row(id) {
-		$("#row_" + id).remove();
-
-		// Hide remove button for first row if only 1 row exists
+		$("#row_ledger_" + id).remove();
 		var remaining_rows = $("#legend_container .row").length;
 		if (remaining_rows <= 1) {
 			$("#remove_btn_1").hide();
 		}
-
 		calc_total();
 	}
 
@@ -894,45 +648,51 @@ page_sidebar();
 			e.preventDefault();
 			var $this = $(this);
 			var id = $this.attr('id') || '';
-
-			// Special handling for Description to add row
-			if (id.indexOf('description_') !== -1 && id !== 'header_description') {
+			if (id.indexOf('credit_') !== -1) {
 				var current_id = parseInt(id.split('_')[1]);
-				var next_id = current_id + 1;
-
-				// Only jump to submit if we are on Description and the totals match
 				var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
 				var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
 				if (tot_damt > 0 && Math.abs(tot_damt - tot_camt) < 0.001) {
-					setTimeout(function () { $('#saveForm').focus(); }, 10);
+					$('#common_description').focus();
 					return;
 				}
-
-				// Add row if it doesn't exist
-				if (!$('#row_ledger_' + next_id).length && !$('#row_' + next_id).length) {
-					add_new_row();
-				}
-
-				// Toggle Voucher Type
-				var current_type = $('#voucher_type_' + current_id).val();
-				var next_type = (current_type === 'by') ? 'to' : 'by';
-
-				$('#voucher_type_' + next_id).val(next_type);
+				add_new_row();
+				var next_id = parseInt($("#id").val());
+				$('#voucher_type_' + next_id).val('to');
 				update_voucher(next_id);
-
-				// Move focus to next row ledger field
-				$('#account_' + next_id).focus();
+				setTimeout(function () { $('#account_' + next_id).focus(); }, 50);
 				return;
 			}
-
-			// Special handling for Debit/Credit to move to Description
-			if (id.indexOf('debit_') !== -1 || id.indexOf('credit_') !== -1) {
+			if (id.indexOf('debit_') !== -1) {
 				var current_id = parseInt(id.split('_')[1]);
-				$('[name="description_' + current_id + '"]').focus();
+				if (!$('#credit_' + current_id).prop('disabled')) {
+					$('#credit_' + current_id).focus();
+				} else {
+					var tot_damt = parseFloat($("#total_damt_hidden").val()) || 0;
+					var tot_camt = parseFloat($("#total_camt_hidden").val()) || 0;
+					if (tot_damt > 0 && Math.abs(tot_damt - tot_camt) < 0.001) {
+						$('#common_description').focus();
+						return;
+					}
+					add_new_row();
+					var next_id = parseInt($("#id").val());
+					$('#voucher_type_' + next_id).val('to');
+					update_voucher(next_id);
+					setTimeout(function () { $('#account_' + next_id).focus(); }, 50);
+				}
 				return;
 			}
 
-			// Generic "Enter as Tab" behavior
+			if (id.indexOf('account_') !== -1 && id.indexOf('_sno') === -1) {
+				var current_id = id.replace('account_', '');
+				var vch_type = $('#voucher_type_' + current_id).val();
+				if (vch_type === 'by') {
+					$('#debit_' + current_id).focus();
+				} else {
+					$('#credit_' + current_id).focus();
+				}
+				return;
+			}
 			var inputs = $(this).closest('form').find(':input:visible:not([disabled])');
 			var idx = inputs.index(this);
 
@@ -976,39 +736,7 @@ page_sidebar();
 		}
 		return response;
 	}
-
-	function update_parent(parent_id) {
-		// Get the dropdown element
-		var selectObj = document.querySelector('select[name="parent"]');
-		var parent_name = selectObj.options[selectObj.selectedIndex].text;
-
-		// Optional: Show selected parent somewhere (debug)
-		console.log("Selected Parent ID:", parent_id);
-		console.log("Selected Parent Name:", parent_name);
-
-		// Store parent_id in a hidden input for form submission
-		var hiddenInput = document.getElementById('parent_hidden');
-		if (!hiddenInput) {
-			hiddenInput = document.createElement('input');
-			hiddenInput.type = 'hidden';
-			hiddenInput.id = 'parent_hidden';
-			hiddenInput.name = 'parent_id';
-			document.forms[0].appendChild(hiddenInput); // first form me add
-		}
-		hiddenInput.value = parent_id;
-	}
-
-
-
 </script>
-<script>
-	$("#create_ledger").on("submit", function (e) {
-		e.preventDefault();
-		create_new();
-	});
-
-</script>
-
 <?php
 if (isset($_GET['id'])) {
 	$sql = 'select * from billit_stock_journal where journal_id="' . $_GET['id'] . '"';
