@@ -27,6 +27,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     $parentId = isset($_GET['parent']) ? trim($_GET['parent']) : '0';
     $headSno = isset($_GET['head']) ? trim($_GET['head']) : $parentId;
     $selected_division = isset($_GET['division_id']) ? trim($_GET['division_id']) : '';
+    $from_date = isset($_GET['from_date']) ? trim($_GET['from_date']) : '2025-04-01';
+    $to_date = isset($_GET['to_date']) ? trim($_GET['to_date']) : '2026-03-31';
 
     $ledger_filter = get_ledger_filter($db, $selected_division);
 
@@ -55,7 +57,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                 'parent_type' => 'Sub Parent',
                 'opening_balance' => 0.0,
                 'child_balance' => 0.0,
-                'total_balance' => abs(get_head_total_balance($db, $hid, $selected_division)),
+                'total_balance' => abs(get_head_total_balance($db, $hid, $selected_division, $from_date, $to_date)),
                 'has_children' => node_has_children_under_head($db, $hid, $selected_division),
                 'head_sno' => $hid
             ];
@@ -82,9 +84,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         $sno = $row['sno'];
 
         // Balance lookup including transactions
-        $ownBal = get_cust_balace('1970-01-01', date('Y-m-d'), $sno);
+        $ownBal = get_cust_balace($from_date, $to_date, $sno, '', $selected_division);
 
-        $childBal = get_descendant_balance($db, $headSno, $sno, $selected_division);
+        $childBal = get_descendant_balance($db, $headSno, $sno, $selected_division, $from_date, $to_date);
         $parentLedger = isset($row['parent_ledger']) ? trim((string) $row['parent_ledger']) : '0';
         $parentType = ($parentLedger === '' || $parentLedger === '0') ? 'Super Parent' : 'Sub Parent';
 
@@ -107,7 +109,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     exit;
 }
 
-function get_descendant_balance($db, $headSno, $parentLedgerSno, $selected_division)
+function get_descendant_balance($db, $headSno, $parentLedgerSno, $selected_division, $from_date, $to_date)
 {
     $total = 0;
     $h = mysqli_real_escape_string($db, (string) $headSno);
@@ -120,13 +122,13 @@ function get_descendant_balance($db, $headSno, $parentLedgerSno, $selected_divis
     while ($row = mysqli_fetch_assoc($res)) {
         $sno = intval($row['sno']);
 
-        $total += get_cust_balace('1970-01-01', date('Y-m-d'), $sno);
-        $total += get_descendant_balance($db, $headSno, $sno, $selected_division);
+        $total += get_cust_balace($from_date, $to_date, $sno, '', $selected_division);
+        $total += get_descendant_balance($db, $headSno, $sno, $selected_division, $from_date, $to_date);
     }
     return $total;
 }
 
-function get_head_total_balance($db, $headSno, $selected_division)
+function get_head_total_balance($db, $headSno, $selected_division, $from_date, $to_date)
 {
     $total = 0;
     $h = mysqli_real_escape_string($db, (string) $headSno);
@@ -140,13 +142,13 @@ function get_head_total_balance($db, $headSno, $selected_division)
     while ($row = mysqli_fetch_assoc($res)) {
         $sno = intval($row['sno']);
 
-        $total += get_cust_balace('1970-01-01', date('Y-m-d'), $sno);
-        $total += get_descendant_balance($db, $headSno, $sno, $selected_division);
+        $total += get_cust_balace($from_date, $to_date, $sno, '', $selected_division);
+        $total += get_descendant_balance($db, $headSno, $sno, $selected_division, $from_date, $to_date);
     }
 
     $resSub = mysqli_query($db, "SELECT sno FROM billit_pl_heads WHERE parent='$h'");
     while ($row = mysqli_fetch_assoc($resSub)) {
-        $total += get_head_total_balance($db, (int) $row['sno'], $selected_division);
+        $total += get_head_total_balance($db, (int) $row['sno'], $selected_division, $from_date, $to_date);
     }
 
     return $total;
@@ -184,25 +186,40 @@ function node_has_children_under_head($db, $headSno, $selected_division)
     return ((int) $row['cnt']) > 0;
 }
 
-function fetch_pl_heads($db, $sno_list, $selected_division)
-{
-    $snos = implode(',', $sno_list);
-    $res = mysqli_query($db, "
-        select h.sno, h.description
-        from billit_pl_heads h
-        where h.sno IN ($snos)
-        order by h.sort_no+0, h.sno asc
-    ");
-    $heads = [];
-    while ($row = mysqli_fetch_assoc($res)) {
-        $hid = $row['sno'];
-        $heads[] = [
-            'sno' => $hid,
-            'description' => $row['description'],
-            'total_balance' => abs(get_head_total_balance($db, $hid, $selected_division))
-        ];
+class ProfitLossReport {
+    private $db;
+    private $division;
+    private $fromDate;
+    private $toDate;
+
+    public function __construct($db, $division, $fromDate, $toDate) {
+        $this->db = $db;
+        $this->division = $division;
+        $this->fromDate = $fromDate;
+        $this->toDate = $toDate;
     }
-    return $heads;
+
+    public function getHeadsBySide($side) {
+        $safeSide = mysqli_real_escape_string($this->db, $side);
+        $query = "
+            SELECT sno, description 
+            FROM billit_pl_heads 
+            WHERE pl_side = '$safeSide' 
+            ORDER BY sort_no+0, sno ASC
+        ";
+        $result = mysqli_query($this->db, $query);
+        
+        $heads = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $hid = $row['sno'];
+            $heads[] = [
+                'sno' => $hid,
+                'description' => $row['description'],
+                'total_balance' => abs(get_head_total_balance($this->db, $hid, $this->division, $this->fromDate, $this->toDate))
+            ];
+        }
+        return $heads;
+    }
 }
 
 // Division Selection Logic for main page
@@ -210,6 +227,8 @@ $is_sadmin = isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin';
 $user_divisions = (isset($_SESSION['divisions']) && is_array($_SESSION['divisions'])) ? $_SESSION['divisions'] : [];
 
 $selected_division = isset($_GET['division_id']) ? $_GET['division_id'] : '';
+$from_date = isset($_GET['from_date']) ? $_GET['from_date'] : '2025-04-01';
+$to_date = isset($_GET['to_date']) ? $_GET['to_date'] : '2026-03-31';
 
 if ($is_sadmin) {
     if ($selected_division === '') $selected_division = 'all';
@@ -223,9 +242,10 @@ if ($is_sadmin) {
     }
 }
 
-/* ── Fetch both sides ── */
-$expense_heads = fetch_pl_heads($db, [4, 6, 12], $selected_division);
-$income_heads = fetch_pl_heads($db, [5, 7, 13], $selected_division);
+/* ── Fetch both sides dynamically using OOP ── */
+$plReport = new ProfitLossReport($db, $selected_division, $from_date, $to_date);
+$expense_heads = $plReport->getHeadsBySide('expense');
+$income_heads  = $plReport->getHeadsBySide('income');
 
 $expense_total = array_sum(array_column($expense_heads, 'total_balance'));
 $income_total = array_sum(array_column($income_heads, 'total_balance'));
@@ -521,6 +541,20 @@ page_sidebar();
                 }
                 ?>
             </select>
+            <label class="mr-2 font-weight-bold ml-3"><i class="fa fa-calendar mr-2"></i>From : </label>
+            <input type="date" name="from_date" class="form-control mr-3" value="<?php echo $from_date; ?>" onchange="document.getElementById('divForm').submit()">
+            
+            <label class="mr-2 font-weight-bold"><i class="fa fa-calendar mr-2"></i>To : </label>
+            <input type="date" name="to_date" class="form-control mr-3" value="<?php echo $to_date; ?>" onchange="document.getElementById('divForm').submit()">
+        </form>
+        <?php else: ?>
+        <form method="GET" class="form-inline mb-3 bg-white p-3 rounded shadow-sm border" id="divForm">
+            <input type="hidden" name="division_id" value="<?php echo htmlspecialchars($selected_division); ?>">
+            <label class="mr-2 font-weight-bold ml-3"><i class="fa fa-calendar mr-2"></i>From : </label>
+            <input type="date" name="from_date" class="form-control mr-3" value="<?php echo $from_date; ?>" onchange="document.getElementById('divForm').submit()">
+            
+            <label class="mr-2 font-weight-bold"><i class="fa fa-calendar mr-2"></i>To : </label>
+            <input type="date" name="to_date" class="form-control mr-3" value="<?php echo $to_date; ?>" onchange="document.getElementById('divForm').submit()">
         </form>
         <?php endif; ?>
 
@@ -612,7 +646,9 @@ page_sidebar();
             + '&type=' + encodeURIComponent(type)
             + '&parent=' + encodeURIComponent(parentId)
             + '&head=' + encodeURIComponent(headSno)
-            + '&division_id=<?php echo urlencode($selected_division); ?>';
+            + '&division_id=<?php echo urlencode($selected_division); ?>'
+            + '&from_date=<?php echo urlencode($from_date); ?>'
+            + '&to_date=<?php echo urlencode($to_date); ?>';
 
         fetch(url)
             .then(function (r) {
@@ -676,7 +712,7 @@ page_sidebar();
         ['expenseTree', 'incomeTree'].forEach(function (id) {
             document.querySelectorAll('#' + id + ' > .ledger-node > .head-card.clickable').forEach(function (card) {
                 var chev = card.querySelector('.chev');
-                if (chev && !chev.classList.contains('open')) card.click();
+                if (chev && !chev.classList.contains('open')) chev.parentElement.click();
             });
         });
     }

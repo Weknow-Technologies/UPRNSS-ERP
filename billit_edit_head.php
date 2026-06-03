@@ -11,14 +11,23 @@ if (isset($_POST['saveHead'])) {
     $description = mysqli_real_escape_string($db, strtoupper($_POST['description']));
     $fund_type = mysqli_real_escape_string($db, $_POST['fund_type']);
     $visibility = mysqli_real_escape_string($db, $_POST['visibility']);
+    $pl_side = isset($_POST['pl_side']) ? mysqli_real_escape_string($db, $_POST['pl_side']) : '';
+    $parent = isset($_POST['parent_group']) ? intval($_POST['parent_group']) : null;
     $make_super = isset($_POST['make_super_parent']) ? true : false;
 
     if ($sno > 0) {
-        $parent_update = $make_super ? ", parent = '0'" : "";
+        $parent_update = "";
+        if ($make_super) {
+            $parent_update = ", parent = '0'";
+        } elseif ($parent !== null) {
+            $parent_update = ", parent = '$parent'";
+        }
+
         $sql = "UPDATE billit_pl_heads SET 
                 description = '$description', 
                 fund_type = '$fund_type', 
-                visibility = '$visibility'
+                visibility = '$visibility',
+                pl_side = " . ($pl_side === '' ? "NULL" : "'$pl_side'") . "
                 $parent_update,
                 edited_by = '" . $_SESSION['username'] . "', 
                 edition_time = '" . date("Y-m-d H:i:s") . "' 
@@ -93,6 +102,29 @@ if (isset($_POST['addSubGroup'])) {
     }
 }
 
+if (isset($_POST['saveBulkLedgers'])) {
+    $bulk_ledgers = isset($_POST['bulk_ledgers']) ? $_POST['bulk_ledgers'] : [];
+    $new_parent = isset($_POST['ledger_new_parent']) ? intval($_POST['ledger_new_parent']) : 0;
+    
+    if (!empty($bulk_ledgers) && $new_parent > 0) {
+        $updated = 0;
+        foreach ($bulk_ledgers as $lsno) {
+            $lsno = intval($lsno);
+            $sql = "UPDATE billit_customer SET parent='$new_parent',
+                    edited_by='" . $_SESSION['username'] . "',
+                    edition_time='" . date("Y-m-d H:i:s") . "'
+                    WHERE sno=$lsno";
+            execute_query($sql);
+            if (!mysqli_error($db)) $updated++;
+        }
+        $msg = alert("$updated ledger(s) successfully shifted to new parent group.", "success");
+    } elseif ($new_parent == 0 && isset($_POST['saveBulkLedgers'])) {
+        $msg = alert("Please select a target parent group to shift to.", "warning");
+    } elseif (isset($_POST['saveBulkLedgers'])) {
+        $msg = alert("No ledgers selected.", "warning");
+    }
+}
+
 $head = null;
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
@@ -102,11 +134,18 @@ if (isset($_GET['id'])) {
 }
 
 $subheads = [];
+$group_ledgers = [];
 if ($head) {
     $sql_sub = "SELECT * FROM billit_pl_heads WHERE parent = '" . $head['sno'] . "' ORDER BY sort_no ASC, sno ASC";
     $res_sub = execute_query($sql_sub);
     while ($row = mysqli_fetch_assoc($res_sub)) {
         $subheads[] = $row;
+    }
+    
+    $sql_ledgers = "SELECT sno, cus_name, mobile, parent FROM billit_customer WHERE parent = '" . $head['sno'] . "' AND (parent_ledger IS NULL OR parent_ledger='' OR parent_ledger='0') ORDER BY cus_name ASC";
+    $res_ledgers = execute_query($sql_ledgers);
+    while ($row = mysqli_fetch_assoc($res_ledgers)) {
+        $group_ledgers[] = $row;
     }
 }
 
@@ -157,7 +196,28 @@ page_sidebar();
                             <small class="text-muted">Private: visible to Head Office only. Public: visible to all units.</small>
                         </div>
 
+                        <div class="form-group">
+                            <label><i class="fa fa-chart-bar mr-1"></i>Trading & P&L Side (For Root Groups)</label>
+                            <select name="pl_side" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                <option value="" <?php echo (empty($head['pl_side'])) ? 'selected' : ''; ?>>-- None (Not in P&L) --</option>
+                                <option value="expense" <?php echo ($head['pl_side'] == 'expense') ? 'selected' : ''; ?>>Trading & P&L Expenses</option>
+                                <option value="income" <?php echo ($head['pl_side'] == 'income') ? 'selected' : ''; ?>>Trading & P&L Incomes</option>
+                            </select>
+                            <small class="text-muted">Select a side to shift this group directly into the Profit & Loss report.</small>
+                        </div>
+
                         <?php if (intval($head['parent']) != 0): ?>
+                        <div class="form-group">
+                            <label>Parent Group</label>
+                            <select name="parent_group" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                <option value="0">-- Root Group --</option>
+                                <?php
+                                echo get_group_hierarchy_options($head['parent'], $head['sno'], false);
+                                ?>
+                            </select>
+                            <small class="text-muted">Shift this group under a different parent.</small>
+                        </div>
+
                         <div class="form-group mt-3">
                             <div class="checkbox">
                                 <label>
@@ -285,6 +345,61 @@ page_sidebar();
                         </div>
 
                     <?php endif; ?>
+                    
+                    <hr>
+                    <h5 class="mt-4 mb-3"><i class="fa fa-users mr-1"></i>Ledgers under "<?php echo htmlspecialchars($head['description']); ?>"</h5>
+                    
+                    <?php if (!empty($group_ledgers)): ?>
+                        <form method="POST" action="<?php echo $_SERVER['PHP_SELF'] . '?id=' . $head['sno']; ?>">
+                            <div class="mb-2 d-flex align-items-center flex-wrap" style="gap:8px;">
+                                <strong>Shift To:</strong>
+                                <select name="ledger_new_parent" class="form-control form-control-sm" style="width:250px; display:inline-block;">
+                                    <option value="0">-- Select New Parent Group --</option>
+                                    <?php echo get_group_hierarchy_options('', '', false); ?>
+                                </select>
+                                <label class="ml-3 mb-0">
+                                    <input type="checkbox" id="selectAllLedgers" onclick="toggleSelectAllLedgers(this)"> Select All
+                                </label>
+                                <button type="submit" name="saveBulkLedgers" class="btn btn-xs btn-primary ml-2">
+                                    <i class="fa fa-share mr-1"></i> Shift Selected
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover table-sm">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th style="width:36px;">
+                                                <input type="checkbox" id="selectAllLedgers2" onclick="toggleSelectAllLedgers(this)">
+                                            </th>
+                                            <th>#</th>
+                                            <th>Ledger Name</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($group_ledgers as $i => $lgr): ?>
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" name="bulk_ledgers[]" value="<?php echo $lgr['sno']; ?>" class="ledger-check">
+                                                </td>
+                                                <td><?php echo $i + 1; ?></td>
+                                                <td><?php echo htmlspecialchars($lgr['cus_name']); ?></td>
+                                                <td>
+                                                    <a href="billit_ledgers.php?id=<?php echo $lgr['sno']; ?>"
+                                                        class="btn btn-xs btn-info" title="Edit full details">
+                                                        <i class="fa fa-pencil"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <p class="text-muted"><i class="fa fa-info-circle mr-1"></i>No ledgers directly under this group.</p>
+                    <?php endif; ?>
 
                 <?php else: ?>
                     <div class="alert alert-warning">
@@ -320,6 +435,15 @@ page_sidebar();
         });
         document.getElementById('selectAll').checked = checked;
         document.getElementById('selectAll2').checked = checked;
+    }
+
+    function toggleSelectAllLedgers(source) {
+        var checked = source.checked;
+        document.querySelectorAll('.ledger-check').forEach(function(chk) {
+            chk.checked = checked;
+        });
+        if(document.getElementById('selectAllLedgers')) document.getElementById('selectAllLedgers').checked = checked;
+        if(document.getElementById('selectAllLedgers2')) document.getElementById('selectAllLedgers2').checked = checked;
     }
 </script>
 

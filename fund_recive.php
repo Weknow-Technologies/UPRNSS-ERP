@@ -1689,7 +1689,7 @@ if (isset($_GET['delid'])) {
                                 tabindex="<?php echo $tab++; ?>">
                                 <option value="">--- Select ---</option>
                                 <?php
-                                $query = 'select * from billit_customer where unit_id="53" and (parent ="1" or (account_no is not null and account_no != "")) order by cus_name';
+                                $query = 'select * from billit_customer where unit_id="53" and (parent ="479" or (account_no is not null and account_no != "")) order by cus_name';
                                 $run = mysqli_query($db, $query);
                                 while ($data = mysqli_fetch_array($run)) {
                                     echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';

@@ -130,7 +130,7 @@ if ($id == 'villages') {
 
 } elseif ($id == 'unit_bank') {
 
-	$sql = 'select * from billit_customer where unit_id="' . $_POST['val'] . '" and (parent ="1" or (account_no is not null and account_no != ""))';
+	$sql = 'select * from billit_customer where unit_id="' . $_POST['val'] . '" and (parent ="479" or (account_no is not null and account_no != ""))';
 	// echo $sql;
 	$result = execute_query($sql);
 	while ($row = mysqli_fetch_assoc($result)) {

@@ -2,17 +2,6 @@
 include("scripts/settings.php");
 include("scripts/billit_settings.php");
 include("scripts/alerts.php");
-
-function can_modify_ledger($row, $session)
-{
-	if (isset($session['usertype']) && $session['usertype'] === 'sadmin')
-		return true;
-	if (isset($session['divisions']) && is_array($session['divisions']) && count($session['divisions']) > 0) {
-		return (string) $row['unit_id'] === (string) $session['divisions'][0];
-	}
-	return false;
-}
-
 $msg = '';
 $tab = 1;
 if (isset($_POST['saveForm'])) {
@@ -54,37 +43,54 @@ if (isset($_POST['saveForm'])) {
 			$msg .= 'Error LG-01 : ' . mysqli_error($db);
 		}
 	} else {
-		$opening_date_val = !empty($_POST['opening_date']) ? '"' . $_POST['opening_date'] . '"' : 'NULL';
-		$sql = 'update billit_customer set 
-		`cus_name` = "' . ($_POST['cus_name'] ?? '') . '",		
-		`address` = "' . ($_POST['address'] ?? '') . '",		
-		`add_2` = "' . ($_POST['add_2'] ?? '') . '",		
-		`state` = "' . ($_POST['state'] ?? '') . '",	
-		`city` = "' . ($_POST['city'] ?? '') . '",
-		`zipcode` = "' . ($_POST['zipcode'] ?? '') . '",		
-		`country` = "' . ($_POST['country'] ?? '') . '",		
-		`mobile` = "' . ($_POST['mobile'] ?? '') . '",		
-		`cus_type` = "' . ($_POST['cus_type'] ?? '') . '",			
-		`opening_balance` = "' . ($_POST['opening_balance'] ?? '') . '",			
-		`tin` = "' . ($_POST['tin'] ?? '') . '",		
-		`adhar_no` = "' . ($_POST['adhar_no'] ?? '') . '",		
-		`pan` = "' . ($_POST['pan'] ?? '') . '",		
-		`parent` = "' . ($_POST['parent'] ?? '') . '",
-		`parent_ledger` = "' . ($_POST['parent_ledger'] ?? '') . '",
-		`ifsc` = "' . ($_POST['ifsc'] ?? '') . '",
-		`account_no` = "' . ($_POST['account_no'] ?? '') . '",
-		`unit_id` = "' . ($_POST['unit_id'] ?? '') . '",
-		`department_id` = "' . ($_POST['department_id'] ?? '') . '",
-		`visibility` = "private",
-		`edited_by` = "' . ($_SESSION['usersno'] ?? '') . '",
-		`edition_time` = "' . date("Y-m-d H:i:s") . '",
-		`opening_date` = ' . $opening_date_val . '
-		 where sno=' . $_POST['edit_sno'];
-		execute_query($sql);
-		if (mysqli_error($db)) {
-			$msg .= 'Error UP-01 : ' . mysqli_error($db) . ' >> ' . $sql;
+		$allow_edit = false;
+		if (isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin') {
+			$allow_edit = true;
+		} elseif (isset($_SESSION['divisions'])) {
+			$sql_chk = 'SELECT unit_id FROM billit_customer WHERE sno=' . $_POST['edit_sno'];
+			$res_chk = execute_query($sql_chk);
+			if ($row_chk = mysqli_fetch_assoc($res_chk)) {
+				if (in_array($row_chk['unit_id'], $_SESSION['divisions'])) {
+					$allow_edit = true;
+				}
+			}
+		}
+
+		if (!$allow_edit) {
+			$msg .= 'Error UP-00 : Unauthorized to edit this ledger. It does not belong to your unit.';
 		} else {
-			$msg .= 'Update Successfull.';
+			$opening_date_val = !empty($_POST['opening_date']) ? '"' . $_POST['opening_date'] . '"' : 'NULL';
+			$sql = 'update billit_customer set 
+			`cus_name` = "' . ($_POST['cus_name'] ?? '') . '",		
+			`address` = "' . ($_POST['address'] ?? '') . '",		
+			`add_2` = "' . ($_POST['add_2'] ?? '') . '",		
+			`state` = "' . ($_POST['state'] ?? '') . '",	
+			`city` = "' . ($_POST['city'] ?? '') . '",
+			`zipcode` = "' . ($_POST['zipcode'] ?? '') . '",		
+			`country` = "' . ($_POST['country'] ?? '') . '",		
+			`mobile` = "' . ($_POST['mobile'] ?? '') . '",		
+			`cus_type` = "' . ($_POST['cus_type'] ?? '') . '",			
+			`opening_balance` = "' . ($_POST['opening_balance'] ?? '') . '",			
+			`tin` = "' . ($_POST['tin'] ?? '') . '",		
+			`adhar_no` = "' . ($_POST['adhar_no'] ?? '') . '",		
+			`pan` = "' . ($_POST['pan'] ?? '') . '",		
+			`parent` = "' . ($_POST['parent'] ?? '') . '",
+			`parent_ledger` = "' . ($_POST['parent_ledger'] ?? '') . '",
+			`ifsc` = "' . ($_POST['ifsc'] ?? '') . '",
+			`account_no` = "' . ($_POST['account_no'] ?? '') . '",
+			`unit_id` = "' . ($_POST['unit_id'] ?? '') . '",
+			`department_id` = "' . ($_POST['department_id'] ?? '') . '",
+			`visibility` = "private",
+			`edited_by` = "' . ($_SESSION['usersno'] ?? '') . '",
+			`edition_time` = "' . date("Y-m-d H:i:s") . '",
+			`opening_date` = ' . $opening_date_val . '
+			 where sno=' . $_POST['edit_sno'];
+			execute_query($sql);
+			if (mysqli_error($db)) {
+				$msg .= 'Error UP-01 : ' . mysqli_error($db) . ' >> ' . $sql;
+			} else {
+				$msg .= 'Update Successfull.';
+			}
 		}
 	}
 }
@@ -136,7 +142,7 @@ if (isset($_GET['mid'])) {
 		$row_chk_mid = mysqli_fetch_assoc(execute_query($sql_chk_mid));
 		$sql_chk_alt = 'SELECT unit_id FROM billit_customer WHERE sno=' . $_GET['alt'];
 		$row_chk_alt = mysqli_fetch_assoc(execute_query($sql_chk_alt));
-
+		
 		if ($row_chk_mid && $row_chk_alt && in_array($row_chk_mid['unit_id'], $_SESSION['divisions']) && in_array($row_chk_alt['unit_id'], $_SESSION['divisions'])) {
 			$allow_merge = true;
 		}
@@ -146,83 +152,15 @@ if (isset($_GET['mid'])) {
 		$msg .= 'Error: Unauthorized to merge ledgers. Both ledgers must belong to your unit.';
 	} else {
 		$admin = ', `admin_remarks`=CONCAT(admin_remarks,"LedgerMerge: Original Ledger:' . get_ledger($_GET['alt']) . ' New Ledger:' . get_ledger($_GET['mid']) . '. On: ' . date("Y-m-d H:i:s") . '. By: ' . $_SESSION['username'] . '#")';
-		
-		// List of tables and columns that reference billit_customer.sno
-		$merge_list = array(
-			array("table" => "billit_barcode_new", "col" => "customer_id"),
-			array("table" => "billit_contra_entry", "col" => "by"),
-			array("table" => "billit_contra_entry", "col" => "to"),
-			array("table" => "billit_customer_transactions", "col" => "cust_id"),
-			array("table" => "billit_invoice_estimate", "col" => "supplier_id"),
-			array("table" => "billit_invoice_issue", "col" => "supplier_id"),
-			array("table" => "billit_invoice_payment", "col" => "cust_id"),
-			array("table" => "billit_invoice_purchase", "col" => "supplier_id"),
-			array("table" => "billit_invoice_purchase_ply", "col" => "supplier_id"),
-			array("table" => "billit_invoice_purchase_revert", "col" => "supplier_id"),
-			array("table" => "billit_invoice_quotation", "col" => "supplier_id"),
-			array("table" => "billit_invoice_receipt", "col" => "cust_id"),
-			array("table" => "billit_invoice_receive", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale_ply", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale_pos", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale_quotation", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale_revert", "col" => "supplier_id"),
-			array("table" => "billit_invoice_sale_temp", "col" => "supplier_id"),
-			array("table" => "billit_journal_entry", "col" => "by"),
-			array("table" => "billit_journal_entry", "col" => "to"),
-			array("table" => "billit_stock_estimate", "col" => "supplier_id"),
-			array("table" => "billit_stock_issue", "col" => "supplier_id"),
-			array("table" => "billit_stock_purchase", "col" => "supplier_id"),
-			array("table" => "billit_stock_purchase_ply", "col" => "supplier_id"),
-			array("table" => "billit_stock_purchase_revert", "col" => "supplier_id"),
-			array("table" => "billit_stock_quotation", "col" => "supplier_id"),
-			array("table" => "billit_stock_receive", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale_ply", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale_pos", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale_quotation", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale_revert", "col" => "supplier_id"),
-			array("table" => "billit_stock_sale_temp", "col" => "supplier_id"),
-			array("table" => "billit_stock_journal", "col" => "by"),
-			array("table" => "billit_stock_journal", "col" => "to"),
-			array("table" => "billit_cash_voucher_journal", "col" => "by"),
-			array("table" => "billit_cash_voucher_journal", "col" => "to")
-		);
-
-		foreach ($merge_list as $item) {
-			$k = $item['table'];
-			$v = $item['col'];
+		$array = array("billit_barcode_new" => "customer_id", "billit_contra_entry" => "by", "billit_contra_entry" => "to", "billit_customer_transactions" => "cust_id", "billit_invoice_estimate" => "supplier_id", "billit_invoice_issue" => "supplier_id", "billit_invoice_payment" => "cust_id", "billit_invoice_purchase" => "supplier_id", "billit_invoice_purchase_ply" => "supplier_id", "billit_invoice_purchase_revert" => "supplier_id", "billit_invoice_quotation" => "supplier_id", "billit_invoice_receipt" => "cust_id", "billit_invoice_receive" => "supplier_id", "billit_invoice_sale" => "supplier_id", "billit_invoice_sale_ply" => "supplier_id", "billit_invoice_sale_pos" => "supplier_id", "billit_invoice_sale_quotation" => "supplier_id", "billit_invoice_sale_revert" => "supplier_id", "billit_invoice_sale_temp" => "supplier_id", "billit_journal_entry" => "by", "billit_journal_entry" => "to", "billit_stock_estimate" => "supplier_id", "billit_stock_issue" => "supplier_id", "billit_stock_purchase" => "supplier_id", "billit_stock_purchase_ply" => "supplier_id", "billit_stock_purchase_revert" => "supplier_id", "billit_stock_quotation" => "supplier_id", "billit_stock_receive" => "supplier_id", "billit_stock_sale" => "supplier_id", "billit_stock_sale_ply" => "supplier_id", "billit_stock_sale_pos" => "supplier_id", "billit_stock_sale_quotation" => "supplier_id", "billit_stock_sale_revert" => "supplier_id", "billit_stock_sale_temp" => "supplier_id");
+		foreach ($array as $k => $v) {
 			$sql = 'update ' . $k . ' set `' . $v . '`=' . $_GET['mid'] . ' ' . $admin . ' where `' . $v . '`=' . $_GET['alt'];
 			execute_query($sql);
 			if (mysqli_error($db)) {
-				$msg .= 'Error : ' . mysqli_error($db) . ' >> ' . $sql . '<br>';
+				$msg .= 'Error : ' . mysqli_error($db) . ' >> ' . $sql;
 			} else {
-				$affected = mysqli_affected_rows($db);
-				if ($affected > 0) {
-					$msg .= 'Done >> ' . $k . ' (' . $v . '). Updated Rows : ' . $affected . '<br>';
-				}
+				$msg .= 'Done >> ' . $k . '. Updated Rows : ' . mysqli_affected_rows($db);
 			}
-		}
-
-		// Merge Opening Balance
-		$sql_alt = 'SELECT opening_balance FROM billit_customer WHERE sno=' . $_GET['alt'];
-		$res_alt = execute_query($sql_alt);
-		if ($row_alt = mysqli_fetch_assoc($res_alt)) {
-			$alt_bal = (float)$row_alt['opening_balance'];
-			if ($alt_bal != 0) {
-				$sql_upd_mid = 'UPDATE billit_customer SET opening_balance = opening_balance + ' . $alt_bal . ' WHERE sno=' . $_GET['mid'];
-				execute_query($sql_upd_mid);
-				$msg .= 'Opening Balance merged. <br>';
-			}
-		}
-
-		// Delete original ledger
-		$sql_del = 'DELETE FROM billit_customer WHERE sno=' . $_GET['alt'];
-		execute_query($sql_del);
-		if (!mysqli_error($db)) {
-			$msg .= 'Original Ledger Deleted (Merged).';
-		} else {
-			$msg .= 'Error deleting original ledger: ' . mysqli_error($db);
 		}
 	}
 }
@@ -275,30 +213,41 @@ page_sidebar();
 							<?php
 							$is_unit_user = isset($_SESSION['usertype']) && $_SESSION['usertype'] !== 'sadmin';
 							$sp_vis = $is_unit_user ? "AND visibility = 'public'" : "";
-							$sp_sql = "SELECT sno, description, fund_type FROM billit_pl_heads
+							$sp_sql = "SELECT sno, description, fund_type, pl_side FROM billit_pl_heads
 							           WHERE (parent IS NULL OR parent='' OR parent='0' OR parent=0)
 							           $sp_vis
 							           ORDER BY sort_no+0, sno ASC";
 							$sp_res = execute_query($sp_sql);
 							$sp_source = [];
 							$sp_app = [];
+							$sp_pl = [];
 							while ($sp_row = mysqli_fetch_assoc($sp_res)) {
-								if ($sp_row['fund_type'] === 'source')
+								if ($sp_row['pl_side'] === 'expense' || $sp_row['pl_side'] === 'income') {
+									$sp_pl[] = $sp_row;
+								} elseif ($sp_row['fund_type'] === 'source') {
 									$sp_source[] = $sp_row;
-								else
+								} else {
 									$sp_app[] = $sp_row;
+								}
 							}
 							if (!empty($sp_source)) {
 								echo '<optgroup label="Liabilities (Source of Funds)">';
 								foreach ($sp_source as $sp) {
-									echo '<option value="' . $sp['sno'] . '">' . htmlspecialchars(strtolower($sp['description'])) . '</option>';
+									echo '<option value="' . $sp['sno'] . '">' . htmlspecialchars(ucwords(strtolower(trim($sp['description'])))) . '</option>';
 								}
 								echo '</optgroup>';
 							}
 							if (!empty($sp_app)) {
 								echo '<optgroup label="Assets (Application of Funds)">';
 								foreach ($sp_app as $sp) {
-									echo '<option value="' . $sp['sno'] . '">' . htmlspecialchars(strtolower($sp['description'])) . '</option>';
+									echo '<option value="' . $sp['sno'] . '">' . htmlspecialchars(ucwords(strtolower(trim($sp['description'])))) . '</option>';
+								}
+								echo '</optgroup>';
+							}
+							if (!empty($sp_pl)) {
+								echo '<optgroup label="Trading & P/L">';
+								foreach ($sp_pl as $sp) {
+									echo '<option value="' . $sp['sno'] . '">' . htmlspecialchars(ucwords(strtolower(trim($sp['description'])))) . '</option>';
 								}
 								echo '</optgroup>';
 							}
@@ -615,9 +564,9 @@ page_sidebar();
                        <td>' . $row['tin'] . '</td>  
                        <td>' . get_parent($row['parent']) . '</td>
                        <td>' . $row['sno'] . '</td>
-                       <td> <a href="billit_ledgers.php?id=' . $row['sno'] . '"><span class="far fa-edit" title="Edit"></span></a> </td>
-                       <td> ' . (can_modify_ledger($row, $_SESSION) ? '<a href="billit_ledgers.php?delid=' . $row['sno'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#f00"><span class="far fa-trash-alt" title="Delete"></span></a>' : '-') . '</td>
-                       <td>' . (can_modify_ledger($row, $_SESSION) ? '<a href="#" onclick="return alternate_value(' . $row['sno'] . ')"><span class="fa fa-compress-alt" title="Merge"></span></a>' : '-') . ' </td> 
+                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?id=' . $row['sno'] . '"><span class="far fa-edit" title="Edit"></span></a>' : '-') . ' </td>
+                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?delid=' . $row['sno'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#f00"><span class="far fa-trash-alt" title="Delete"></span></a>' : '-') . '</td>
+                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="#" onclick="return alternate_value(' . $row['sno'] . ')"><span class="fa fa-compress-alt" title="Merge"></span></a>' : '-') . ' </td> 
                        </tr>';
 						}
 						?>

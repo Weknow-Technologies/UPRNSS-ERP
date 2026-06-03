@@ -479,7 +479,6 @@ if ($msg != '') {
 								<th>S.No.</th>
 								<th>Date</th>
 								<th>Unit Name</th>
-								<th>Parent</th>
 								<th>Voucher No.</th>
 								<th>Particulars</th>
 								<th>Amount</th>
@@ -501,7 +500,6 @@ if ($msg != '') {
                             <td>' . $i++ . '</td>
                             <td>' . $row['timestamp'] . '</td>
                             <td>' . get_division($row['unit_id']) . '</td>
-                            <td>' . get_ledger($row['first_by']) . '</td>
                             <td>' . $row['voucher_no'] . '</td>
                             <td>' . get_ledger($row['first_to']) . '</td>
                             <td>' . $row['tot_debit'] . '</td>

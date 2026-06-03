@@ -389,7 +389,6 @@ switch ($response) {
 								$to = date("Y-m-d", strtotime($_SESSION['report_ledger_date_to']) + 86400);
 
 								for ($pgid = $start; $pgid < $end; $pgid++) {
-									//print_r($row);
 									if ($pgid == $total_results) {
 										break;
 									}

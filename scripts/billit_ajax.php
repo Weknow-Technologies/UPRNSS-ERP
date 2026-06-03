@@ -324,6 +324,14 @@ if ($id == 'cust_name') {
 	$sql = "SELECT sno, description FROM billit_pl_heads WHERE parent = $super_parent_id AND $head_vis_cond ORDER BY sort_no+0, sno ASC";
 	$res = execute_query($sql);
 	$options = '<option value="">-- Select Group --</option>';
+	
+	// Add the Super Parent itself so ledgers can be placed directly under it
+	$sp_sql = "SELECT sno, description FROM billit_pl_heads WHERE sno = $super_parent_id AND $head_vis_cond";
+	$sp_res = execute_query($sp_sql);
+	if ($sp_row = mysqli_fetch_assoc($sp_res)) {
+		$options .= '<option value="' . $sp_row['sno'] . '">' . htmlspecialchars($sp_row['description']) . ' (Direct)</option>';
+	}
+
 	while ($row = mysqli_fetch_assoc($res)) {
 		$options .= '<option value="' . $row['sno'] . '">' . htmlspecialchars($row['description']) . '</option>';
 	}
