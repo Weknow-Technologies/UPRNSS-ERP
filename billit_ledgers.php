@@ -465,7 +465,7 @@ page_sidebar();
 
 				if ($_SESSION['usertype'] != 'sadmin' && isset($_SESSION['divisions'])) {
 					$divs = implode(",", $_SESSION['divisions']);
-					$where .= ' and (unit_id IN (' . $divs . ') or visibility="public")';
+					$where .= ' and unit_id IN (' . $divs . ')';
 				}
 
 				// Total count for pagination
