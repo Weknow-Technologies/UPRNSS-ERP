@@ -24,6 +24,41 @@ function get_state($id)
     return $row['indian_states'];
 }
 
+function generateVoucherNumber($table, $column, $prefix)
+{
+    global $db;
+
+    $month = date('n');
+    $year  = date('Y');
+
+    $fy_start = ($month >= 4) ? $year : ($year - 1);
+    $fy_end   = $fy_start + 1;
+
+    $fy_code = substr($fy_start, -2) . substr($fy_end, -2);
+
+    $table  = mysqli_real_escape_string($db, $table);
+    $column = mysqli_real_escape_string($db, $column);
+
+    $sql = "
+        SELECT `$column`
+        FROM `$table`
+        WHERE `$column` LIKE '{$prefix}-{$fy_code}-%'
+        ORDER BY `$column` DESC
+        LIMIT 1
+    ";
+
+    $result = mysqli_query($db, $sql);
+
+    $next = 1;
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        preg_match('/(\d+)$/', $row[$column], $match);
+        $next = isset($match[1]) ? ((int)$match[1] + 1) : 1;
+    }
+
+    return sprintf('%s-%s-%04d', $prefix, $fy_code, $next);
+}
+
 function get_parent($id)
 {
     if ($id == '' || $id == 0) {
@@ -143,15 +178,19 @@ function add_customer($data_or_name, ...$other_args)
 
 function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 {
+    static $_cust_cache = [];
     $cust_balanace = 0;
-    $sql = 'select * from billit_customer where sno=' . $id;
-    $customer = mysqli_fetch_array(execute_query($sql));
+    if (!isset($_cust_cache[$id])) {
+        $sql = 'select sno, parent, opening_balance from billit_customer where sno=' . $id;
+        $_cust_cache[$id] = mysqli_fetch_array(execute_query($sql));
+    }
+    $customer = $_cust_cache[$id];
     $pl_heads = array("DirectIncome" => 11, "DirectExpense" => 10, "IndirectIncome" => 19, "IndirectExpense" => 18);
 
     $unit_filter = "";
-    if ($unit_id != '' && $unit_id != 'all') {
-        $unit_filter = " and unit_id='" . mysqli_real_escape_string(dbconnect(), $unit_id) . "'";
-    }
+    // if ($unit_id != '' && $unit_id != 'all') {
+        // $unit_filter = " and unit_id='" . mysqli_real_escape_string(dbconnect(), $unit_id) . "'";
+    // }
 
     if ($from != '' && $to != '') {
         $cust_opening = 0;
@@ -161,6 +200,12 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
             $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp<"' . $from . '" and `by`=' . $id . ' and status="1" ' . $unit_filter;
             $opening_journal_dr = mysqli_fetch_array(execute_query($sql_journal));
+			
+			$sql_journal = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp<"' . $from . '" and `by`=' . $id . ' ' . $unit_filter;
+            $opening_journal_dr_erp = mysqli_fetch_array(execute_query($sql_journal));
+			
+			$sql_journal = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp<"' . $from . '" and `by`=' . $id . ' ' . $unit_filter;
+            $opening_journal_dr_erp_payment = mysqli_fetch_array(execute_query($sql_journal));
 
             $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp<"' . $from . '" and `by`=' . $id . ' and status="1" ' . $unit_filter;
             $opening_cash_dr = mysqli_fetch_array(execute_query($sql_cash));
@@ -171,7 +216,7 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
             $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"' . $from . '" and type="debit_note" and cust_id=' . $id;
             $opening_debit_note = mysqli_fetch_array(execute_query($sql_trans));
 
-            $opening_tot_dr = $opening_dr_trans['trans'] + $opening_journal_dr['journal'] + $opening_cash_dr['cash'] + $opening_contra_dr['contra'] + $opening_debit_note['trans'];
+            $opening_tot_dr = $opening_dr_trans['trans'] + $opening_journal_dr['journal'] + $opening_journal_dr_erp['journal']  + $opening_journal_dr_erp_payment['journal'] + $opening_cash_dr['cash'] + $opening_contra_dr['contra'] + $opening_debit_note['trans'];
 
             $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"' . $from . '" and type="credit_note" and cust_id=' . $id;
             $opening_credit_note = mysqli_fetch_array(execute_query($sql_trans));
@@ -181,6 +226,12 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
             $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp<"' . $from . '" and `to`=' . $id . ' and status="1" ' . $unit_filter;
             $opening_journal_cr = mysqli_fetch_array(execute_query($sql_journal));
+			
+			$sql_journal = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp<"' . $from . '" and `to`=' . $id . ' ' . $unit_filter;
+            $opening_journal_cr_erp = mysqli_fetch_array(execute_query($sql_journal));
+			
+			$sql_journal = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp<"' . $from . '" and `to`=' . $id . ' ' . $unit_filter;
+            $opening_journal_cr_erp_payment = mysqli_fetch_array(execute_query($sql_journal));
 
             $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp<"' . $from . '" and `to`=' . $id . ' and status="1" ' . $unit_filter;
             $opening_journal_cr_cash = mysqli_fetch_array(execute_query($sql_cash));
@@ -188,7 +239,7 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
             $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp<"' . $from . '" and `by`=' . $id . $unit_filter;
             $opening_contra_cr = mysqli_fetch_array(execute_query($sql_contra));
 
-            $opening_tot_cr = $opening_cr_trans['trans'] + $opening_journal_cr['journal'] + $opening_journal_cr_cash['cash'] + $opening_contra_cr['contra'] + $opening_credit_note['trans'];
+            $opening_tot_cr = $opening_cr_trans['trans'] + $opening_journal_cr['journal'] + $opening_journal_cr_erp['journal']  + $opening_journal_cr_erp_payment['journal'] + $opening_journal_cr_cash['cash'] + $opening_contra_cr['contra'] + $opening_credit_note['trans'];
 
             $cust_opening = (float) $customer['opening_balance'] + ((float) $opening_tot_dr - (float) $opening_tot_cr);
         } else {
@@ -208,11 +259,17 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
         $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `by`=' . $id . ' and status="1" ' . $unit_filter;
         $journal_dr = mysqli_fetch_array(execute_query($sql_journal));
+		
+		$sql_journal_erp_receipt = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `by`=' . $id . '  ' . $unit_filter;
+        $journal_dr_erp_receipt = mysqli_fetch_array(execute_query($sql_journal_erp_receipt));
+		
+		$sql_journal_erp_receipt = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `by`=' . $id . '  ' . $unit_filter;
+        $journal_dr_erp_payment = mysqli_fetch_array(execute_query($sql_journal_erp_receipt));
 
         $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `by`=' . $id . ' and status="1" ' . $unit_filter;
         $journal_dr_cash = mysqli_fetch_array(execute_query($sql_cash));
 
-        $tot_dr = $dr_trans['trans'] + $journal_dr['journal'] + $journal_dr_cash['cash'] + $contra_dr['contra'] + $debit_note['trans'];
+        $tot_dr = $dr_trans['trans'] + $journal_dr['journal'] + $journal_dr_erp_receipt['journal']  + $journal_dr_erp_payment['journal'] + $journal_dr_cash['cash'] + $contra_dr['contra'] + $debit_note['trans'];
 
         $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp>="' . $from . '" and timestamp<="' . $to . '" and type in ("RECIEPT","purchase", "RECEIPT", "sale_revert") and cust_id=' . $id;
         $cr_trans = mysqli_fetch_array(execute_query($sql_trans));
@@ -222,6 +279,14 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
         $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `to`=' . $id . ' and status="1" ' . $unit_filter;
         $journal_cr = mysqli_fetch_array(execute_query($sql_journal));
+		
+		$sql_journal_erp_receipt = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `to`=' . $id . '' . $unit_filter;
+        $journal_cr_erp_receipt = mysqli_fetch_array(execute_query($sql_journal_erp_receipt));
+		
+		$sql_journal_erp_receipt = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `to`=' . $id . '' . $unit_filter;
+        $journal_cr_erp_payment = mysqli_fetch_array(execute_query($sql_journal_erp_receipt));
+		
+		
 
         $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `to`=' . $id . ' and status="1" ' . $unit_filter;
         $journal_cr_cash = mysqli_fetch_array(execute_query($sql_cash));
@@ -229,16 +294,16 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
         $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp>="' . $from . '" and timestamp<="' . $to . '" and `by`=' . $id . $unit_filter;
         $contra_cr = mysqli_fetch_array(execute_query($sql_contra));
 
-        $tot_cr = $cr_trans['trans'] + $journal_cr['journal'] + $journal_cr_cash['cash'] + $contra_cr['contra'] + $credit_note['trans'];
+        $tot_cr = $cr_trans['trans'] + $journal_cr['journal'] + $journal_cr_erp_receipt['journal'] + $journal_cr_erp_payment['journal'] + $journal_cr_cash['cash'] + $contra_cr['contra'] + $credit_note['trans'];
 
         $closing = $tot_dr - $tot_cr;
 
         if ($in_out == '') {
             $cust_balanace = $cust_opening + $closing;
         } elseif ($in_out == 'in') {
-            $cust_balanace = $cr_trans['trans'] + $journal_dr['journal'] + $journal_dr_cash['cash'] + $contra_dr['contra'] + $debit_note['trans'];
+            $cust_balanace = $cr_trans['trans'] + $journal_dr['journal']  + $journal_dr_erp_receipt['journal']   + $journal_dr_erp_payment['journal'] + $journal_dr_cash['cash'] + $contra_dr['contra'] + $debit_note['trans'];
         } elseif ($in_out == 'out') {
-            $cust_balanace = $dr_trans['trans'] + $journal_cr['journal'] + $journal_cr_cash['cash'] + $contra_cr['contra'] + $credit_note['trans'];
+            $cust_balanace = $dr_trans['trans'] + $journal_cr['journal'] + $journal_cr_erp_receipt['journal']  + $journal_cr_erp_payment['journal'] + $journal_cr_cash['cash'] + $contra_cr['contra'] + $credit_note['trans'];
         }
 
         if ($cust_balanace < 0) {
@@ -310,15 +375,21 @@ function get_group_hierarchy_options($selected_id = '', $default_id = 32, $exclu
         || (isset($_SESSION['usertype']) && $_SESSION['usertype'] !== 'sadmin');
 
     if ($is_unit) {
-        $unit_cond = "(visibility IS NULL OR visibility = '' OR visibility = 'public')";
+        $unit_cond = "(p.visibility IS NULL OR p.visibility = '' OR p.visibility = 'public')";
     } else {
         $unit_cond = "1=1";
     }
 
-    $sql = 'SELECT sno, description, parent, visibility FROM billit_pl_heads WHERE ' . $unit_cond . ' ORDER BY sort_no+0, sno ASC';
+    $sql = 'SELECT p.sno, p.description, p.parent, p.visibility, d.department_name_hindi 
+            FROM billit_pl_heads p 
+            LEFT JOIN uprnss_department_name d ON TRIM(p.description) = TRIM(d.department_name_english) 
+            WHERE ' . $unit_cond . ' ORDER BY p.sort_no+0, p.sno ASC';
     $res = execute_query($sql);
     $heads_map = [];
     while ($row = mysqli_fetch_assoc($res)) {
+        if (!empty($row['department_name_hindi'])) {
+            $row['description'] .= ' (' . trim($row['department_name_hindi']) . ')';
+        }
         $heads_map[$row['sno']] = $row;
     }
 

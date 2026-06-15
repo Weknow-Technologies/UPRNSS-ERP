@@ -37,6 +37,9 @@ if(isset($_GET['voucher'])){
                                        AND table_id="'.$data['sno'].'"
                                    ) 
                                    ORDER BY sno ASC');
+
+								   
+								   //echo '@@@@'.mysqli_num_rows($lines_result).'@@@';
         while($line = mysqli_fetch_assoc($lines_result)) {
             $voucher_lines[] = $line;
         }
@@ -45,6 +48,9 @@ if(isset($_GET['voucher'])){
     
     // Helper function to get ledger name
     function get_ledger_name($ledger_id) {
+        global $data;
+        $unit_id = $data['unit_id'] ?? 0;
+
         if(empty($ledger_id)) {
             return '';
         }
@@ -55,15 +61,40 @@ if(isset($_GET['voucher'])){
             return $name;
         }
         
-        // 2. Try looking up as a tag in general_settings
-        $result = execute_query('SELECT rate FROM general_settings WHERE `desc` = "' . mysqli_real_escape_string($GLOBALS['db'], $ledger_id) . '" LIMIT 1');
-        if($result && $row = mysqli_fetch_assoc($result)) {
-            // If the rate is a numeric ID, try getting the ledger name for it
-            if(is_numeric($row['rate'])) {
-                $name = get_ledger($row['rate']);
+        $check_setting = function($desc) use ($unit_id) {
+            if ($unit_id > 0) {
+                $res = execute_query('SELECT rate FROM general_settings WHERE `desc` = "' . mysqli_real_escape_string($GLOBALS['db'], $desc) . '" AND unit_id="' . mysqli_real_escape_string($GLOBALS['db'], $unit_id) . '" LIMIT 1');
+                if ($res && $r = mysqli_fetch_assoc($res)) return $r['rate'];
+            }
+            $res = execute_query('SELECT rate FROM general_settings WHERE `desc` = "' . mysqli_real_escape_string($GLOBALS['db'], $desc) . '" AND (unit_id IS NULL OR unit_id=0 OR unit_id="") LIMIT 1');
+            if ($res && $r = mysqli_fetch_assoc($res)) return $r['rate'];
+            return '';
+        };
+
+        $rate = $check_setting($ledger_id);
+
+        // Fallback for CGST/SGST if user mapped the parent GST
+        if ($rate == '' && ($ledger_id == 'BILL_CGST' || $ledger_id == 'BILL_SGST')) {
+            $rate = $check_setting('BILL_GST');
+            if ($rate != '') {
+                $name = get_ledger($rate);
+                if ($name != '') return ($ledger_id == 'BILL_CGST' ? "CGST ($name)" : "SGST ($name)");
+            }
+        }
+        if ($rate == '' && ($ledger_id == 'BILL_CGST_TDS' || $ledger_id == 'BILL_SGST_TDS')) {
+            $rate = $check_setting('BILL_GST_TDS');
+            if ($rate != '') {
+                $name = get_ledger($rate);
+                if ($name != '') return ($ledger_id == 'BILL_CGST_TDS' ? "CGST TDS ($name)" : "SGST TDS ($name)");
+            }
+        }
+
+        if($rate != '') {
+            if(is_numeric($rate)) {
+                $name = get_ledger($rate);
                 if($name != '') return $name;
             }
-            return $row['rate'];
+            return $rate;
         }
         
         return $ledger_id;
@@ -186,187 +217,125 @@ if(isset($_GET['voucher'])){
 				$tot_debit = 0;
 				$tot_credit = 0;
 
+				// Get mapped project ledger name
+				$project_ledger_name = '';
+				if (!empty($data['project_name'])) {
+					// Check erp_code mapping first (standard method)
+					$res_erp = execute_query('SELECT erp_code, project_name_hindi FROM uprnss_project_temp WHERE sno="'.$data['project_name'].'" LIMIT 1');
+					if ($res_erp && $row_erp = mysqli_fetch_assoc($res_erp)) {
+						if ($row_erp['erp_code'] != '') {
+							$res_led = execute_query('SELECT cus_name FROM billit_customer WHERE erp_code="'.mysqli_real_escape_string($GLOBALS['db'], $row_erp['erp_code']).'" LIMIT 1');
+							if ($res_led && $row_led = mysqli_fetch_assoc($res_led)) {
+								$project_ledger_name = $row_led['cus_name'];
+							}
+						}
+						if ($project_ledger_name == '') {
+							$project_ledger_name = $row_erp['project_name_hindi']; // Fallback to project name
+						}
+					}
+					
+					// Check general_settings mapping if not found
+					if ($project_ledger_name == '' || $project_ledger_name == $row_erp['project_name_hindi']) {
+						$res_set = execute_query('SELECT rate FROM general_settings WHERE `desc`="PROJECT_LEDGER_MAP" AND unit_id="'.$data['unit_id'].'" AND remark="'.$data['project_name'].'" LIMIT 1');
+						if ($res_set && $row_set = mysqli_fetch_assoc($res_set)) {
+							$mapped_name = get_ledger_name($row_set['rate']);
+							if ($mapped_name != '') {
+								$project_ledger_name = $mapped_name;
+							}
+						}
+					}
+				}
+				$debit_entries = [];
+                $credit_entries = []; 
+
 				if(!empty($voucher_lines)) {
 					// Use actual voucher lines from billit_stock_erp_payment
 					$source_bank_amount = 0;
 					$source_bank_name = '';
-					$debit_entries = [];
-					$credit_entries = [];
+					
+					// Get proper vendor name to use instead of generic ledger name if applicable
+					$vendor_full_name = '';
+					if(!empty($data['firm_name'])) {
+						$vendor_full_name = $data['firm_name'];
+						if(!empty($data['contractor_name'])) {
+							$vendor_full_name .= ' (' . $data['contractor_name'] . ')';
+						}
+					}
 					
 					foreach($voucher_lines as $line) {
 						if(!empty($line['to']) && $line['amount'] > 0) {
 							// This is a Credit entry
 							$particulars = get_ledger_name($line['to']);
-							$credit_entries[] = [
-								'particulars' => $particulars,
-								'amount' => $line['amount']
-							];
+							
+							// Override vendor name if it matches vendor_id
+							if(!empty($data['vendor_id']) && $line['to'] == $data['vendor_id'] && $vendor_full_name != '') {
+								$particulars = $vendor_full_name . ' (Net Payment)';
+							}
+							
+							if(!isset($credit_entries[$particulars])) {
+								$credit_entries[$particulars] = 0;
+							}
+							$credit_entries[$particulars] += $line['amount'];
 						}
-						elseif(!empty($line['by']) && $line['amount'] > 0) {
+						
+						if(!empty($line['by']) && $line['amount'] > 0) {
 							// This is a Debit entry
 							$particulars = get_ledger_name($line['by']);
+							
+							if(!empty($data['vendor_id']) && $line['by'] == $data['vendor_id'] && $vendor_full_name != '') {
+								$particulars = $vendor_full_name . ' (Net Payment)';
+							}
+							
 							// Based on user request, move TDS/Income Tax to Credit even if saved as Debit
-							if(stripos($particulars, 'TDS') !== false || stripos($particulars, 'Income Tax') !== false || stripos($particulars, 'IT') !== false) {
-								$credit_entries[] = [
-									'particulars' => $particulars,
-									'amount' => $line['amount']
-								];
+							if($particulars == 'TDS' || $particulars == 'Income Tax' || $particulars == 'IT' || $particulars == 'GST TDS' || $particulars == 'CGST TDS' || $particulars == 'SGST TDS') {
+
+								if(!isset($credit_entries[$particulars])) {
+									$credit_entries[$particulars] = 0;
+								}
+								$credit_entries[$particulars] += $line['amount'];
 							} else {
-								$debit_entries[] = [
-									'particulars' => $particulars,
-									'amount' => $line['amount']
-								];
+								if(!isset($debit_entries[$particulars])) {
+									$debit_entries[$particulars] = 0;
+								}
+								$debit_entries[$particulars] += $line['amount'];
 							}
 						}
 					}
 					
 					// Display all Debit Entries first
-					foreach($debit_entries as $debit) {
+					foreach($debit_entries as $particulars => $amount) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>'.$debit['particulars'].'</td>
-								<td class="debit">'.number_format($debit['amount'], 2).'</td>
+								<td>'.$particulars.'</td>
+								<td class="debit">'.number_format($amount, 2).'</td>
 								<td class="credit"></td>
 							  </tr>';
-						$tot_debit += $debit['amount'];
+						$tot_debit += $amount;
 					}
 					
 					// Display all Credit Entries
-					foreach($credit_entries as $credit) {
+					foreach($credit_entries as $particulars => $amount) {
 						echo '<tr>
 								<td>'.$i++.'</td>
-								<td>'.$credit['particulars'].'</td>
+								<td>'.$particulars.'</td>
 								<td class="debit"></td>
-								<td class="credit">'.number_format($credit['amount'], 2).'</td>
+								<td class="credit">'.number_format($amount, 2).'</td>
 							  </tr>';
-						$tot_credit += $credit['amount'];
+						$tot_credit += $amount;
 					}
 					
-				} else {
-					// Fallback: Show based on component breakdown
-					$total_debit_amount = 0;
-					
-					// Debit items: Net, CGST, SGST
-					$net_payment = floatval($data['praposemoney']);
-					$cgst = floatval($data['cgst_amount'] ?? 0);
-					$sgst = floatval($data['sgst_amount'] ?? 0);
-					
-					// Credit items: Deductions
-					$gsttds = floatval($data['gsttds'] ?? 0);
-					$it = floatval($data['incometax'] ?? 0);
-					$cess = floatval($data['leborses'] ?? 0);
-					$centage = floatval($data['sentage'] ?? 0);
-
-					// 1. Show Bank Transfer (Debit)
-					echo '<tr>
-							<td>'.$i++.'</td>
-							<td>'.get_ledger_name($data['first_by'] ?: ($data['firm_name'] ?: ($data['to_bank_name'] ?: 'Bank Transfer'))).'</td>
-							<td class="debit">'.number_format($net_payment, 2).'</td>
-							<td class="credit"></td>
-						  </tr>';
-					$tot_debit += $net_payment;
-					
-					// 2. Show CGST (Debit)
-					if($cgst > 0) {
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('CGST').'</td>
-								<td class="debit">'.number_format($cgst, 2).'</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $cgst;
-					}
-					
-					// 3. Show SGST (Debit)
-					if($sgst > 0) {
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('SGST').'</td>
-								<td class="debit">'.number_format($sgst, 2).'</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $sgst;
-					}
-					
-					// 4. Show GST-TDS (Credit)
-					if($gsttds > 0) {
-						$tds_half = $gsttds / 2;
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('CGST-TDS Deducted').'</td>
-								<td class="debit"></td>
-								<td class="credit">'.number_format($tds_half, 2).'</td>
-							  </tr>';
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('SGST-TDS Deducted').'</td>
-								<td class="debit"></td>
-								<td class="credit">'.number_format($tds_half, 2).'</td>
-							  </tr>';
-						$tot_credit += $gsttds;
-					}
-					
-					// 5. Show Income Tax (Credit)
-					if($it > 0) {
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('Income Tax Deducted').'</td>
-								<td class="debit"></td>
-								<td class="credit">'.number_format($it, 2).'</td>
-							  </tr>';
-						$tot_credit += $it;
-					}
-					
-					// 6. Show other deductions on Credit side if exists
-					if($cess > 0) {
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('LABOUR CESS').'</td>
-								<td class="debit"></td>
-								<td class="credit">'.number_format($cess, 2).'</td>
-							  </tr>';
-						$tot_credit += $cess;
-					}
-					if($centage > 0) {
-						echo '<tr>
-								<td>'.$i++.'</td>
-								<td>'.get_ledger_name('CENTAGE').'</td>
-								<td class="debit"></td>
-								<td class="credit">'.number_format($centage, 2).'</td>
-							  </tr>';
-						$tot_credit += $centage;
-					}
-
-					// 7. HO Bank Account - The source bank (Credit)
-					// It should be the balancing figure or the total transfer amount from HO
-					$ho_bank_credit = $tot_debit - $tot_credit;
-					// If ho_bank_credit is basically the net payout or specific amount in DB
-					// In current screenshot logic, Source was credit for GROSS
-					// But we want it to balance. 
-					// Let's use the Gross from DB if available, otherwise Debit total
-					
-					$source_name = get_ledger_name($data['first_to'] ?: ($data['from_account_no'] ?: 'HO Bank Account'));
-					echo '<tr>
-							<td>'.$i++.'</td>
-							<td>'.$source_name.'</td>
-							<td class="debit"></td>
-							<td class="credit">'.number_format($ho_bank_credit, 2).'</td>
-						  </tr>';
-					$tot_credit += $ho_bank_credit;
 				}
 				
 								
-				echo '<tr class="">
-						<td colspan="2" align="right"></br><b>On Account of:&nbsp; &nbsp;</b>'. $data['remark'].'<br></td>
-						<td></td>
-						<td></td>
-					  </tr>';
-				
 				echo '<tr class="total-row">
-						<td colspan="2" align="right"></td>
+						<td colspan="2" align="right">Total</td>
 						<td class="debit">'.number_format($tot_debit, 2).'</td>
 						<td class="credit">'.number_format($tot_credit, 2).'</td>
 					  </tr>';
+                      
+                echo '<tr>
+                        <td colspan="4"><b>Narration:</b> ' . htmlspecialchars($data['remark'] ?? '') . '</td>
+                      </tr>';
 				?>
 			</tbody>
 		</table>

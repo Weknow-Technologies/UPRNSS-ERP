@@ -132,7 +132,7 @@ if ($id == 'cust_name') {
 		}
 	}
 	$sql .= ' limit 20';
-	//echo $sql;
+//	echo $sql;
 	$res = execute_query($sql);
 	while ($row = mysqli_fetch_array($res)) {
 		$row['balance'] = get_cust_balace('1970-01-01', date("Y-m-d"), $row['sno']);
@@ -316,24 +316,39 @@ if ($id == 'cust_name') {
 		|| ($selected_unit !== '' && $selected_unit !== 'all' && $selected_unit !== '53');
 
 	if ($is_unit) {
-		$head_vis_cond = "(visibility IS NULL OR visibility = '' OR visibility = 'public')";
+		$head_vis_cond = "(p.visibility IS NULL OR p.visibility = '' OR p.visibility = 'public')";
 	} else {
 		$head_vis_cond = "1=1";
 	}
 
-	$sql = "SELECT sno, description FROM billit_pl_heads WHERE parent = $super_parent_id AND $head_vis_cond ORDER BY sort_no+0, sno ASC";
+	$sql = "SELECT p.sno, p.description, d.department_name_hindi 
+	        FROM billit_pl_heads p 
+	        LEFT JOIN uprnss_department_name d ON TRIM(p.description) = TRIM(d.department_name_english) 
+	        WHERE p.parent = $super_parent_id AND $head_vis_cond 
+	        ORDER BY p.sort_no+0, p.sno ASC";
 	$res = execute_query($sql);
 	$options = '<option value="">-- Select Group --</option>';
 	
 	// Add the Super Parent itself so ledgers can be placed directly under it
-	$sp_sql = "SELECT sno, description FROM billit_pl_heads WHERE sno = $super_parent_id AND $head_vis_cond";
+	$sp_sql = "SELECT p.sno, p.description, d.department_name_hindi 
+	           FROM billit_pl_heads p 
+	           LEFT JOIN uprnss_department_name d ON TRIM(p.description) = TRIM(d.department_name_english) 
+	           WHERE p.sno = $super_parent_id AND $head_vis_cond";
 	$sp_res = execute_query($sp_sql);
 	if ($sp_row = mysqli_fetch_assoc($sp_res)) {
-		$options .= '<option value="' . $sp_row['sno'] . '">' . htmlspecialchars($sp_row['description']) . ' (Direct)</option>';
+	    $desc = htmlspecialchars($sp_row['description']);
+	    if (!empty($sp_row['department_name_hindi'])) {
+	        $desc .= ' (' . htmlspecialchars(trim($sp_row['department_name_hindi'])) . ')';
+	    }
+		$options .= '<option value="' . $sp_row['sno'] . '">' . $desc . ' (Direct)</option>';
 	}
 
 	while ($row = mysqli_fetch_assoc($res)) {
-		$options .= '<option value="' . $row['sno'] . '">' . htmlspecialchars($row['description']) . '</option>';
+	    $desc = htmlspecialchars($row['description']);
+	    if (!empty($row['department_name_hindi'])) {
+	        $desc .= ' (' . htmlspecialchars(trim($row['department_name_hindi'])) . ')';
+	    }
+		$options .= '<option value="' . $row['sno'] . '">' . $desc . '</option>';
 	}
 	echo $options;
 	exit;

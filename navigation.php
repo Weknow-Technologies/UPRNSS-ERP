@@ -18,7 +18,8 @@ page_sidebar();
 		  `link_description` ,
 		  `parent` ,
 		  `color` ,
-		  `sub_parent` ,
+		  `admin_parent` ,
+		  `admin_sub_parent` ,		  
 		  `sort_no` 
 		   ) 
 		
@@ -28,7 +29,8 @@ page_sidebar();
 		"'.$_POST['link_description'].'", 
 		"'.$_POST['parent'].'", 
 		"'.$_POST['color'].'", 
-		"'.$_POST['sub_parent'].'", 
+		"'.$_POST['sub_parent'].'",
+		"'.$_POST['sub_sub_parent'].'",
 		"'.$_POST['sort_no'].'"
 		 )';
 		execute_query($sql);
@@ -49,7 +51,8 @@ page_sidebar();
 			`link_description` ="'.$_POST['link_description'].'",
 			`parent` ="'.$_POST['parent'].'",
 			`color` ="'.$_POST['color'].'",
-			`sub_parent` ="'.$_POST['sub_parent'].'",
+			`admin_parent` ="'.$_POST['sub_parent'].'",
+			`admin_sub_parent` ="'.$_POST['sub_sub_parent'].'",	
 			`sort_no` ="'.$_POST['sort_no'].'"
 			
 		
@@ -146,10 +149,17 @@ if(isset($_GET['del'])){
 						</div>
 						<div class="col-md-3">
 							<div class="form-group">
+								<label for="">Sub-Sub-Parent</label>
+								<input type="text" name="sub_sub_parent" id="sub_sub_parent" class="form-control" placeholder="" value="<?php echo $_POST['sub_sub_parent']; ?>" tabindex="<?php echo $tab++; ?>">
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="form-group">
 								<label for="">Sort no.</label>
 								<input type="text" name="sort_no" id="sort_no" class="form-control" placeholder="" value="<?php echo $_POST['sort_no']; ?>" tabindex="<?php echo $tab++; ?>">
 							</div>
 						</div>
+						
 					</div>
 					<div class="row">
 						<div class="col-md-11"  align = "center">
@@ -179,9 +189,10 @@ if(isset($_GET['del'])){
 						<th>Navigation Id</th>
 						<th>Icon code</th>
 						<th>Navigation Name</th>
-						<th>Parent</th>
 						<th>Color</th>
+						<th>Parent</th>
 						<th>Sub-Parent</th>
+						<th>Sub-Sub-Parent</th>
 						<th>Sort no.</th>
 						<th></th>
 						<th></th>
@@ -197,9 +208,10 @@ if(isset($_GET['del'])){
 							<td>'.$row['sno'].'</td>
 							<td>'.$row['icon_image'].'</td>
 							<td>'.$row['link_description'].'</td>
-							<td>'.$row['parent'].'</td>
 							<td>'.$row['color'].'</td>
-							<td>'.$row['sub_parent'].'</td>
+							<td>'.$row['parent'].'</td>
+							<td>'.$row['admin_parent'].'</td>
+							<td>'.$row['admin_sub_parent'].'</td>
 							<td>'.$row['sort_no'].'</td>
 							<td><a href="'.$_SERVER['PHP_SELF'].'?edit_sno='.$row['sno'].'" onClick="return confirm(\'Are you sure?\');" alt="Edit Details" data-toggle="tooltip" title="Edit Details"><span class="far fa-edit" aria-hidden="true"></span></a></td>
 							<td><a href="'.$_SERVER['PHP_SELF'].'?del='.$row['sno'].'" onclick="return confirm(\'Are you sure?\');" style="color:#f00" alt="Delete Entry"><span class="far fa-trash-alt" aria-hidden="true" data-toggle="tooltip" title="Delete Entry"></span></a></td>

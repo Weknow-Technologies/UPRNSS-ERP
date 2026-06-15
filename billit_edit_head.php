@@ -155,10 +155,10 @@ page_sidebar();
 ?>
 
 <div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="card-title"><i class="fa fa-edit mr-2"></i>Edit Head / Group</h4>
+    <div class="col-md-12">
+        <div class="card" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none;">
+            <div class="card-header" style="background: linear-gradient(45deg, #e53935, #b71c1c); color: white; border-bottom: none;">
+                <h4 class="card-title" style="margin: 0; font-weight: bold; color: white;"><i class="fa fa-edit mr-2"></i>Edit Head / Group</h4>
             </div>
             <div class="card-body p-4">
                 <?php echo $msg; ?>
@@ -167,64 +167,79 @@ page_sidebar();
                     <form method="POST" action="<?php echo $_SERVER['PHP_SELF'] . '?id=' . $head['sno']; ?>">
                         <input type="hidden" name="edit_sno" value="<?php echo $head['sno']; ?>">
 
-                        <div class="form-group">
-                            <label>Description / Name</label>
-                            <input type="text" name="description" class="form-control"
-                                value="<?php echo htmlspecialchars($head['description']); ?>" required
-                                tabindex="<?php echo $tab++; ?>">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Description / Name</label>
+                                    <input type="text" name="description" class="form-control"
+                                        value="<?php echo htmlspecialchars($head['description']); ?>" required
+                                        tabindex="<?php echo $tab++; ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Fund Type</label>
+                                    <select name="fund_type" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                        <option value="" <?php echo $head['fund_type'] == '' ? 'selected' : ''; ?>>-- Select --</option>
+                                        <option value="source" <?php echo $head['fund_type'] == 'source' ? 'selected' : ''; ?>>SOURCE OF FUNDS</option>
+                                        <option value="application" <?php echo $head['fund_type'] == 'application' ? 'selected' : ''; ?>>APPLICATION OF FUNDS</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Fund Type</label>
-                            <select name="fund_type" class="form-control" tabindex="<?php echo $tab++; ?>">
-                                <option value="" <?php echo $head['fund_type'] == '' ? 'selected' : ''; ?>>-- Select --</option>
-                                <option value="source" <?php echo $head['fund_type'] == 'source' ? 'selected' : ''; ?>>SOURCE OF FUNDS</option>
-                                <option value="application" <?php echo $head['fund_type'] == 'application' ? 'selected' : ''; ?>>APPLICATION OF FUNDS</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label><i class="fa fa-eye mr-1"></i>Visibility</label>
-                            <select name="visibility" class="form-control" tabindex="<?php echo $tab++; ?>">
-                                <option value="private" <?php echo ($head['visibility'] == 'private' || $head['visibility'] == '') ? 'selected' : ''; ?>>
-                                    🔒 Private (Head Office Only)
-                                </option>
-                                <option value="public" <?php echo $head['visibility'] == 'public' ? 'selected' : ''; ?>>
-                                    🌐 Public (Visible to Units)
-                                </option>
-                            </select>
-                            <small class="text-muted">Private: visible to Head Office only. Public: visible to all units.</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label><i class="fa fa-chart-bar mr-1"></i>Trading & P&L Side (For Root Groups)</label>
-                            <select name="pl_side" class="form-control" tabindex="<?php echo $tab++; ?>">
-                                <option value="" <?php echo (empty($head['pl_side'])) ? 'selected' : ''; ?>>-- None (Not in P&L) --</option>
-                                <option value="expense" <?php echo ($head['pl_side'] == 'expense') ? 'selected' : ''; ?>>Trading & P&L Expenses</option>
-                                <option value="income" <?php echo ($head['pl_side'] == 'income') ? 'selected' : ''; ?>>Trading & P&L Incomes</option>
-                            </select>
-                            <small class="text-muted">Select a side to shift this group directly into the Profit & Loss report.</small>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><i class="fa fa-eye mr-1"></i>Visibility</label>
+                                    <select name="visibility" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                        <option value="private" <?php echo ($head['visibility'] == 'private' || $head['visibility'] == '') ? 'selected' : ''; ?>>
+                                            🔒 Private (Head Office Only)
+                                        </option>
+                                        <option value="public" <?php echo $head['visibility'] == 'public' ? 'selected' : ''; ?>>
+                                            🌐 Public (Visible to Units)
+                                        </option>
+                                    </select>
+                                    <small class="text-muted">Private: visible to Head Office only. Public: visible to all units.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><i class="fa fa-chart-bar mr-1"></i>Trading & P&L Side (For Root Groups)</label>
+                                    <select name="pl_side" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                        <option value="" <?php echo (empty($head['pl_side'])) ? 'selected' : ''; ?>>-- None (Not in P&L) --</option>
+                                        <option value="expense" <?php echo ($head['pl_side'] == 'expense') ? 'selected' : ''; ?>>Trading & P&L Expenses</option>
+                                        <option value="income" <?php echo ($head['pl_side'] == 'income') ? 'selected' : ''; ?>>Trading & P&L Incomes</option>
+                                    </select>
+                                    <small class="text-muted">Select a side to shift this group directly into the Profit & Loss report.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <?php if (intval($head['parent']) != 0): ?>
-                        <div class="form-group">
-                            <label>Parent Group</label>
-                            <select name="parent_group" class="form-control" tabindex="<?php echo $tab++; ?>">
-                                <option value="0">-- Root Group --</option>
-                                <?php
-                                echo get_group_hierarchy_options($head['parent'], $head['sno'], false);
-                                ?>
-                            </select>
-                            <small class="text-muted">Shift this group under a different parent.</small>
-                        </div>
-
-                        <div class="form-group mt-3">
-                            <div class="checkbox">
-                                <label>
-                                    <input type="checkbox" name="make_super_parent" value="1">
-                                    <strong>⭐ Make Super Parent</strong>
-                                    <small class="text-muted d-block">This will move the group to root level (parent = 0). Sub-heads will remain unchanged.</small>
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Parent Group</label>
+                                    <select name="parent_group" class="form-control" tabindex="<?php echo $tab++; ?>">
+                                        <option value="0">-- Root Group --</option>
+                                        <?php
+                                        echo get_group_hierarchy_options($head['parent'], $head['sno'], false);
+                                        ?>
+                                    </select>
+                                    <small class="text-muted">Shift this group under a different parent.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mt-3" style="padding-top: 15px;">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" name="make_super_parent" value="1">
+                                            <strong>⭐ Make Super Parent</strong>
+                                            <small class="text-muted d-block">This will move the group to root level (parent = 0). Sub-heads will remain unchanged.</small>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -233,7 +248,7 @@ page_sidebar();
                             <button type="submit" name="saveHead" class="btn btn-success">
                                 <i class="fa fa-save mr-1"></i> Update Changes
                             </button>
-                            <a href="billit_ledger_detail_report.php" class="btn btn-link">Back to Report</a>
+                            <a href="billit_ledger_detail_report.php" class="btn btn-link" style="color: #666; font-weight: bold;">Back to Report</a>
                         </div>
                     </form>
 
@@ -268,8 +283,8 @@ page_sidebar();
                                                 <th style="width:36px;">
                                                     <input type="checkbox" id="selectAll2" onclick="toggleSelectAll(this)">
                                                 </th>
-                                                <th>#</th>
-                                                <th>Description</th>
+                                                <th class="text-right">S.No</th>
+                                                <th class="text-left">Description</th>
                                                 <th>Visibility</th>
                                                 <th>Action</th>
                                             </tr>
@@ -280,8 +295,8 @@ page_sidebar();
                                                     <td>
                                                         <input type="checkbox" name="bulk_snos[]" value="<?php echo $sub['sno']; ?>" class="row-check">
                                                     </td>
-                                                    <td><?php echo $i + 1; ?></td>
-                                                    <td><?php echo htmlspecialchars($sub['description']); ?></td>
+                                                    <td class="text-right"><?php echo $i + 1; ?></td>
+                                                    <td class="text-left"><?php echo htmlspecialchars($sub['description']); ?></td>
                                                     <td>
                                                         <select name="row_visibility[<?php echo $sub['sno']; ?>]"
                                                                 class="form-control form-control-sm vis-select"
@@ -293,7 +308,7 @@ page_sidebar();
                                                     <td>
                                                         <a href="billit_edit_head.php?id=<?php echo $sub['sno']; ?>"
                                                             class="btn btn-xs btn-info" title="Edit full details">
-                                                            <i class="fa fa-pencil"></i>
+                                                            <i class="fa fa-pencil"></i> Edit
                                                         </a>
                                                     </td>
                                                 </tr>
@@ -372,8 +387,8 @@ page_sidebar();
                                             <th style="width:36px;">
                                                 <input type="checkbox" id="selectAllLedgers2" onclick="toggleSelectAllLedgers(this)">
                                             </th>
-                                            <th>#</th>
-                                            <th>Ledger Name</th>
+                                            <th class="text-right">S.No</th>
+                                            <th class="text-left">Ledger Name</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -383,12 +398,12 @@ page_sidebar();
                                                 <td>
                                                     <input type="checkbox" name="bulk_ledgers[]" value="<?php echo $lgr['sno']; ?>" class="ledger-check">
                                                 </td>
-                                                <td><?php echo $i + 1; ?></td>
-                                                <td><?php echo htmlspecialchars($lgr['cus_name']); ?></td>
+                                                <td class="text-right"><?php echo $i + 1; ?></td>
+                                                <td class="text-left"><?php echo htmlspecialchars($lgr['cus_name']); ?></td>
                                                 <td>
                                                     <a href="billit_ledgers.php?id=<?php echo $lgr['sno']; ?>"
                                                         class="btn btn-xs btn-info" title="Edit full details">
-                                                        <i class="fa fa-pencil"></i>
+                                                        <i class="fa fa-pencil"></i> Edit
                                                     </a>
                                                 </td>
                                             </tr>

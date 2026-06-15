@@ -462,7 +462,14 @@ page_sidebar();
 								?>
 							</select>
 						</th>
-						<th>टेंडर की स्थिति</th>
+						<th width="10%">Running/Close</th>
+						<th width="18%">
+							<select name="project_running_status" id="project_running_status" class="form-control">
+								<option value="0" <?php echo ($_POST['project_running_status'] == 0 ? 'selected' : ''); ?>>Running Project</option>
+								<option value="1" <?php echo ($_POST['project_running_status'] == 1 ? 'selected' : ''); ?>>Close Project </option>
+							</select>
+						</th>
+						<!--<th>टेंडर की स्थिति</th>
 						<th>
 							<select class="form-control" name="tender_status" id="tender_status"
 								tabindex="<?php echo $tab++; ?>">
@@ -481,7 +488,7 @@ page_sidebar();
 								}
 								?>
 							</select>
-						</th>
+						</th>-->
 					</tr>
 				</table>
 				<table width="100%" class="table table-striped table-hover rounded" style="margin:0px; padding:0px;">
@@ -739,9 +746,13 @@ page_sidebar();
 							left join uprnss_district on uprnss_district.sno = district_id
 							left join uprnss_division on uprnss_division.s_no = uprnss_project_temp.division_id
 							left join uprnss_department_name on uprnss_department_name.sno = department_id
-							where 1=1 and (status!="5" or status="0" or status is null or status="1") and reporting_status="0"';
+							where 1=1 and (status!="5" or status="0" or status is null or status="1") ';
 						//print_r($_POST);
 						if (isset($_POST['search'])) {
+						    
+						    if ($_POST['project_running_status'] != '') {
+									$sql .= ' and reporting_status="' . $_POST['project_running_status'] . '"';
+								}
 							if ($_POST['department'] != '') {
 								$sql .= ' and department_id="' . $_POST['department'] . '"';
 							}
@@ -1147,6 +1158,7 @@ page_sidebar();
 								echo '<td></td>';
 							}
 							if (isset($_POST['chk_project_image'])) {
+							   
 							echo '<td class="text-center">
 									<span class="icon-stack">
 									  <button type="button" class="icon-btn btn-view" 
@@ -1160,6 +1172,7 @@ page_sidebar();
 									  </button>
 									</span><br>
 								  </td>';
+							    
 							}
 
 

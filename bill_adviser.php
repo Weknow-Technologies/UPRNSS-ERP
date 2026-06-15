@@ -118,12 +118,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pba_payment_update'])
         <?php if (!empty($msg)) echo $msg; ?>
 
         <style>
-          .pba-cell { min-width: 280px; }
+          .pba-cell { min-width: 130px; }
           .pba-details { font-size: 12px; line-height: 1.35; display: grid; gap: 4px; }
           .pba-details .r { display: grid; grid-template-columns: 120px 1fr; align-items: baseline; }
           .pba-details .r > span { color: #6c757d; }
           .pba-details .r > b { font-weight: 600; word-break: break-word; }
           .align-top { vertical-align: top; }
+
+          table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(45deg, #e53935, #b71c1c);
+            text-align: center;
+            vertical-align: middle;
+            font-size: 15px !important;
+            white-space: nowrap;
+            color: white !important;
+            padding: 12px;
+          }
+
+          table tbody td {
+            font-size: 13px !important;
+            vertical-align: middle;
+            padding: 10px;
+          }
+
+          /* Ensure sidebar is always above sticky headers */
+          .sidebar {
+            z-index: 1050 !important;
+          }
         </style>
 		<style>
   /* Wider modal */
@@ -148,25 +172,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pba_payment_update'])
     }
   }
 </style>
-
-        <table class="table table-bordered">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto; overflow-x: auto;">
+        <table class="table table-bordered table-striped table-hover" style="margin-bottom: 0;">
             <thead>
                 <tr>
-                    <th>Sr. No</th>
-                    <th>Project Name</th>
-                    <th>Vendor Name</th>
+                    <th class="text-right" style="width: 20px !important;">Sr. No</th>
+                    <th class="text-left">Project Name</th>
+                    <th class="text-left">Vendor Name</th>
                     <!--<th>Bill SNOs</th>-->
-                    <th>Total Received</th>
-                    <th>Total Bill</th>
-                    <th>Total Net Payment</th>
-                    <th>Bill Count</th>
-                    <th>Created At</th>
-                    <th>Current With</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                    <th class="no-print">Note Sheet</th>
-                    <th class="no-print">Advise</th>
-                    <th class="no-print">Payment Details</th>
+                    <th class="text-right">Total Received</th>
+                    <th class="text-right">Total Bill</th>
+                    <th class="text-right">Total Net Payment</th>
+                    <th class="text-right">Bill Count</th>
+                    <th class="text-center">Created At</th>
+                    <th class="text-center">Current With</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Action</th>
+                    <th class="text-center no-print">Note Sheet</th>
+                    <th class="text-center no-print">Advise</th>
+                    <th class="text-center no-print">Payment Details</th>
                 </tr>
             </thead>
             <tbody>
@@ -200,14 +224,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pba_payment_update'])
                         }
 
                         echo "<tr>";
-                        echo "<td>".$d++."</td>";
-                        echo "<td>".h($row['project_name_hindi'])."</td>";
-                        echo "<td>".$row_vendor_name."</td>";
-                        echo "<td>".h($row['total_rcv_amt'])."</td>";
-                        echo "<td>".h($row['total_transfer'])."</td>";
-                        echo "<td>".h($row['total_net_pay'])."</td>";
-                        echo "<td>".h($row['bill_count'])."</td>";
-                        echo "<td>".h($row['created_at'])."</td>";
+                        echo "<td class='text-right'>".$d++."</td>";
+                        echo "<td class='text-left'>".h($row['project_name_hindi'])."</td>";
+                        echo "<td class='text-left'>".$row_vendor_name."</td>";
+                        echo "<td class='text-right'>₹".number_format((float)$row['total_rcv_amt'], 2)."</td>";
+                        echo "<td class='text-right'>₹".number_format((float)$row['total_transfer'], 2)."</td>";
+                        echo "<td class='text-right'>₹".number_format((float)$row['total_net_pay'], 2)."</td>";
+                        echo "<td class='text-right'>".h($row['bill_count'])."</td>";
+                        echo "<td class='text-center'>".h($row['created_at'])."</td>";
 
                         // Current With + Status (helper prints two <td>)
                         echo getApprovalTrailRow($module_name, $row['id']);
@@ -297,6 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pba_payment_update'])
                 } ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 

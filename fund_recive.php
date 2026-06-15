@@ -6,7 +6,7 @@ $tab = 1;
 
 page_header_start();
 ?>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <?php
 page_header_end();
 page_sidebar();
@@ -15,6 +15,20 @@ page_sidebar();
 function nval($v)
 {
     return is_numeric($v) ? floatval($v) : 0.0;
+}
+function get_general_setting($desc, $unit_id = 0)
+{
+    global $db;
+    $unit_id = ($unit_id == "" || $unit_id == 0) ? 53 : $unit_id; // Default HO is 53
+    $sql = "SELECT * FROM general_settings WHERE `desc`='" . mysqli_real_escape_string($db, $desc) . "' AND unit_id='" . mysqli_real_escape_string($db, $unit_id) . "' LIMIT 1";
+    $res = execute_query($sql);
+    if ($r = mysqli_fetch_assoc($res)) {
+        return $r;
+    }
+    // Fallback to global (unit_id IS NULL or 0)
+    $sql = "SELECT * FROM general_settings WHERE `desc`='" . mysqli_real_escape_string($db, $desc) . "' AND (unit_id IS NULL OR unit_id=0 OR unit_id='') LIMIT 1";
+    $res = execute_query($sql);
+    return mysqli_fetch_assoc($res);
 }
 function ensure_tfr_alloc_columns($db)
 {
@@ -58,12 +72,48 @@ function ensure_tfr_alloc_columns($db)
 
 
 
+function ensure_ifr_ledger_columns($db)
+{
+    $res = mysqli_query($db, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='invoice_fund_receive'");
+    $have = [];
+    if ($res) {
+        while ($r = mysqli_fetch_assoc($res)) {
+            $have[$r['COLUMN_NAME']] = 1;
+        }
+    }
+    $clauses = [];
+    if (!isset($have['tds_ledger_id']))
+        $clauses[] = "ADD COLUMN `tds_ledger_id` VARCHAR(50) DEFAULT NULL";
+    if (!isset($have['gst_tds_ledger_id']))
+        $clauses[] = "ADD COLUMN `gst_tds_ledger_id` VARCHAR(50) DEFAULT NULL";
+    if (!isset($have['labour_cess_ledger_id']))
+        $clauses[] = "ADD COLUMN `labour_cess_ledger_id` VARCHAR(50) DEFAULT NULL";
+    if (!isset($have['other_charges_ledger_id']))
+        $clauses[] = "ADD COLUMN `other_charges_ledger_id` VARCHAR(50) DEFAULT NULL";
+    if (!isset($have['other_charges']))
+        $clauses[] = "ADD COLUMN `other_charges` DECIMAL(15,2) DEFAULT '0.00'";
+
+    if (!empty($clauses)) {
+        $sql = "ALTER TABLE `invoice_fund_receive` " . implode(", ", $clauses);
+        mysqli_query($db, $sql);
+    }
+}
+// Run schema update globally to ensure columns exist before edit queries run
+ensure_ifr_ledger_columns($db);
+
 /* ---------- Submit (Insert/Update) ---------- */
 if (isset($_POST['submit'])) {
     mysqli_begin_transaction($db);
 
     // Make sure allocation columns exist
     ensure_tfr_alloc_columns($db);
+    ensure_ifr_ledger_columns($db);
+
+    $tds_ledger_id = mysqli_real_escape_string($db, $_POST['tds_ledger_id'] ?? '');
+    $gst_tds_ledger_id = mysqli_real_escape_string($db, $_POST['gst_tds_ledger_id'] ?? '');
+    $labour_cess_ledger_id = mysqli_real_escape_string($db, $_POST['labour_cess_ledger_id'] ?? '');
+    $other_charges_ledger_id = mysqli_real_escape_string($db, $_POST['other_charges_ledger_id'] ?? '');
+    $other_charges = nval($_POST['other_charges'] ?? 0);
 
     $rowCount = intval($_POST['add_rows_id']);
     $perProjectNew = [];  // project_id => sum p_receive_amount (rupees)
@@ -90,7 +140,8 @@ if (isset($_POST['submit'])) {
     $tds_total = nval($_POST['tds_deducted']);
     $gsttds_total = nval($_POST['gsttds_deducted']);
     $labour_total = nval($_POST['labour_sess']);
-    $tot_credit_amount = max(0, $tot_receive_amount - $tds_total - $gsttds_total - $labour_total);
+    $other_charges = nval($_POST['other_charges'] ?? 0);
+    $tot_credit_amount = max(0, $tot_receive_amount - $tds_total - $gsttds_total - $labour_total - $other_charges);
     $_POST['tot_credit_amount'] = number_format($tot_credit_amount, 2, '.', '');
 
     /* ---------- Server-side cap check (Sanction in Lakh → Rupees) ---------- */
@@ -159,7 +210,7 @@ if (isset($_POST['submit'])) {
             $sql = 'INSERT INTO invoice_fund_receive 
             (`fund_receive_type`,`fund_receive_to`,`installment`,`order_no`,`order_date`,`receive_date`,
              `tot_receive_amount`, `tds_per`,`tds_deducted`,`gst_tds_per`,`gsttds_deducted`,`labour_sess`,
-             `bank_name`,`remark`,`status`,`created_by`,`creation_time`, `voucher_no` ) VALUES (
+             `bank_name`,`remark`,`status`,`created_by`,`creation_time`, `voucher_no`, `tds_ledger_id`, `gst_tds_ledger_id`, `labour_cess_ledger_id`, `other_charges_ledger_id`, `other_charges` ) VALUES (
             "' . $_POST['fund_receive_type'] . '",
             "' . $_POST['fund_receive_to'] . '",
             "' . $_POST['installment'] . '",
@@ -177,7 +228,12 @@ if (isset($_POST['submit'])) {
             "0",
             "' . $_SESSION['usersno'] . '",
             "' . date("Y-m-d H:i:s") . '",
-            "' . $_POST['voucher_no'] . '"
+            "' . $_POST['voucher_no'] . '",
+            "' . $tds_ledger_id . '",
+            "' . $gst_tds_ledger_id . '",
+            "' . $labour_cess_ledger_id . '",
+            "' . $other_charges_ledger_id . '",
+            "' . number_format($other_charges, 2, '.', '') . '"
             )';
             execute_query($sql);
             if (mysqli_error($db)) {
@@ -285,57 +341,118 @@ if (isset($_POST['submit'])) {
                     $net_total = nval($sum['net_total']);
                     $tot_credit_amount = $_POST['tot_credit_amount'];
 
-                    /* Ledger lookups (same style as before) */
-                    $gsttds = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="GSTTDS"'));
-                    $ittds = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="ITTDS"'));
-                    $laborcess = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="LABORCESS"'));
+                    /* Ledger lookups (unit-aware) */
+                    $unit_id_for_settings = $_POST['unit_id'] ?? 53;
 
-                    /* CGST/SGST ledgers (use `rate`; fallback labels if not configured) */
-                    $cgstL = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="CGST"'));
-                    $sgstL = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="SGST"'));
-                    $cgst_by = ($cgstL && isset($cgstL['rate']) && $cgstL['rate'] !== '') ? $cgstL['rate'] : 'CGST';
-                    $sgst_by = ($sgstL && isset($sgstL['rate']) && $sgstL['rate'] !== '') ? $sgstL['rate'] : 'SGST';
+                    $tds_ledger = $tds_ledger_id;
+                    $gst_tds_ledger = $gst_tds_ledger_id;
+                    $labour_cess_ledger = $labour_cess_ledger_id;
+                    $other_charges_ledger = $other_charges_ledger_id;
+					$cgst_ledger == '';
+					$sgst_ledger == '';
+
+                    if ($tds_ledger == '') {
+                        $s = get_general_setting("ITTDS", $unit_id_for_settings);
+                        $tds_ledger = $s['rate'] ?? '';
+                    }
+                    if ($gst_tds_ledger == '') {
+                        $s = get_general_setting("GSTTDS", $unit_id_for_settings);
+                        $gst_tds_ledger = $s['rate'] ?? '';
+                    }
+                    if ($labour_cess_ledger == '') {
+                        $s = get_general_setting("LABORCESS", $unit_id_for_settings);
+                        $labour_cess_ledger = $s['rate'] ?? '';
+                    }
+                    if ($other_charges_ledger == '') {
+                        $s = get_general_setting("OTHER_CHARGES", $unit_id_for_settings);
+                        $other_charges_ledger = $s['rate'] ?? '';
+                    }
+                    if ($cgst_ledger == '') {
+                        $s = get_general_setting("CGST", $unit_id_for_settings);
+                        $cgst_ledger = $s['rate'] ?? '';
+                    }
+                    if ($sgst_ledger == '') {
+                        $s = get_general_setting("SGST", $unit_id_for_settings);
+                        $sgst_ledger = $s['rate'] ?? '';
+                    }
+
+
 
                     /* By: Bank — DIFFERENCE/NET (sum of p_diff_amount) */
                     execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
 								   VALUES ("' . $journal_id . '", "' . $_POST['bank_name'] . '", "' . number_format($tot_credit_amount, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
 
-                    /* By: TDS, GST-TDS, Labour (unchanged) */
+                    /* By: TDS, GST-TDS, Labour (using selected ledgers) */
                     if (nval($tds_total) > 0) {
                         execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $ittds['rate'] . '",  "' . number_format($tds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+									 VALUES ("' . $journal_id . '", "' . $tds_ledger . '",  "' . number_format($tds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                     }
                     if (nval($gsttds_total) > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $gsttds['rate'] . '",  "' . number_format($gsttds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        if ($gst_tds_ledger != '') {
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $gst_tds_ledger . '",  "' . number_format($gsttds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        } else {
+                            $cgst_tds_l = get_general_setting("CGSTTDS", $unit_id_for_settings)['rate'] ?? '';
+                            $sgst_tds_l = get_general_setting("SGSTTDS", $unit_id_for_settings)['rate'] ?? '';
+                            $half = $gsttds_total / 2;
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $cgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $sgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        }
                     }
                     if (nval($labour_total) > 0) {
                         execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $laborcess['rate'] . '", "' . number_format($labour_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+									 VALUES ("' . $journal_id . '", "' . $labour_cess_ledger . '", "' . number_format($labour_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                    }
+                    if (nval($other_charges) > 0) {
+                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $other_charges_ledger_id . '", "' . number_format($other_charges, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                     }
 
 
-                    /* To: Department — gross total (unchanged) */
-                    execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-								   VALUES ("' . $journal_id . '", "' . $first_to['ledger_id'] . '", "' . number_format($net_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                    /* To: Project Ledgers (row-wise) */
+                    for ($k = 0; $k <= $rowCount; $k++) {
+                        if (!empty($_POST['project_id_' . $k]) && !empty($_POST['p_receive_amount_' . $k])) {
+                            $net_amt = nval($_POST['p_diff_amount_' . $k] ?? 0);
+                            $cgst_amt = nval($_POST['cgst_amount_' . $k] ?? 0);
+                            $sgst_amt = nval($_POST['sgst_amount_' . $k] ?? 0);
 
-                    /* By: CGST total */
-                    if ($cgst_total > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $cgst_by . '", "' . number_format($cgst_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+
+
+                            if ($net_amt > 0) {
+                                $proj_ledger = mysqli_real_escape_string($db, $_POST['project_ledger_id_' . $k] ?? '');
+                                if (empty($proj_ledger)) {
+                                    $proj_ledger = $first_to['ledger_id']; // fallback to department
+                                }
+                                execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
+                                               VALUES ("' . $journal_id . '", "' . $proj_ledger . '", "' . number_format($net_amt, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+
+                                execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
+                                               VALUES ("' . $journal_id . '", "' . $cgst_ledger . '", "' . number_format($cgst_amt, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+
+                                execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
+                                               VALUES ("' . $journal_id . '", "' . $sgst_ledger . '", "' . number_format($sgst_amt, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                            }
+                        }
                     }
 
-                    /* By: SGST total */
-                    if ($sgst_total > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $sgst_by . '", "' . number_format($sgst_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
-                    }
+
                     if (mysqli_error($db)) {
                         mysqli_rollback($db);
                         $msg .= 'Error # 1.369';
                     } else {
                         mysqli_commit($db);
                         $msg .= 'Successfully Added';
+
+                        // Notification to HO Accountant
+                        if ($_POST['fund_receive_to'] == 'Unit' && $_SESSION['usertype'] == '9') {
+                            $u_id = mysqli_real_escape_string($db, $_POST['unit_id'] ?? ($_SESSION['divisions'][0] ?? '0'));
+                            $n_msg = "Fund of ₹" . number_format($tot_receive_amount, 2) . " received successfully.";
+                            $n_time = date("Y-m-d H:i:s");
+                            execute_query("INSERT INTO ho_notifications (sender_unit_id, invoice_id, message, status, created_time) VALUES ('$u_id', '$inv_id', '$n_msg', '0', '$n_time')");
+                        }
+
                         unset($_POST);
                         goto postblank;
                     }
@@ -364,7 +481,12 @@ if (isset($_POST['submit'])) {
                 `remark` ="' . mysqli_real_escape_string($db, $_POST['remark']) . '",
                 `edited_by` ="' . $_SESSION['username'] . '",
                 `edition_time` ="' . date("Y-m-d H:i:s") . '",
-                `voucher_no` = "' . $_POST['voucher_no'] . '"
+                `voucher_no` = "' . $_POST['voucher_no'] . '",
+                `tds_ledger_id` = "' . $tds_ledger_id . '",
+                `gst_tds_ledger_id` = "' . $gst_tds_ledger_id . '",
+                `labour_cess_ledger_id` = "' . $labour_cess_ledger_id . '",
+                `other_charges_ledger_id` = "' . $other_charges_ledger_id . '",
+                `other_charges` = "' . number_format($other_charges, 2, '.', '') . '"
                 WHERE sno="' . $inv_id . '"';
             execute_query($sql);
             if (mysqli_error($db)) {
@@ -459,51 +581,81 @@ if (isset($_POST['submit'])) {
                     $net_total = nval($sum['net_total']);
                     $tot_credit_amount = $_POST['tot_credit_amount'];
 
-                    /* Ledger lookups (same style as before) */
-                    $gsttds = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="GSTTDS"'));
-                    $ittds = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="ITTDS"'));
-                    $laborcess = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="LABORCESS"'));
+                    /* Ledger lookups (unit-aware) */
+                    $unit_id_for_settings = $_POST['unit_id'] ?? 53;
 
-                    /* CGST/SGST ledgers (use `rate`; fallback labels if not configured) */
-                    $cgstL = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="CGST"'));
-                    $sgstL = mysqli_fetch_assoc(execute_query('select * from general_settings where `desc`="SGST"'));
-                    $cgst_by = ($cgstL && isset($cgstL['rate']) && $cgstL['rate'] !== '') ? $cgstL['rate'] : 'CGST';
-                    $sgst_by = ($sgstL && isset($sgstL['rate']) && $sgstL['rate'] !== '') ? $sgstL['rate'] : 'SGST';
+                    $tds_ledger = $tds_ledger_id;
+                    $gst_tds_ledger = $gst_tds_ledger_id;
+                    $labour_cess_ledger = $labour_cess_ledger_id;
+
+                    if ($tds_ledger == '') {
+                        $s = get_general_setting("ITTDS", $unit_id_for_settings);
+                        $tds_ledger = $s['rate'] ?? '';
+                    }
+                    if ($gst_tds_ledger == '') {
+                        $s = get_general_setting("GSTTDS", $unit_id_for_settings);
+                        $gst_tds_ledger = $s['rate'] ?? '';
+                    }
+                    if ($labour_cess_ledger == '') {
+                        $s = get_general_setting("LABORCESS", $unit_id_for_settings);
+                        $labour_cess_ledger = $s['rate'] ?? '';
+                    }
+                    if ($other_charges_ledger_id == '') {
+                        $s = get_general_setting("OTHER_CHARGES", $unit_id_for_settings);
+                        $other_charges_ledger_id = $s['rate'] ?? '';
+                    }
+
+
 
                     /* By: Bank — DIFFERENCE/NET (sum of p_diff_amount) */
                     execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
 								   VALUES ("' . $journal_id . '", "' . $_POST['bank_name'] . '", "' . number_format($tot_credit_amount, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
 
-                    /* By: TDS, GST-TDS, Labour (unchanged) */
+                    /* By: TDS, GST-TDS, Labour (using selected ledgers) */
                     if (nval($tds_total) > 0) {
                         execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $ittds['rate'] . '",  "' . number_format($tds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+									 VALUES ("' . $journal_id . '", "' . $tds_ledger . '",  "' . number_format($tds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                     }
                     if (nval($gsttds_total) > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $gsttds['rate'] . '",  "' . number_format($gsttds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        if ($gst_tds_ledger != '') {
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $gst_tds_ledger . '",  "' . number_format($gsttds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        } else {
+                            $cgst_tds_l = get_general_setting("CGSTTDS", $unit_id_for_settings)['rate'] ?? '';
+                            $sgst_tds_l = get_general_setting("SGSTTDS", $unit_id_for_settings)['rate'] ?? '';
+                            $half = $gsttds_total / 2;
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $cgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $sgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                        }
                     }
                     if (nval($labour_total) > 0) {
                         execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $laborcess['rate'] . '", "' . number_format($labour_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+									 VALUES ("' . $journal_id . '", "' . $labour_cess_ledger . '", "' . number_format($labour_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                    }
+                    if (nval($other_charges) > 0) {
+                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
+									 VALUES ("' . $journal_id . '", "' . $other_charges_ledger_id . '", "' . number_format($other_charges, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                     }
 
 
-                    /* To: Department — gross total (unchanged) */
-                    execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-								   VALUES ("' . $journal_id . '", "' . $first_to['ledger_id'] . '", "' . number_format($net_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
-
-                    /* By: CGST total */
-                    if ($cgst_total > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $cgst_by . '", "' . number_format($cgst_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                    /* To: Project Ledgers (row-wise) */
+                    for ($k = 0; $k <= $rowCount; $k++) {
+                        if (!empty($_POST['project_id_' . $k]) && !empty($_POST['p_receive_amount_' . $k])) {
+                            $net_amt = nval($_POST['p_receive_amount_' . $k] ?? 0);
+                            if ($net_amt > 0) {
+                                $proj_ledger = mysqli_real_escape_string($db, $_POST['project_ledger_id_' . $k] ?? '');
+                                if (empty($proj_ledger)) {
+                                    $proj_ledger = $first_to['ledger_id']; // fallback to department
+                                }
+                                execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
+                                               VALUES ("' . $journal_id . '", "' . $proj_ledger . '", "' . number_format($net_amt, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+                            }
+                        }
                     }
 
-                    /* By: SGST total */
-                    if ($sgst_total > 0) {
-                        execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `to`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $sgst_by . '", "' . number_format($sgst_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
-                    }
+
 
                 }
 
@@ -545,12 +697,19 @@ if (isset($_POST['submit'])) {
     $_POST['add_rows_id'] = 1;
     $_POST['edit_sno'] = '';
 
-    if ($_SESSION['usertype'] == "6" && $_SESSION['usertype'] == "sadmin") {
+    if ($_SESSION['usertype'] == "6" || $_SESSION['usertype'] == "sadmin" || $_SESSION['username'] == "headacc") {
         $_POST['fund_receive_to'] = 'HO';
     } elseif ($_SESSION['usertype'] == "9") {
         $_POST['fund_receive_to'] = 'Unit';
     } else {
         $_POST['fund_receive_to'] = '';
+    }
+
+    // Auto-select unit_id if user only has one division
+    if (isset($_SESSION['divisions']) && count($_SESSION['divisions']) == 1) {
+        $_POST['unit_id'] = $_SESSION['divisions'][0];
+    } else {
+        $_POST['unit_id'] = '';
     }
 }
 
@@ -576,6 +735,11 @@ if (isset($_GET['edit_sno']) && $_GET['edit_sno'] != '') {
     $_POST['voucher_no'] = $data['voucher_no'];
     $_POST['remark'] = $data['remark'];
     $_POST['edit_sno'] = $data['sno'];
+    $_POST['tds_ledger_id'] = $data['tds_ledger_id'] ?? '';
+    $_POST['gst_tds_ledger_id'] = $data['gst_tds_ledger_id'] ?? '';
+    $_POST['labour_cess_ledger_id'] = $data['labour_cess_ledger_id'] ?? '';
+    $_POST['other_charges_ledger_id'] = $data['other_charges_ledger_id'] ?? '';
+    $_POST['other_charges'] = $data['other_charges'] ?? '';
 
     // Load unit_id from billit_invoice_erp_receipt
     $jr = mysqli_fetch_assoc(execute_query('SELECT unit_id FROM billit_invoice_erp_receipt WHERE table_name="invoice_fund_receive" AND table_id="' . $editId . '" LIMIT 1'));
@@ -689,12 +853,19 @@ if (isset($_GET['delid'])) {
             document.getElementById("bank_ho").style.display = "none";
             document.getElementById("bank_name_unit").disabled = false;
             document.getElementById("bank_name").disabled = true;
+            if (typeof fill_unit_ledgers === "function") {
+                var uId = document.getElementById("unit_id") ? document.getElementById("unit_id").value : '';
+                if (uId) fill_unit_ledgers(uId);
+            }
         } else {
             document.getElementById("unit").style.display = "none";
             document.getElementById("bank_unit").style.display = "none";
             document.getElementById("bank_ho").style.display = "block";
             document.getElementById("bank_name_unit").disabled = true;
             document.getElementById("bank_name").disabled = false;
+            if (typeof fill_unit_ledgers === "function") {
+                fill_unit_ledgers("53"); // 53 is HO
+            }
         }
     }
 
@@ -703,6 +874,12 @@ if (isset($_GET['delid'])) {
         document.getElementById("fund_receive_type").onchange = onchangetype;
         fund_receive_to();
         document.getElementById("fund_receive_to").onchange = fund_receive_to;
+
+        // Auto-fetch unit ledgers if a unit is already selected (for edit)
+        var preUnit = document.getElementById("unit_id")?.value;
+        if (preUnit) {
+            fill_unit_ledgers(preUnit);
+        }
     };
 
     /* ---------- Totals / Percent ---------- */
@@ -783,8 +960,42 @@ if (isset($_GET['delid'])) {
         let tds_ded = parseFloat(tdsdeducted.value) || 0;
         let gst_ded = parseFloat(gsttdsdeducted.value) || 0;
         let lab = parseFloat(laboursess.value) || 0;
+        let other_chg = parseFloat(document.getElementById('other_charges')?.value) || 0;
 
-        totcreditamount.value = customRound(totamount - tds_ded - gst_ded - lab);
+        totcreditamount.value = customRound(totamount - tds_ded - gst_ded - lab - other_chg);
+
+        // Update GST split
+        let cgst_box = document.getElementById('cgst_split_box');
+        let sgst_box = document.getElementById('sgst_split_box');
+        if (cgst_box && sgst_box) {
+            let half_gst = (gst_ded / 2).toFixed(2);
+            cgst_box.value = half_gst;
+            sgst_box.value = half_gst;
+        }
+    }
+
+
+
+    /* ---------- NEW: Project Row Calculation ---------- */
+    function addCalc(rowId) {
+        let max = parseInt($("#add_rows_id").val()) || 1;
+        let sum = 0;
+        for (let i = 1; i <= max; i++) {
+            if ($("#row_wrap_" + i).length) {
+                let val = parseFloat($("#p_receive_amount_" + i).val()) || 0;
+                sum += val;
+            }
+        }
+
+        let type = $("#fund_receive_type").val();
+        if (type == "1") {
+            $("#tot_receive_amount").val(sum.toFixed(2));
+            percent_amt_calc(); // Update TDS and Net amounts
+        }
+
+        if (rowId) {
+            renderTaxBreakdown(rowId);
+        }
     }
 
     /* ---------- NEW: Per-row CGST/SGST/Net breakdown (display only) ---------- */
@@ -862,7 +1073,16 @@ if (isset($_GET['delid'])) {
     /* ---------- New: top toolbar add, per-row remove ---------- */
     function remove_row(rowId) {
         $("#row_wrap_" + rowId).remove();
+        $("#row_num_" + rowId).remove();
         addCalc(1); // recalc totals
+        update_row_numbers();
+    }
+
+    function update_row_numbers() {
+        $('.row-serial-number').each(function(index) {
+            // First static row has no visible number, first dynamic row is #2
+            $(this).text(index + 2);
+        });
     }
 
     /* ---------- Lock & show department on new rows ---------- */
@@ -880,9 +1100,9 @@ if (isset($_GET['delid'])) {
 
         var lockedDept = getLockedDepartment();
 
-        var txt = id +
-            '<div id="row_wrap_' + id + '" class="row border-top pt-2 mt-2">' +
-            '<div class="col-md-2 ">' +
+        var txt = '<div id="row_num_' + id + '" class="mt-3 font-weight-bold row-serial-number" style="font-size: 16px;">' + id + '</div>' +
+            '<div id="row_wrap_' + id + '" class="row align-items-start border-top pt-2 mt-2 flex-nowrap overflow-auto">' +
+            '<div class="col" style="min-width: 160px;">' +
             '<div class="form-group mb-1">' +
             '<label>विभाग</label>' +
             '<div class="d-flex gap-2 align-items-center">' +
@@ -904,26 +1124,33 @@ if (isset($_GET['delid'])) {
             '</div>' +
             '</div>' +
             '</div>' +
-            '<div class="col-md-2">' +
+            '<div class="col" style="min-width: 160px;">' +
             '<div class="form-group mb-1">' +
             '<label>उप विभाग</label>' +
             '<select class="form-control" name="sub_department_id_' + id + '" id="sub_department_id_' + id + '" value=""></select>' +
             '</div>' +
             '</div>' +
-            '<div class="col-md-2">' +
+            '<div class="col" style="min-width: 160px;">' +
             '<div class="form-group mb-1">' +
             '<label>आच्छादित जनपद</label>' +
             '<select class="form-control" name="district_id_' + id + '" id="district_id_' + id + '" onChange="fill_project(this.value, ' + id + ')"></select>' +
             '</div>' +
             '</div>' +
-            '<div class="col-md-3">' +
+            '<div class="col" style="min-width: 160px; max-width: 350px;">' +
             '<div class="form-group mb-1">' +
             '<label>परियोजना का नाम <span id="ledger_link_' + id + '"></span></label>' +
-            '<select class="form-control" name="project_id_' + id + '" id="project_id_' + id + '" onChange="view_ledger_row(' + id + '); loadProjectInfo(' + id + ');"></select>' +
+            '<select class="form-control" name="project_id_' + id + '" id="project_id_' + id + '" onChange="view_ledger_row(' + id + '); loadProjectInfo(' + id + '); loadProjectMappingInfo(' + id + ');"></select>' +
+            '<input type="hidden" id="erp_code_' + id + '">' +
             '<div class="mt-1 small text-muted" id="proj_info_' + id + '"></div>' +
             '</div>' +
             '</div>' +
-            '<div class="col-md-3">' +
+            '<div class="col" id="ledger_map_col_' + id + '">' +
+            '<div class="form-group mb-1">' +
+            '<label>Ledger Map <span class="text-success small" id="map_status_' + id + '" style="display:none;">Saved ✓</span> <a href="billit_ledgers.php" target="_blank" title="Create Ledger" style="margin-left:5px; color:#16a34a;"><i class="fas fa-plus-circle"></i></a></label>' +
+            '<select class="form-control ledger-select" name="project_ledger_id_' + id + '" id="project_ledger_id_' + id + '" onChange="save_project_ledger_mapping(' + id + ')"></select>' +
+            '</div>' +
+            '</div>' +
+            '<div class="col" style="min-width: 160px;">' +
             '<div class="form-group mb-1">' +
             '<label>परियोजना पर प्राप्त राशि</label>' +
             '<input type="text" name="p_receive_amount_' + id + '" id="p_receive_amount_' + id + '" class="form-control" value="" onInput="addCalc(' + id + ')">' +
@@ -931,7 +1158,6 @@ if (isset($_GET['delid'])) {
             '<input type="hidden" name="cgst_amount_' + id + '" id="cgst_amount_' + id + '">' +
             '<input type="hidden" name="sgst_amount_' + id + '" id="sgst_amount_' + id + '">' +
             '<input type="hidden" name="p_diff_amount_' + id + '" id="p_diff_amount_' + id + '">' +
-
             '</div>' +
             '</div>' +
             '</div>';
@@ -954,6 +1180,12 @@ if (isset($_GET['delid'])) {
 
         // Transform new dropdowns to searchable
         ['department_id_' + id, 'sub_department_id_' + id, 'district_id_' + id, 'project_id_' + id].forEach(makeSearchable);
+
+        // Fetch ledgers and initialize Select2 for all ledger-select elements, including the new one
+        var currentUnit = $('#unit_id').val() || 53;
+        fill_unit_ledgers(currentUnit);
+
+        update_row_numbers();
     }
 
     var actionUrl = "scripts/ajax_isolated.php";
@@ -971,6 +1203,11 @@ if (isset($_GET['delid'])) {
                     txt += '<option value="' + value.id + '">' + value.sub_department_hindi + '</option>';
                 });
                 $("#sub_department_id_" + rowId).html(txt).trigger('change');
+                if (ajaxdata && ajaxdata.length > 0) {
+                    $("#sub_department_id_" + rowId).closest('.col').show();
+                } else {
+                    $("#sub_department_id_" + rowId).closest('.col').hide();
+                }
             }
         });
     }
@@ -1006,6 +1243,56 @@ if (isset($_GET['delid'])) {
         });
     }
 
+    function loadProjectMappingInfo(rowId) {
+        var prj = $("#project_id_" + rowId).val();
+        $("#erp_code_" + rowId).val('');
+
+        if (!prj) {
+            $("#project_ledger_id_" + rowId).val('').trigger('change.select2');
+            $("#ledger_map_col_" + rowId).show();
+            return;
+        }
+
+        $.ajax({
+            url: 'scripts/ajax.php',
+            type: 'POST',
+            data: { term: 'all', id: 'get_project_mapping_info', project_id: prj },
+            dataType: 'json',
+            success: function (res) {
+                if (res.erp_code) {
+                    $("#erp_code_" + rowId).val(res.erp_code);
+                }
+                if (res.ledger_sno) {
+                    $("#project_ledger_id_" + rowId).val(res.ledger_sno).trigger('change.select2');
+                    $("#ledger_map_col_" + rowId).hide();
+                } else {
+                    $("#project_ledger_id_" + rowId).val('').trigger('change.select2');
+                    $("#ledger_map_col_" + rowId).show();
+                }
+            }
+        });
+    }
+
+    function save_project_ledger_mapping(rowId) {
+        var ledgerSno = $("#project_ledger_id_" + rowId).val();
+        var erpCode = $("#erp_code_" + rowId).val();
+        // Do not alert if we are just unselecting or if there's no ERP code on load
+        if (!erpCode) {
+            return;
+        }
+        $.ajax({
+            url: 'scripts/project_ledger_mapping_ajax.php',
+            type: 'POST',
+            data: { action: 'save_mapping', erp_code: erpCode, ledger_sno: ledgerSno },
+            dataType: 'json',
+            success: function (res) {
+                if (res.status === 'success') {
+                    $('#map_status_' + rowId).show().fadeOut(3000);
+                }
+            }
+        });
+    }
+
     // Prefill versions for edit
     function fill_sub_department_prefill(deptId, rowId, selectedVal) {
         $.ajax({
@@ -1019,6 +1306,11 @@ if (isset($_GET['delid'])) {
                     txt += '<option value="' + value.id + '">' + value.sub_department_hindi + '</option>';
                 });
                 $("#sub_department_id_" + rowId).html(txt).val(selectedVal).trigger('change');
+                if (ajaxdata && ajaxdata.length > 0) {
+                    $("#sub_department_id_" + rowId).closest('.col').show();
+                } else {
+                    $("#sub_department_id_" + rowId).closest('.col').hide();
+                }
             }
         });
     }
@@ -1050,6 +1342,7 @@ if (isset($_GET['delid'])) {
                 });
                 $("#project_id_" + rowId).html(txt).val(selectedVal).trigger('change');
                 loadProjectInfo(rowId);
+                loadProjectMappingInfo(rowId);
             }
         });
     }
@@ -1093,6 +1386,40 @@ if (isset($_GET['delid'])) {
                     $("#proj_info_" + rowId).html(parts.join(' | '));
                     view_ledger_row(rowId);
                     enforcePerProjectLimit(rowId);
+
+                    // NEW: Fetch HO Transfer Details and auto-fill amount
+                    if (exclude === 0) {
+                        var orderNo = $("#order_no").val();
+                        if (orderNo && orderNo.trim() !== '') {
+                            $.ajax({
+                                type: "POST",
+                                url: "scripts/ajax_isolated.php",
+                                data: { "id": "fetch_transfer_row", "order_no": orderNo, "project_id": prj },
+                                success: function (res) {
+                                    try {
+                                        var transferData = JSON.parse(res);
+                                        if (transferData.status === 'success') {
+                                            var transferAmt = parseFloat(transferData.transafer_amount) || 0;
+                                            if (transferAmt > 0 && !$("#p_receive_amount_" + rowId).val()) { // Only auto-fill if empty
+                                                $("#p_receive_amount_" + rowId).val(transferAmt).trigger("input");
+                                                $("#proj_info_" + rowId).append(' <br><span class="text-success"><i class="fas fa-check-circle"></i> HO Transfer Amount Auto-filled: ₹' + transferAmt.toFixed(2) + '</span>');
+
+                                                // Accumulate deductions into the footer
+                                                var tds = parseFloat(transferData.incometax) || 0;
+                                                var gst = parseFloat(transferData.gsttds) || 0;
+                                                var lab = parseFloat(transferData.leborses) || 0;
+
+                                                if (tds > 0) $("#tds_deducted").val((parseFloat($("#tds_deducted").val()) || 0) + tds).trigger("input");
+                                                if (gst > 0) $("#gsttds_deducted").val((parseFloat($("#gsttds_deducted").val()) || 0) + gst).trigger("input");
+                                                if (lab > 0) $("#labour_sess").val((parseFloat($("#labour_sess").val()) || 0) + lab).trigger("input");
+                                            }
+                                        }
+                                    } catch (e) { }
+                                }
+                            });
+                        }
+                    }
+
                 } catch (e) {
                     $("#proj_info_" + rowId).html('<span class="text-danger">Unable to load project info</span>');
                 }
@@ -1177,7 +1504,27 @@ if (isset($_GET['delid'])) {
         }
 
         $("#sale_form").on("submit", function (e) {
-            var id = parseFloat($("#add_rows_id").val());
+            var id = parseFloat($("#add_rows_id").val()) || 1;
+
+            // 1. Check Project Ledgers
+            for (let i = 1; i <= id; i++) {
+                let $projRow = $("#row_wrap_" + i);
+                let $projId = $("#project_id_" + i);
+                let $amt = $("#p_receive_amount_" + i);
+                let $ledger = $("#project_ledger_id_" + i);
+
+                if ($projRow.length && $projId.length && $projId.val() && $amt.length && parseFloat($amt.val()) > 0) {
+                    if (!$ledger.val() || $ledger.val().trim() === '') {
+                        alert("Kripya row " + i + " ke liye 'Project Ledger Map' select karein.");
+                        e.preventDefault();
+                        $ledger.focus();
+                        return false;
+                    }
+                }
+            }
+
+            // Removed legacy checkFinancialLedger validation since unit settings now handles mappings and split logic.
+
             for (let i = 1; i <= id; i++) {
                 if ($("#row_wrap_" + i).length && $("#project_id_" + i).length && $("#project_id_" + i).val()) {
                     enforcePerProjectLimit(i);
@@ -1187,220 +1534,16 @@ if (isset($_GET['delid'])) {
     });
 
 </script>
-<!-- <style>
-    @page {
-        size: A4 landscape;
-        margin-top: 15mm;
-        margin-left: 4mm;
-        margin-right: 4mm;
-        margin-bottom: 5mm;
-    }
-
-    @media print {
-
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: auto;
-            overflow: visible !important;
-        }
-
-        .no-print {
-            display: none !important;
-        }
-
-        .table-responsive {
-            max-height: none !important;
-            overflow: visible !important;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            border-spacing: 0;
-            table-layout: fixed;
-            font-size: 8px;
-        }
-
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 1px 2px;
-            text-align: center;
-            vertical-align: middle;
-            white-space: normal;
-            word-break: break-word;
-        }
-
-        thead {
-            display: table-header-group;
-        }
-
-        tfoot {
-            display: table-footer-group;
-        }
-
-        th {
-            background: #f3f3f3;
-            font-weight: bold;
-            line-height: 1.1;
-        }
-
-        body {
-            zoom: 0.45;
-            transform: none !important;
-        }
-    }
-</style> -->
-<style>
-    /* 🕊️ Premium Typography */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap');
-
-    :root {
-        --primary: #c83232;
-        --primary-light: #f8e5e5;
-        --bg-color: #fbfafb;
-        --success: #28A745;
-        --danger: #E74C3C;
-        --glass: rgba(255, 255, 255, 0.1);
-    }
-
-    body {
-        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-        background-attachment: fixed;
-        font-family: 'Inter', sans-serif;
-        color: #333;
-    }
-
-    /* 💎 Premium Layered Shadows & Glassmorphism */
-    .card,
-    .card-custom {
-        border: 1px solid rgba(248, 229, 229, 0.5) !important;
-        border-radius: 12px !important;
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 4px 15px rgba(200, 50, 50, 0.03) !important;
-        transition: box-shadow 0.3s ease;
-    }
-
-    .card:hover,
-    .card-custom:hover {
-        box-shadow: 0 8px 25px rgba(200, 50, 50, 0.06) !important;
-    }
-
-    /* ✨ Clean Header */
-    .card-header,
-    .card-custom .card-header {
-        background: transparent !important;
-        border-bottom: 1px solid #fdf2f2 !important;
-        color: var(--primary) !important;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 800 !important;
-        padding: 16px 24px 12px !important;
-    }
-
-    .card-title {
-        font-size: 1.2rem;
-        font-family: 'Outfit', sans-serif;
-        margin-bottom: 0 !important;
-    }
-
-    label {
-        text-transform: uppercase;
-        font-size: 14px !important;
-        color: var(--primary);
-        font-weight: 800 !important;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px !important;
-        position: relative;
-        padding-left: 10px;
-    }
-
-    label::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 3px;
-        height: 12px;
-        background-color: var(--primary);
-        border-radius: 2px;
-    }
-
-    .form-select,
-    .form-control {
-        border-radius: 8px;
-        border: 1px solid #f1d4d4;
-        transition: all 0.3s ease;
-        box-shadow: none;
-        font-size: 13px;
-        padding: 8px 12px;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(200, 50, 50, 0.1) !important;
-        background-color: #fff !important;
-        outline: none;
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #28A745, #2ed351) !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .btn-success:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-    }
-
-    .actions-col {
-        min-width: 150px;
-    }
-
-    .dropdown-menu {
-        border: 1px solid var(--primary-light);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        padding: 8px 0;
-        margin-top: 8px;
-    }
-
-    .dropdown-item {
-        padding: 10px 20px;
-        font-size: 13px;
-        border-radius: 8px;
-        margin: 2px 8px;
-        transition: all 0.2s ease;
-    }
-
-    .dropdown-item:hover {
-        background: var(--primary-light);
-        color: var(--primary);
-        transform: translateX(4px);
-    }
-</style>
-
 
 
 <form id="sale_form" name="sale_form" class="no-print" autocomplete="off" enctype="multipart/form-data" method="post"
     action="<?php echo $_SERVER['PHP_SELF']; ?>">
     <div class="row">
         <div class="col-md-12">
-            <div class="card card-custom">
-                <div class="card-header d-flex align-items-center justify-content-center">
-                    <i class="fas fa-wallet me-2"></i>
-                    <h5 class="card-title mb-0">Fund Received</h5>
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white d-flex align-items-center justify-content-center">
+                    <i class="fas fa-wallet me-2"></i>&nbsp;&nbsp;
+                    <h5 class="card-title mb-0 text-white">Fund Receive</h5>
                 </div>
                 <div class="card-body py-4">
                     <?php
@@ -1425,28 +1568,31 @@ if (isset($_GET['delid'])) {
 
                             <?php
                             $username = $_SESSION['username'];
-                            $isHo = ($username == "headacc") ? 1 : 0;
+                            $isHo = ($username == "headacc" || $_SESSION['usertype'] == "sadmin" || $_SESSION['usertype'] == "6") ? 1 : 0;
+                            $frt = @$_POST['fund_receive_to'] ?: ($isHo ? 'HO' : 'Unit');
                             ?>
                             <select name="fund_receive_to" id="fund_receive_to" class="form-control form-select"
                                 tabindex="<?php echo $tab++; ?>" onchange="fund_receive_to()" <?php echo $isHo ? '' : 'style="pointer-events: none; background-color: #e9ecef;"'; ?>>
-                                <option value="HO" <?php echo $isHo ? 'selected' : ''; ?>>
+                                <option value="HO" <?php echo ($frt == 'HO') ? 'selected' : ''; ?>>
                                     HO
                                 </option>
-                                <option value="Unit" <?php echo $isHo ? '' : 'selected'; ?>>
+                                <option value="Unit" <?php echo ($frt == 'Unit') ? 'selected' : ''; ?>>
                                     UNIT
                                 </option>
                             </select>
                         </div>
 
                         <div class="col-md-3 mb-3" id="unit">
-                            <label>Unit Name</label>
+                            <label>Division</label>
                             <select name="unit_id" id="unit_id" class="form-control form-select"
-                                onchange="fill_bank_details(this.value)">
+                                onchange="fill_bank_details(this.value); fill_unit_ledgers(this.value);">
                                 <option value="">-select-</option>
                                 <?php
                                 if (is_array($_SESSION['divisions'])) {
                                     foreach ($_SESSION['divisions'] as $k => $v) {
-                                        $selected = (@$_POST['unit_id'] == $v) ? 'selected' : '';
+                                        // Also select if user only has 1 division
+                                        $is_default = (count($_SESSION['divisions']) == 1 && $_SESSION['divisions'][0] == $v);
+                                        $selected = (@$_POST['unit_id'] == $v || $is_default) ? 'selected' : '';
                                         echo '<option value="' . $v . '" ' . $selected . '>' . get_division($v) . '</option>';
                                     }
                                 }
@@ -1460,9 +1606,10 @@ if (isset($_GET['delid'])) {
                                 tabindex="<?php echo $tab++; ?>">
                                 <option value="">Select--</option>
                                 <?php
+                                $romans = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X'];
                                 for ($k = 1; $k <= 10; $k++) {
                                     $sel = (@$_POST['installment'] == $k ? 'selected' : '');
-                                    echo '<option value="' . $k . '" ' . $sel . '>' . str_repeat('I', $k) . ' Installment</option>';
+                                    echo '<option value="' . $k . '" ' . $sel . '>' . $romans[$k] . ' Installment</option>';
                                 }
                                 ?>
                             </select>
@@ -1497,250 +1644,295 @@ if (isset($_GET['delid'])) {
                             </script>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- 2. Project Details Card -->
-            <div class="card mb-4 shadow-sm" id="hide_project_type"
-                style="display:none; border-radius: 12px; border: 1px solid var(--primary-light);">
-                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-                    style="border-bottom: none;">
-                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Project-wise Allocation</h5>
-                    <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="add_rows()"
-                        style="background-color: var(--primary); border-color: var(--primary); border-radius: 8px;">+
-                        Add
-                        Row</button>
-                </div>
-                <div class="card-body p-4">
-                    <input type="hidden" name="division_id" id="division_id" class="form-control"
-                        value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
+                    <!-- 2. Project Details Card -->
+                    <div class="card mb-4 " id="hide_project_type"
+                        style="display:none;">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                            <h5 class="mb-0 text-danger font-weight-bold">Project-wise Allocation
+                            </h5>
+                            <button type="button" class="btn btn-danger btn-sm shadow-sm" onclick="add_rows()">+
+                                Add
+                                Row</button>
+                        </div>
+                        <div class="card-body p-4">
+                            <input type="hidden" name="division_id" id="division_id" class="form-control"
+                                value="<?php echo $_POST['division_id']; ?>" readonly tabindex="<?php echo $tab++; ?>">
 
-                    <!-- First row (existing markup adapted with wrapper & remove icon) -->
-                    <div id="rows_container">
-                        <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
-                            <div id="row_wrap_<?php echo $i; ?>"
-                                class="row <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
-                                <div class="col-md-2">
-                                    <div class="form-group mb-1">
-                                        <label>Department</label>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <select class="form-control" name="department_id_<?php echo $i; ?>"
-                                                id="department_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                                onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
-                                                <option value="">--- Select ---</option>
-                                                <?php
-                                                if (!empty($_SESSION['department'])) {
-                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
-                                                } elseif (!empty($_SESSION['divisions'])) {
-                                                    $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
-                                                }
-                                                $run = mysqli_query($db, $query);
-                                                while ($data = mysqli_fetch_array($run)) {
-                                                    echo '<option value="' . $data['sno'] . '" ';
-                                                    if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
-                                                        echo ' selected="Selected"';
-                                                    }
-                                                    echo '>' . trim($data['department_name_hindi']) . '</option>';
-                                                }
-                                                ?>
-                                            </select>
-                                            <?php if ($i > 1) { ?>
-                                                <button type="button" class="btn btn-outline-danger btn-sm ms-2"
-                                                    title="Remove row" onclick="remove_row(<?php echo $i; ?>)">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php } ?>
+                            <!-- First row (existing markup adapted with wrapper & remove icon) -->
+                            <div id="rows_container">
+                                <?php for ($i = 1; $i <= $_POST['add_rows_id']; $i++) { ?>
+                                    <div id="row_wrap_<?php echo $i; ?>"
+                                        class="row align-items-start flex-nowrap overflow-auto <?php echo ($i > 1 ? 'border-top pt-2 mt-2' : ''); ?>">
+                                        <div class="col">
+                                            <div class="form-group mb-1">
+                                                <label>Department</label>
+                                                <div class="d-flex gap-2 align-items-center">
+                                                    <select class="form-control" name="department_id_<?php echo $i; ?>"
+                                                        id="department_id_<?php echo $i; ?>"
+                                                        tabindex="<?php echo $tab++; ?>"
+                                                        onChange="fill_district(this.value, <?php echo $i; ?>), fill_sub_department(this.value, <?php echo $i; ?>)">
+                                                        <option value="">--- Select ---</option>
+                                                        <?php
+                                                        if (!empty($_SESSION['department'])) {
+                                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where department_id in (' . implode(",", $_SESSION['department']) . ') group by department_id) ';
+                                                        } elseif (!empty($_SESSION['divisions'])) {
+                                                            $query = '(SELECT uprnss_department_name.sno as sno, uprnss_department_name.department_name_hindi FROM `uprnss_project_temp` left join uprnss_department_name on uprnss_department_name.sno = department_id where division_id in (' . implode(",", $_SESSION['divisions']) . ') group by division_id ) ';
+                                                        }
+                                                        $run = mysqli_query($db, $query);
+                                                        while ($data = mysqli_fetch_array($run)) {
+                                                            echo '<option value="' . $data['sno'] . '" ';
+                                                            if (isset($_POST['department_id_' . $i]) && $_POST['department_id_' . $i] == $data['sno']) {
+                                                                echo ' selected="Selected"';
+                                                            }
+                                                            echo '>' . trim($data['department_name_hindi']) . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                    <?php if ($i > 1) { ?>
+                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2"
+                                                            title="Remove row" onclick="remove_row(<?php echo $i; ?>)">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    <?php } ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col" style="min-width: 160px;">
+                                            <div class="form-group mb-1">
+                                                <label>Sub Department</label>
+                                                <select class="form-control" name="sub_department_id_<?php echo $i; ?>"
+                                                    id="sub_department_id_<?php echo $i; ?>"
+                                                    value="<?php echo $_POST['sub_department_id_' . $i] ?? ''; ?>"
+                                                    tabindex="<?php echo $tab++; ?>"></select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col" style="min-width: 160px;">
+                                            <div class="form-group mb-1">
+                                                <label>District</label>
+                                                <select class="form-control" name="district_id_<?php echo $i; ?>"
+                                                    id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                                    onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col" style="min-width: 160px;">
+                                            <div class="form-group mb-1">
+                                                <label>Project<span id="ledger_link_<?php echo $i; ?>"></span></label>
+                                                <select class="form-control" name="project_id_<?php echo $i; ?>"
+                                                    id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
+                                                    onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>); loadProjectMappingInfo(<?php echo $i; ?>);"></select>
+                                                <input type="hidden" id="erp_code_<?php echo $i; ?>">
+                                                <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col" id="ledger_map_col_<?php echo $i; ?>">
+                                            <div class="form-group mb-1">
+                                                <label>Ledger Map <span class="text-success small"
+                                                        id="map_status_<?php echo $i; ?>" style="display:none;">Saved
+                                                        ✓</span> <a href="billit_ledgers.php" target="_blank"
+                                                        title="Create Ledger" style="margin-left:5px; color:#16a34a;"><i
+                                                            class="fas fa-plus-circle"></i></a></label>
+                                                <select class="form-control ledger-select"
+                                                    name="project_ledger_id_<?php echo $i; ?>"
+                                                    id="project_ledger_id_<?php echo $i; ?>"
+                                                    tabindex="<?php echo $tab++; ?>"
+                                                    onChange="save_project_ledger_mapping(<?php echo $i; ?>)"></select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col" style="min-width: 160px;">
+                                            <div class="form-group mb-1">
+                                                <label>Project Received Amount</label>
+                                                <input type="text" name="p_receive_amount_<?php echo $i; ?>"
+                                                    id="p_receive_amount_<?php echo $i; ?>" class="form-control"
+                                                    value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
+                                                    tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
+                                                <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
+
+                                                <!-- NEW: send displayed values via POST -->
+                                                <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
+                                                    id="cgst_amount_<?php echo $i; ?>">
+                                                <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
+                                                    id="sgst_amount_<?php echo $i; ?>">
+                                                <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
+                                                    id="p_diff_amount_<?php echo $i; ?>">
+
+                                            </div>
                                         </div>
                                     </div>
+                                <?php } ?>
+                            </div>
+
+                            <input type="hidden" name="add_rows_id" id="add_rows_id"
+                                value="<?php echo $_POST['add_rows_id']; ?>">
+                        </div>
+                    </div>
+
+
+                    <!-- 3. Financial Settings Card -->
+                    <div class="card mb-4 ">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                            <h5 class="mb-0 text-danger font-weight-bold">Deduction details</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div style="display:none;">
+                                <input type="hidden" name="tds_ledger_id" id="tds_ledger_id"
+                                    value="<?php echo @$_POST['tds_ledger_id']; ?>">
+                                <input type="hidden" name="gst_tds_ledger_id" id="gst_tds_ledger_id"
+                                    value="<?php echo @$_POST['gst_tds_ledger_id']; ?>">
+                                <input type="hidden" name="labour_cess_ledger_id" id="labour_cess_ledger_id"
+                                    value="<?php echo @$_POST['labour_cess_ledger_id']; ?>">
+                                <input type="hidden" name="other_charges_ledger_id" id="other_charges_ledger_id"
+                                    value="<?php echo @$_POST['other_charges_ledger_id']; ?>">
+                            </div>
+                            <div class="row align-items-end">
+                                <div class="col-md-1 mb-3" style="padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">TDS(%)</label>
+                                    <input type="text" name="tds_per" id="tds_per" class="form-control px-1"
+                                        value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc('tds_per')">
                                 </div>
-
-                                <div class="col-md-2">
-                                    <div class="form-group mb-1">
-                                        <label>sub_department</label>
-                                        <select class="form-control" name="sub_department_id_<?php echo $i; ?>"
-                                            id="sub_department_id_<?php echo $i; ?>"
-                                            value="<?php echo $_POST['sub_department_id_' . $i] ?? ''; ?>"
-                                            tabindex="<?php echo $tab++; ?>"></select>
-                                    </div>
+                                <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">TDS Amount</label>
+                                    <input type="text" name="tds_deducted" id="tds_deducted" class="form-control px-1"
+                                        value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc('tds_deducted')">
                                 </div>
-
-                                <div class="col-md-2">
-                                    <div class="form-group mb-1">
-                                        <label>District</label>
-                                        <select class="form-control" name="district_id_<?php echo $i; ?>"
-                                            id="district_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                            onChange="fill_project(this.value, <?php echo $i; ?>)"></select>
-                                    </div>
+                                <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">GST TDS (%)</label>
+                                    <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control px-1"
+                                        value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc('gst_tds_per')">
                                 </div>
-
-                                <div class="col-md-3">
-                                    <div class="form-group mb-1">
-                                        <label>Project<span id="ledger_link_<?php echo $i; ?>"></span></label>
-                                        <select class="form-control" name="project_id_<?php echo $i; ?>"
-                                            id="project_id_<?php echo $i; ?>" tabindex="<?php echo $tab++; ?>"
-                                            onChange="view_ledger_row(<?php echo $i; ?>); loadProjectInfo(<?php echo $i; ?>)"></select>
-                                        <div class="mt-1 small text-muted" id="proj_info_<?php echo $i; ?>"></div>
-                                    </div>
+                                <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">GST TDS Amount</label>
+                                    <input type="text" name="gsttds_deducted" id="gsttds_deducted"
+                                        class="form-control px-1" value="<?php echo @$_POST['gsttds_deducted']; ?>"
+                                        tabindex="<?php echo $tab++; ?>" onInput="percent_amt_calc('gsttds_deducted')">
                                 </div>
-
-                                <div class="col-md-3">
-                                    <div class="form-group mb-1">
-                                        <label>ProjectReceivedAmount</label>
-                                        <input type="text" name="p_receive_amount_<?php echo $i; ?>"
-                                            id="p_receive_amount_<?php echo $i; ?>" class="form-control"
-                                            value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
-                                            tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
-                                        <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
-
-                                        <!-- NEW: send displayed values via POST -->
-                                        <input type="hidden" name="cgst_amount_<?php echo $i; ?>"
-                                            id="cgst_amount_<?php echo $i; ?>">
-                                        <input type="hidden" name="sgst_amount_<?php echo $i; ?>"
-                                            id="sgst_amount_<?php echo $i; ?>">
-                                        <input type="hidden" name="p_diff_amount_<?php echo $i; ?>"
-                                            id="p_diff_amount_<?php echo $i; ?>">
-
-                                    </div>
+                                <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">CGST TDS</label>
+                                    <input type="text" id="cgst_split_box" class="form-control px-1"
+                                        style="background-color: #f0fdf4; color: #000; font-weight: bold; border-color: #bbf7d0;"
+                                        readonly>
+                                </div>
+                                <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">SGST TDS</label>
+                                    <input type="text" id="sgst_split_box" class="form-control px-1"
+                                        style="background-color: #f0fdf4; color: #000; font-weight: bold; border-color: #bbf7d0;"
+                                        readonly>
+                                </div>
+                                <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">Labour Cess</label>
+                                    <input type="text" name="labour_sess" id="labour_sess" class="form-control px-1"
+                                        value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc()">
+                                </div>
+                                <div class="col-md-2 mb-3" style="padding-left: 5px;">
+                                    <label style="font-size: 13px !important; color: #000;">Other Charges</label>
+                                    <input type="text" name="other_charges" id="other_charges" class="form-control px-1"
+                                        value="<?php echo @$_POST['other_charges']; ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc()">
                                 </div>
                             </div>
-                        <?php } ?>
-                    </div>
-
-                    <input type="hidden" name="add_rows_id" id="add_rows_id"
-                        value="<?php echo $_POST['add_rows_id']; ?>">
-                </div>
-            </div>
-
-
-            <!-- 3. Financial Settings Card -->
-            <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
-                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-                    style="border-bottom: none;">
-                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Financial Settings</h5>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row">
-                        <div class="col-md-2 mb-3">
-                            <label>TDS (%)</label>
-                            <input type="text" name="tds_per" id="tds_per" class="form-control"
-                                value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                                onInput="percent_amt_calc('tds_per')">
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label>TDS Deducted</label>
-                            <input type="text" name="tds_deducted" id="tds_deducted" class="form-control"
-                                value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
-                                onInput="percent_amt_calc('tds_deducted')">
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label>GST TDS (%)</label>
-                            <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control"
-                                value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
-                                onInput="percent_amt_calc('gst_tds_per')">
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label>GST TDS Deducted</label>
-                            <input type="text" name="gsttds_deducted" id="gsttds_deducted" class="form-control"
-                                value="<?php echo @$_POST['gsttds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
-                                onInput="percent_amt_calc('gsttds_deducted')">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Labour Cess</label>
-                            <input type="text" name="labour_sess" id="labour_sess" class="form-control"
-                                value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
-                                onInput="percent_amt_calc()">
                         </div>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-12 mb-3">
-                            <label>Remark</label>
-                            <textarea name="remark" id="remark" class="form-control"
-                                style="height: auto; padding: 6px 12px;" rows="1"
-                                tabindex="<?php echo $tab++; ?>"><?php echo trim(@$_POST['remark']); ?></textarea>
+
+                    <!-- 4. Dashboard Totals Card -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                            <h5 class="mb-0 text-danger font-weight-bold">Overview Totals</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row align-items-end">
+                                <div class="col-md-2 mb-3">
+                                    <label>Total Received Amount</label>
+                                    <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount"
+                                        id="tot_receive_amount" class="form-control"
+                                        value="<?php echo @$_POST['tot_receive_amount']; ?>"
+                                        tabindex="<?php echo $tab++; ?>" style="background-color: #fdfaf9;">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label>Total Credit Amount In Bank</label>
+                                    <input type="text" name="tot_credit_amount" id="tot_credit_amount"
+                                        class="form-control" value="<?php echo @$_POST['tot_credit_amount']; ?>"
+                                        tabindex="<?php echo $tab++; ?>" style="background-color: #f6fdf6;">
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="bank_ho">
+                                    <label>Bank Details (HO)</label>
+                                    <select class="form-control form-select" name="bank_name" id="bank_name"
+                                        tabindex="<?php echo $tab++; ?>">
+                                        <option value="">--- Select ---</option>
+                                        <?php
+                                        $query = 'select * from billit_customer where unit_id="53" and (parent IN ("479", "61") or (account_no is not null and account_no != "")) order by cus_name';
+                                        $run = mysqli_query($db, $query);
+                                        while ($data = mysqli_fetch_array($run)) {
+                                            echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3" id="bank_unit" style="display:none;">
+                                    <label>Bank Details (Unit)</label>
+                                    <select class="form-control form-select" name="bank_name" id="bank_name_unit"
+                                        tabindex="<?php echo $tab++; ?>">
+                                        <option value="">--Select--</option>
+                                        <?php /* Options load via AJAX when Unit Name is selected — fill_bank_details() */ ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label>Remark (Review)</label>
+                                    <textarea name="remark" id="remark" class="form-control"
+                                        style="height: 40px; padding: 6px 12px; font-size: 14px;" rows="1"
+                                        tabindex="<?php echo $tab++; ?>"><?php echo trim(@$_POST['remark']); ?></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </div> <!-- end main outer card-body -->
+				
+				    <!-- Submit Section -->
+					<div class="text-center mb-5">
+						<button type="submit" name="submit" class="btn btn-success btn-lg px-5"
+							>
+							<?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
+						</button>
+						<input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo @$_POST['edit_sno']; ?>">
+					</div>
+			</div> <!-- end main outer card -->
+		</div>
+	</div>
 
-            <!-- 4. Dashboard Totals Card -->
-            <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
-                <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-                    style="border-bottom: none;">
-                    <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Overview Totals</h5>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Total Received Amount</label>
-                            <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount"
-                                id="tot_receive_amount" class="form-control"
-                                value="<?php echo @$_POST['tot_receive_amount']; ?>" tabindex="<?php echo $tab++; ?>"
-                                style="background-color: #fdfaf9;">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Total Credit Amount In Bank</label>
-                            <input type="text" name="tot_credit_amount" id="tot_credit_amount" class="form-control"
-                                value="<?php echo @$_POST['tot_credit_amount']; ?>" tabindex="<?php echo $tab++; ?>"
-                                style="background-color: #f6fdf6;">
-                        </div>
-                        <div class="col-md-4 mb-3" id="bank_ho">
-                            <label>Bank Details (HO)</label>
-                            <select class="form-control form-select" name="bank_name" id="bank_name"
-                                tabindex="<?php echo $tab++; ?>">
-                                <option value="">--- Select ---</option>
-                                <?php
-                                $query = 'select * from billit_customer where unit_id="53" and (parent ="479" or (account_no is not null and account_no != "")) order by cus_name';
-                                $run = mysqli_query($db, $query);
-                                while ($data = mysqli_fetch_array($run)) {
-                                    echo '<option value="' . $data['sno'] . '" ' . ((@$_POST['bank_name'] == $data['sno']) ? 'selected' : '') . '>' . trim($data['cus_name']) . '</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3" id="bank_unit" style="display:none;">
-                            <label>Bank Details (Unit)</label>
-                            <select class="form-control form-select" name="bank_name" id="bank_name_unit"
-                                tabindex="<?php echo $tab++; ?>">
-                                <option value="">--Select--</option>
-                                <?php /* Options load via AJAX when Unit Name is selected — fill_bank_details() */ ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Submit Section -->
-            <div class="text-center mb-5">
-                <button type="submit" name="submit" class="btn btn-success btn-lg shadow-sm px-5"
-                    style="border-radius: 10px; font-weight: 700; font-size: 16px;">
-                    <?php echo !empty($_POST['edit_sno']) ? 'Update' : 'Submit'; ?>
-                </button>
-                <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo @$_POST['edit_sno']; ?>">
-            </div>
 </form>
 
 <div class="row">
     <div class="col-md-12">
         <!-- 5. Recent Fund Receives Table -->
-        <div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid var(--primary-light);">
-            <div class="card-header d-flex justify-content-between align-items-center bg-transparent pt-4 pb-0"
-                style="border-bottom: none;">
-                <h5 class="mb-0" style="color: var(--primary); font-weight: 700;">Journal Voucher</h5>
+        <div class="card shadow mb-4">
+            <div class="card-header bg-danger text-white d-flex align-items-center justify-content-start">
+                <i class="fas fa-list-ul me-2"></i>&nbsp;&nbsp;
+                <h5 class="card-title mb-0 text-white">List of Fund Received </h5>
             </div>
             <div class="card-body p-4">
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover" id="fundReceiveTable" style="width:100%">
-                        <thead>
+                        <thead class="bg-danger text-white">
                             <tr>
-                                <th>S.No.</th>
-                                <th>Voucher No.</th>
-                                <th>FundReceivedAt</th>
-                                <th>OrderNo</th>
-                                <th>OrderDate</th>
-                                <th>Installment</th>
-                                <th>TotalReceivedAmount</th>
-                                <th>Remark</th>
-                                <th class="no-print">Actions</th>
+                                <th class="text-center text-white">S.No.</th>
+                                <th class="text-center text-white">Voucher No.</th>
+                                <th class="text-center text-white">FundReceivedAt</th>
+                                <th class="text-center text-white">OrderNo</th>
+                                <th class="text-center text-white">OrderDate</th>
+                                <th class="text-center text-white">Installment</th>
+                                <th class="text-center text-white">TotalReceivedAmount</th>
+                                <th class="text-center text-white">Remark</th>
+                                <th class="no-print text-left text-white">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1779,15 +1971,15 @@ if (isset($_GET['delid'])) {
                                 }
 
                                 echo '<tr>
-                            <td>' . $i++ . '</td>
-                            <td>' . htmlspecialchars($row['voucher_no']) . '</td>
-                            <td>' . $receivedAtLabel . '</td>
-                            <td>' . htmlspecialchars($row['order_no']) . '</td>
-                            <td>' . htmlspecialchars($row['order_date']) . '</td>
-                            <td>' . htmlspecialchars($row['installment']) . '</td>
-                            <td>' . htmlspecialchars($row['tot_receive_amount']) . '</td>
-                            <td>' . htmlspecialchars($row['remark']) . '</td>
-                            <td class="no-print actions-col" style="white-space:nowrap">
+                            <td class="text-right">' . $i++ . '</td>
+                            <td class="text-left">' . htmlspecialchars($row['voucher_no']) . '</td>
+                            <td class="text-left">' . $receivedAtLabel . '</td>
+                            <td class="text-left">' . htmlspecialchars($row['order_no']) . '</td>
+                            <td class="text-left">' . htmlspecialchars($row['order_date']) . '</td>
+                            <td class="text-right">' . (isset($romans[$row['installment']]) ? $romans[$row['installment']] : htmlspecialchars($row['installment'])) . '</td>
+                            <td class="text-right">' . htmlspecialchars($row['tot_receive_amount']) . '</td>
+                            <td class="text-left">' . htmlspecialchars($row['remark']) . '</td>
+                            <td class="no-print actions-col text-left" style="white-space:nowrap">
                                 <div class="dropdown">
                                   <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     Actions
@@ -1857,6 +2049,50 @@ if (isset($_GET['delid'])) {
                 fill_bank_details(savedUnit, savedBank);
             }
         });
+
+        function fill_unit_ledgers(unit_id) {
+            if (!unit_id) return;
+            $.ajax({
+                url: 'scripts/ajax.php?id=get_unit_ledgers&unit_id=' + unit_id + '&term=all',
+                dataType: 'json',
+                success: function (ledgers) {
+                    var options = '<option value="">--- Select Ledger ---</option>';
+                    if (ledgers && ledgers.length > 0) {
+                        ledgers.forEach(function (l) {
+                            options += '<option value="' + l.id + '">' + l.text + '</option>';
+                        });
+                    }
+
+                    $('.ledger-select').each(function () {
+                        var currentVal = $(this).val();
+                        if ($(this).hasClass('select2-hidden-accessible')) {
+                            $(this).select2('destroy');
+                        }
+                        $(this).html(options);
+                        if (currentVal) $(this).val(currentVal); // retain value if already set
+                        $(this).select2({
+                            theme: 'bootstrap4',
+                            width: '100%'
+                        });
+                    });
+
+                    // Fetch unit default settings for TDS/GST/Labour if not prefilled
+                    $.ajax({
+                        url: 'scripts/ajax.php?id=get_unit_settings&unit_id=' + unit_id + '&term=all',
+                        dataType: 'json',
+                        success: function (data) {
+                            if (data && !window.has_prefilled_ledgers) {
+                                if ($('#tds_ledger_id').val() == '') $('#tds_ledger_id').val(data.ITTDS);
+                                if ($('#gst_tds_ledger_id').val() == '') $('#gst_tds_ledger_id').val(data.GSTTDS);
+                                if ($('#labour_cess_ledger_id').val() == '') $('#labour_cess_ledger_id').val(data.LABORCESS);
+                                if ($('#other_charges_ledger_id').val() == '') $('#other_charges_ledger_id').val(data.OTHER_CHARGES);
+                                window.has_prefilled_ledgers = true;
+                            }
+                        }
+                    });
+                }
+            });
+        }
 
         function getOrderData(orderNo) {
             console.log("getOrderData called with:", orderNo);

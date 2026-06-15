@@ -15,7 +15,7 @@ error_reporting(E_ALL);
 ?>
 <?php
 include("settings_dbase.php");
-//include("settings_dbase_payroll_for_erp.php");
+include("settings_dbase_payroll_for_erp.php");
 
 $sms_result = execute_query("select * from general_settings where `desc`='sms_user'");
 if ($sms_result) {
@@ -89,6 +89,37 @@ if (!function_exists('amount_format')) {
 	{
 		return is_numeric($amount) ? number_format($amount, 2) : $amount;
 	}
+}
+
+function IndianCurrency($amount)
+{
+    $amount = number_format((float)$amount, 2, '.', '');
+    $parts = explode('.', $amount);
+    $number = $parts[0];
+    $decimal = $parts[1];
+
+    $lastThree = substr($number, -3);
+    $restUnits = substr($number, 0, -3);
+
+    if ($restUnits != '') {
+        $lastThree = ',' . $lastThree;
+    }
+    $restUnits = preg_replace("/\B(?=(\d{2})+(?!\d))/", ",", $restUnits);
+
+    return '₹ ' . $restUnits . $lastThree . '.' . $decimal;
+}
+
+function custRound($amount)
+{
+    $decimal = $amount - floor($amount);
+
+    if ($decimal == 0.5) {
+        return number_format($amount, 2, '.', '');
+    } elseif ($decimal < 0.5) {
+        return floor($amount);
+    } else {
+        return ceil($amount);
+    }
 }
 
 function page_header_start($title = 'UPRNSS|AIPPCA')
@@ -197,172 +228,7 @@ function page_header_start($title = 'UPRNSS|AIPPCA')
             background-color: #b2b8ae;
         }
         
-       body {
-    text-transform: "Segoe UI", Tahoma, sans-serif;
-}
-        
-        /* 🎨 UPRNSS Sidebar Matching Theme */
-        :root {
-            --red-light: #e53935;
-            --red-dark: #b71c1c;
-            --yellow: #f6b800;
-            --green: #008b00;
-            --soft-bg: #fff8f6;
-        }
 
-
-        /* Cards */
-        .card-custom {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            background: #fff;
-            margin-bottom: 25px;
-        }
-
-        .card-custom .card-header {
-            background: linear-gradient(45deg, var(--red-light), var(--red-dark));
-            color: white;
-            font-weight: 600;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            padding: 12px 18px;
-            letter-spacing: 0.5px;
-        }
-
-        /* Form controls */
-        .form-select, .form-control {
-            border-radius: 8px;
-        }
-
-        /* Primary button */
-        .btn-primary {
-            background: linear-gradient(45deg, var(--red-light), var(--red-dark));
-            border: none;
-            color: #fff;
-            border-radius: 8px;
-            padding: 8px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, var(--red-dark), var(--yellow));
-            transform: scale(1.03);
-        }
-
-        /* Success (Print) button */
-        .btn-success {
-            background: linear-gradient(45deg, var(--yellow), var(--red-light));
-            border: none;
-            color: #fff;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: 0.3s ease;
-        }
-
-        .btn-success:hover {
-            background: linear-gradient(45deg, var(--red-dark), var(--yellow));
-        }
-
-        /* Table Styling */
-        .table-custom {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
-        table thead th {
-            background: linear-gradient(45deg, var(--red-light), var(--red-dark)) !important;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 14px !important;
-            font-weight: 700 !important;
-            white-space: nowrap;
-            color: white !important;
-            text-transform: capitalize !important;
-        }
-
-        table tbody td {
-            font-size: 13px !important;
-            font-weight: 600 !important;
-            text-align: center;
-            vertical-align: middle;
-            text-transform: capitalize !important;
-        }
-
-        table tr:nth-child(even) {
-            background-color: #fff5f5;
-        }
-
-        table tr:hover {
-            background-color: #ffeaea;
-        }
-
-        .sticky-header thead th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
-
-        /* GLOBAL PERFECT CENTER ALIGN FOR ALL INPUTS & SELECTS */
-        input.form-control,
-        select.form-select,
-        input[type="text"],
-        input[type="date"],
-        input[type="number"],
-        select {
-            height: 40px !important;
-            text-align: left !important;
-            padding: 5px 10px !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            text-transform: none !important;
-        }
-
-        /* For placeholder center */
-        input::placeholder,
-        select::placeholder {
-            text-align: center !important;
-        }
-
-        /* Form labels */
-        .form-label, label {
-            font-size: 14px !important;
-            font-weight: 700 !important;
-            color: #333 !important;
-            text-transform: capitalize !important;
-        }
-
-        /* Card titles */
-        .card-title, h1, h2, h3, h4, h5, h6 {
-            font-size: 18px !important;
-            font-weight: 700 !important;
-            text-transform: capitalize!important;
-        }
-
-        /* Button text */
-        .btn {
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            text-transform: capitalize !important;
-        }
-
-        /* Sidebar always on top */
-        .sidebar {
-            position: fixed;
-            z-index: 9999 !important;
-        }
-
-        /* Your fixed TH behind sidebar */
-        table th {
-            position: sticky;
-            top: 0;
-            z-index: 10 !important;
-        }
-
-        /* Print mode */
     </style>
     <style type="text/css">
         .daterclass{
@@ -2088,17 +1954,6 @@ function get_division($id)
 	}
 }
 
-function get_department($id)
-{
-	$sql = 'select * from uprnss_department_name where sno="' . $id . '"';
-	$row = mysqli_fetch_assoc(execute_query($sql));
-	if (isset($row['department_name_hindi'])) {
-		return $row['department_name_hindi'];
-	} else {
-		return '';
-	}
-}
-
 function customRound($number)
 {
 	if ((float) $number == 0) {
@@ -2110,5 +1965,24 @@ function customRound($number)
 		return number_format($int, 2, '.', '');
 	}
 	return ($decimal < 0.50) ? number_format($int + 0.50, 2, '.', '') : number_format($int + 1, 2, '.', '');
+}
+
+function get_department($id)
+{
+	$sql = 'select * from uprnss_department_name where sno="' . $id . '"';
+	$row = mysqli_fetch_assoc(execute_query($sql));
+	if ($row) {
+		$eng = trim($row['department_name_english'] ?? '');
+		$hin = trim($row['department_name_hindi'] ?? '');
+
+		if ($eng != '' && $hin != '') {
+			return $eng . ' (' . $hin . ')';
+		} elseif ($eng != '') {
+			return $eng;
+		} elseif ($hin != '') {
+			return $hin;
+		}
+	}
+	return '';
 }
 ?>

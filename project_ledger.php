@@ -155,7 +155,7 @@ page_sidebar();
 											echo ' selected="Selected"';
 										}
 									}
-									echo '>' . trim($data['department_name_hindi']) . '</option>';
+									echo '>' . trim($data['department_name_english'] . " (" . $data['department_name_hindi'] . ")") . '</option>';
 								}
 								?>
 							</select>

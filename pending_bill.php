@@ -226,6 +226,10 @@ page_header_start();
 <script src="js/krutidev.js"></script>
 <script src="js/unicode_keyboard.js"></script>
 <style>
+	:root {
+		--primary: #c83232;
+		--primary-light: #f8e5e5;
+	}
 	#project_name_hindi {
 		font-family: 'Kruti Dev 010';
 		font-size: 20px;
@@ -234,6 +238,24 @@ page_header_start();
 	textarea {
 		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	}
+
+	/* Typography & Alignment Standardization */
+	.table th {
+		background-color: #e06666 !important;
+		color: #ffffff !important;
+		font-size: 15px !important;
+		font-weight: 700 !important;
+		text-transform: uppercase;
+		border-bottom: 2px solid var(--primary) !important;
+	}
+	.table td {
+		font-size: 13px !important;
+		vertical-align: middle !important;
+	}
+	/* Alignment Helpers */
+	.text-right { text-align: right !important; }
+	.text-left { text-align: left !important; }
+	.text-center { text-align: center !important; }
 
 	.no-border {
 		border: 0 !important;
@@ -302,10 +324,10 @@ switch ($page) {
 					?>
 					<div class="row d-flex my-auto">
 
-						<table width="100%" class="table table-striped table-hover rounded">
-							<tr>
-								<th>विभाग </th>
-								<th width="18%">
+						<div class="row w-100 mb-3" style="background:#f9f9f9; padding:20px; border-radius:8px; border:1px solid #e0e0e0; margin: 0 auto;">
+							<div class="col-md-3">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">विभाग</label>
 									<select class="form-control" name="department" id="department"
 										tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
@@ -319,13 +341,16 @@ switch ($page) {
 													echo ' selected="Selected"';
 												}
 											}
-											echo '>' . trim($data['department_name_hindi']) . '</option>';
+											echo '>' . trim($data['department_name_english'] . " (" . $data['department_name_hindi'] . ")") . '</option>';
 										}
 										?>
 									</select>
-								</th>
-								<th>प्रखण्ड </th>
-								<th width="18%"><select class="form-control" name="division_name" id="division_name"
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">प्रखण्ड</label>
+									<select class="form-control" name="division_name" id="division_name"
 										tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
 										<?php
@@ -341,9 +366,12 @@ switch ($page) {
 											echo '>' . $data['division_name'] . '</option>';
 										}
 										?>
-									</select></th>
-								<th>आच्छादित जनपद</th>
-								<th width="18%">
+									</select>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">आच्छादित जनपद</label>
 									<select class="form-control" name="district" id="district" tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
 										<?php
@@ -360,9 +388,11 @@ switch ($page) {
 										}
 										?>
 									</select>
-								</th>
-								<th>परियोजना का स्तर</th>
-								<th width="18%">
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">परियोजना का स्तर</label>
 									<select name="project_type" id="project_type" class="form-control"
 										onchange="onchangetype()">
 										<option value="">--- Select ---</option>
@@ -371,9 +401,9 @@ switch ($page) {
 										<option value="2" <?php echo ($_POST['project_type'] == 2 ? 'selected' : ''); ?>>जिला स्तर
 										</option>
 									</select>
-								</th>
-							</tr>
-						</table>
+								</div>
+							</div>
+						</div>
 						<div class="col-md-12 text-center">
 							<button type="submit" name="search" class="btn btn-primary">Search</button>
 							<input type="hidden" id="id" name="id" value="1">
@@ -387,31 +417,25 @@ switch ($page) {
 		<div class="row">
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header bg-danger text-white mt-2">
-						<h4 class="card-title text-center text-white ">Pending For Payment bill list</h4></br>
+					<div class="card-header bg-transparent pt-4 pb-3" style="border-bottom: 1px solid var(--primary-light);">
+						<h3 class="card-title text-left mb-0" style="color: var(--primary); font-weight: 800; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">
+							<i class="fas fa-list-alt mr-2"></i> Pending For Payment Bill List
+						</h3>
 					</div>
 					<div class="card-body">
 						<table class="table table-striped table-hover table-bordered" id="">
 							<thead style="position:sticky;top:0; z-index:2;">
 								<tr>
-									<th>S.No.</th>
-									<th>Project Type</th>
-									<th>Department Name</th>
-									<th>District Name</th>
-									<th>Project Name</th>
-									<th>Bill Number </th>
-									<th>Bill Date</th>
-									<th>Bill Amount</th>
-									<th>Action</th>
-									<th>Delete</th>
-
-								</tr>
-								<tr>
-									<?php
-									for ($i = 1; $i <= 10; $i++) {
-										echo '<th>' . $i . '</th>';
-									}
-									?>
+									<th class="text-center">S.No.</th>
+									<th class="text-left">Project Type</th>
+									<th class="text-left">Department Name</th>
+									<th class="text-left">District Name</th>
+									<th class="text-left">Project Name</th>
+									<th class="text-right">Bill Number</th>
+									<th class="text-center">Bill Date</th>
+									<th class="text-right">Bill Amount</th>
+									<th class="text-center">Action</th>
+									<th class="text-center">Delete</th>
 								</tr>
 							</thead>
 
@@ -439,6 +463,7 @@ switch ($page) {
 										project.admin_go_no,
 
 										dept.department_name_hindi,
+										dept.department_name_english,
 										subdept.sub_department_hindi,
 										dist.district_name_hindi
 
@@ -468,35 +493,32 @@ switch ($page) {
 										}
 									}
 									$sql .= ' ORDER BY invoice.bill_date DESC';
+									
 									$result = execute_query($sql);
 									$i = 1;
 									while ($row = mysqli_fetch_assoc($result)) {
 										echo '<tr>';
-										echo '<td>' . $i++ . '</td>';
-										echo '<td>';
+										echo '<td class="text-center">' . $i++ . '</td>';
+										echo '<td class="text-left">';
 										if ($row['project_type'] == '1')
 											echo 'शासन स्तर';
 										elseif ($row['project_type'] == '2')
 											echo 'जिला स्तर';
 										echo '</td>';
-										echo '<td>' . $row['department_name_hindi'] . '<br><small>' . $row['sub_department_hindi'] . '</small></td>';
-										echo '<td>' . $row['district_name_hindi'] . '</td>';
+										echo '<td class="text-left">' . $row['department_name_english'] . " (" . $row['department_name_hindi'] . ")" . '<br><small>' . $row['sub_department_hindi'] . '</small></td>';
+										echo '<td class="text-left">' . $row['district_name_hindi'] . '</td>';
 
-										echo '<td>' . $row['project_name_hindi'] . '<br><small>' . $row['admin_go_no'] . '</small></td>';
-										echo '<td>' . $row['bill_no'] . '</td>';
-										echo '<td>' . date('d-m-Y', strtotime($row['bill_date'])) . '</td>';
-										echo '<td>₹' . number_format($row['transafer_amount'], 2) . '</td>';
-										echo '</td>
-										<td class="no-print text-center">';
-
-										echo '<a target="_blank" href="fund_transfer.php?id=' . $row['sno'] . '" onClick="return confirm(\'Are you sure you?\');"><span class="far fa-edit" aria-hidden="true" data-toggle="tooltip" title="Proceed For Payment" ></span></a><br/><br/>';
-
+										echo '<td class="text-left">' . $row['project_name_hindi'] . '<br><small>' . $row['admin_go_no'] . '</small></td>';
+										echo '<td class="text-right"><b>' . $row['bill_no'] . '</b></td>';
+										echo '<td class="text-center">' . date('d-m-Y', strtotime($row['bill_date'])) . '</td>';
+										echo '<td class="text-right">₹' . number_format($row['transafer_amount'], 2) . '</td>';
+										
+										echo '<td class="no-print text-center">';
+										echo '<a target="_blank" href="fund_transfer.php?id=' . $row['sno'] . '" onClick="return confirm(\'Are you sure you want to proceed?\');"><span class="far fa-edit" aria-hidden="true" data-toggle="tooltip" title="Proceed For Payment" ></span></a>';
 										echo '</td>';
-										echo '</td>
-										<td class="no-print text-center">';
-
-										echo '<a target="_blank" href="pending_bill.php?delid=' . $row['sno'] . '" onClick="return confirm(\'Are you sure you?\');"><span class="fas fa-trash-alt" aria-hidden="true" data-toggle="tooltip" title="Delete" ></span></a><br/><br/>';
-
+										
+										echo '<td class="no-print text-center">';
+										echo '<a target="_blank" href="pending_bill.php?delid=' . $row['sno'] . '" onClick="return confirm(\'Are you sure you want to delete?\');"><span class="fas fa-trash-alt text-danger" aria-hidden="true" data-toggle="tooltip" title="Delete" ></span></a>';
 										echo '</td>';
 										echo '</tr>';
 									}
@@ -570,7 +592,7 @@ switch ($page) {
 													echo ' selected="Selected"';
 												}
 											}
-											echo '>' . trim($data['department_name_hindi']) . '</option>';
+											echo '>' . trim($data['department_name_english'] . " (" . $data['department_name_hindi'] . ")") . '</option>';
 										}
 										?>
 									</select>
@@ -648,9 +670,9 @@ switch ($page) {
 									<div class="row compact" style="width:100%; margin:0;">
 										<div class="col-md-6">
 											<div class="form-group">
-												<label>Upload Photo / PDF 1 *</label>
+												<label>Upload Photo / PDF 1</label>
 												<input type="file" name="photo1" id="photo1" class="form-control"
-													accept="image/*,application/pdf" onchange="validateAndPreview(this, 'preview1')" required>
+													accept="image/*,application/pdf" onchange="validateAndPreview(this, 'preview1')">
 												<img id="preview1" src="#" alt="Preview Image 1"
 													style="display:none; width:100px; margin-top:10px; border:1px solid #ccc;" />
 											</div>
@@ -739,10 +761,10 @@ switch ($page) {
 						<div class="col-md-12 text-right"><a href="pending_bill.php" style="color: #ffffff"><button
 									type="button" name="student_ledger" class="btn btn-danger">Pending For Payment bill
 									list</button></a></div>
-						<table width="100%" class="table table-striped table-hover rounded">
-							<tr>
-								<th>विभाग </th>
-								<th width="18%">
+						<div class="row w-100 mb-3" style="background:#f9f9f9; padding:20px; border-radius:8px; border:1px solid #e0e0e0; margin: 0 auto;">
+							<div class="col-md-4">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">विभाग</label>
 									<select class="form-control" name="department" id="department"
 										tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
@@ -756,13 +778,16 @@ switch ($page) {
 													echo ' selected="Selected"';
 												}
 											}
-											echo '>' . trim($data['department_name_hindi']) . '</option>';
+											echo '>' . trim($data['department_name_english'] . " (" . $data['department_name_hindi'] . ")") . '</option>';
 										}
 										?>
 									</select>
-								</th>
-								<th>प्रखण्ड </th>
-								<th width="18%"><select class="form-control" name="division_name" id="division_name"
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">प्रखण्ड</label>
+									<select class="form-control" name="division_name" id="division_name"
 										tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
 										<?php
@@ -778,9 +803,12 @@ switch ($page) {
 											echo '>' . $data['division_name'] . '</option>';
 										}
 										?>
-									</select></th>
-								<th>आच्छादित जनपद</th>
-								<th width="18%">
+									</select>
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="form-group">
+									<label style="font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase;">आच्छादित जनपद</label>
 									<select class="form-control" name="district" id="district" tabindex="<?php echo $tab++; ?>">
 										<option value="">--- Select ---</option>
 										<?php
@@ -797,9 +825,9 @@ switch ($page) {
 										}
 										?>
 									</select>
-								</th>
-							</tr>
-						</table>
+								</div>
+							</div>
+						</div>
 						<div class="col-md-12 text-center">
 							<button type="submit" name="search" class="btn btn-primary">Search</button>
 						</div>
@@ -823,7 +851,7 @@ switch ($page) {
 							<table class="table table-striped table-hover table-bordered" id="">
 								<thead style="position:sticky;top:0; z-index:2;">
 									<tr>
-										<th></th>
+										<th>#</th>
 										<th>S.No.</th>
 										<th>Project Type</th>
 										<th>Department Name</th>
@@ -868,6 +896,7 @@ switch ($page) {
 										project.admin_go_no,
 
 										dept.department_name_hindi,
+										dept.department_name_english,
 										subdept.sub_department_hindi,
 										dist.district_name_hindi
 
@@ -905,7 +934,7 @@ switch ($page) {
 											elseif ($row['project_type'] == '2')
 												echo 'जिला स्तर';
 											echo '</td>';
-											echo '<td>' . $row['department_name_hindi'] . '<br><small>' . $row['sub_department_hindi'] . '</small></td>';
+											echo '<td>' . $row['department_name_english'] . " (" . $row['department_name_hindi'] . ")" . '<br><small>' . $row['sub_department_hindi'] . '</small></td>';
 											echo '<td>' . $row['district_name_hindi'] . '</td>';
 
 											echo '<td>' . $row['project_name_hindi'] . '<br><small>' . $row['admin_go_no'] . '</small></td>';
@@ -1198,7 +1227,7 @@ switch ($page) {
 						'<div class="row compact" style="width:100%; margin:0;">' +
 						'<div class="col-md-6">' +
 						'<div class="form-group">' +
-						'<label>Upload Photo / PDF 1 *</label>' +
+						'<label>Upload Photo / PDF 1</label>' +
 						'<input type="file" name="photo1_' + counter + '" id="photo1_' + counter + '" class="form-control" accept="image/*,application/pdf" onchange="validateAndPreview(this, \'preview1_' + counter + '\')">' +
 						'<img id="preview1_' + counter + '" src="#" alt="Preview Image 1" style="display:none; width:100px; margin-top:10px; border:1px solid #ccc;"/>' +
 						'</div>' +

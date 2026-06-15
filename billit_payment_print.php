@@ -21,12 +21,12 @@ if (isset($_GET['id'])) {
         echo "<p>Voucher ID {$_GET['id']} does not exist or has been deleted.</p>";
         exit;
     }
-    
+
     // Try to get unit and project info from different possible sources
     $unit_info = '';
     $project_info = '';
     $department_info = '';
-    
+
     // Method 1: Check if it's a fund transfer and try to get from invoice_fund_transfer table
     if ($old_data['table_name'] == 'invoice_fund_transfer' && $old_data['table_id'] > 0) {
         // Try to get from invoice_fund_transfer table (if it has the columns)
@@ -111,7 +111,7 @@ if (isset($_GET['id'])) {
             return '';
         $result = execute_query("SELECT department_name_hindi FROM uprnss_department_name WHERE sno = '" . $dept_id . "' LIMIT 1");
         if ($result && $row = mysqli_fetch_assoc($result)) {
-            return $row['department_name_hindi'] ?? '';
+            return $row['department_name_english'] . " (" . $row['department_name_hindi'] . ")" ?? '';
         }
         return $dept_id;
     }
@@ -278,16 +278,14 @@ if (isset($_GET['id'])) {
 							<td class="credit">' . $credit . '</td>
 						  </tr>';
                 }
-                echo '<tr class="">
-						<td colspan="2" align="right"></br><b>On Account of:&nbsp; &nbsp;</b>' . $old_data['remarks'] . '<br></td>
-						<td></td>
-						<td></td>
-					  </tr>';
-
                 echo '<tr class="total-row">
-						<td colspan="2" align="right"></td>
+						<td colspan="2" align="right">Total</td>
 						<td class="debit">' . number_format($tot_debit, 2) . '</td>
 						<td class="credit">' . number_format($tot_credit, 2) . '</td>
+					  </tr>';
+
+                echo '<tr>
+						<td colspan="4"><b>Narration:</b> ' . htmlspecialchars($old_data['remarks'] ?? '') . '</td>
 					  </tr>';
                 ?>
             </tbody>

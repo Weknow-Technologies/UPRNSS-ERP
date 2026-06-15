@@ -10,6 +10,14 @@ $tab = 1;
 page_header_start();
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    #fundTransferReportTable thead th {
+        background-color: #ae1f20 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
+</style>
 <?php
 page_header_end();
 page_sidebar();
@@ -93,6 +101,8 @@ if (isset($_GET['edit_sno'])) {
 
                                     if ($result && mysqli_num_rows($result) > 0) {
                                         while ($row = mysqli_fetch_assoc($result)) {
+
+                                        // echo $row['sno'];
                                             $actId = (int) $row['sno'];
 
                                             // Get from/to names

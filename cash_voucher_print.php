@@ -159,9 +159,13 @@ if (isset($_GET['id'])) {
 				}
 
 				echo '<tr class="total-row">
-						<td colspan="3" align="right"></td><!-- Vendor column commented out, changed from 4 to 3 -->
+						<td colspan="3" align="right">Total</td><!-- Vendor column commented out, changed from 4 to 3 -->
 						<td class="debit">' . number_format($tot_debit, 2) . '</td>
 						<td class="credit">' . number_format($tot_credit, 2) . '</td>
+					  </tr>';
+                      
+                echo '<tr>
+						<td colspan="5"><b>Narration:</b> ' . htmlspecialchars($old_data['remarks'] ?? '') . '</td>
 					  </tr>';
 				?>
 			</tbody>

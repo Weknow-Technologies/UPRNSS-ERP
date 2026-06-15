@@ -7,7 +7,6 @@ $response = 0;
 $finalmsg = '';
 $tab = 1;
 date_default_timezone_set('Asia/Calcutta');
-//print_r($_POST);
 if (isset($_GET['id'])) {
 	$sql = 'select * from billit_invoice_erp_receipt where sno="' . $_GET['id'] . '"';
 	$old_data = mysqli_fetch_assoc(execute_query($sql));
@@ -133,7 +132,7 @@ if (isset($_GET['voucher'])) {
 		<p>
 		<p>E-Mail: paccfedho@gmail.com
 		<p>
-		<h4>Receipt At: <?php echo get_division($old_data['unit_id']); ?></h4>
+		<h4><?php echo get_division($old_data['unit_id']); ?></h4>
 
 		<h4>Journal Voucher</h4>
 
@@ -186,7 +185,7 @@ if (isset($_GET['voucher'])) {
 								  </tr>';
 							continue;
 						}
-						
+
 						$debit = number_format($debit_amt, 2);
 					} else {
 						$particulars = get_ledger($row['to']);
@@ -203,102 +202,14 @@ if (isset($_GET['voucher'])) {
 						  </tr>';
 				}
 
-				// Add deduction details if available from invoice header
-				$deduction_sql = 'SELECT * FROM invoice_fund_receive WHERE sno="' . $old_data['table_id'] . '"';
-				$deduction_result = execute_query($deduction_sql);
-				if ($deduction_data = mysqli_fetch_assoc($deduction_result)) {
-					// Get ledger account codes from general_settings for proper identification
-					$gstw = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='GSTW'"));
-					$advcen = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='ADVCEN'"));
-					$gsttdsw = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='GSTTDSW'"));
-					$cgsttds = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='CGSTTDSW'"));
-					$sgsttds = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='SGSTTDSW'"));
-					$labourw = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='LABOURCESSW'"));
-					$ittds = mysqli_fetch_assoc(execute_query("select * from general_settings where `desc`='ITTDSW'"));
-
-					// Show TDS DEDUCTED BY DEPARTMENT
-					if (!empty($deduction_data['total_tds']) && $deduction_data['total_tds'] > 0) {
-						$ledger_name = $ittds ? get_ledger($ittds['sno']) : 'TDS DEDUCTED BY DEPARTMENT';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_tds'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_tds'];
-					}
-
-					// Show GST-TDS DEDUCTED BY DEPARTMENT
-					if (!empty($deduction_data['total_gst_tds']) && $deduction_data['total_gst_tds'] > 0) {
-						$ledger_name = $gsttdsw ? get_ledger($gsttdsw['sno']) : 'GST-TDS DEDUCTED BY DEPARTMENT';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_gst_tds'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_gst_tds'];
-					}
-
-					// Show LABOUR CESS DEDUCTED BY DEPARTMENT
-					if (!empty($deduction_data['total_labour']) && $deduction_data['total_labour'] > 0) {
-						$ledger_name = $labourw ? get_ledger($labourw['sno']) : 'LABOUR CESS DEDUCTED BY DEPARTMENT';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_labour'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_labour'];
-					}
-
-					// Show CGST
-					if (!empty($deduction_data['total_cgst']) && $deduction_data['total_cgst'] > 0) {
-						$ledger_name = $gstw ? get_ledger($gstw['sno']) : 'CGST';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_cgst'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_cgst'];
-					}
-
-					// Show SGST
-					if (!empty($deduction_data['total_sgst']) && $deduction_data['total_sgst'] > 0) {
-						$ledger_name = $sgsttds ? get_ledger($sgsttds['sno']) : 'SGST';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_sgst'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_sgst'];
-					}
-
-					// Show Advance Centage
-					if (!empty($deduction_data['total_adv_centage']) && $deduction_data['total_adv_centage'] > 0) {
-						$ledger_name = $advcen ? get_ledger($advcen['sno']) : 'ADVANCE CENTAGE DEDUCTED';
-						echo '<tr>
-								<td>' . ($i++) . '</td>
-								<td>' . $ledger_name . '</td>
-								<td class="debit">' . number_format($deduction_data['total_adv_centage'], 2) . '</td>
-								<td class="credit"></td>
-							  </tr>';
-						$tot_debit += $deduction_data['total_adv_centage'];
-					}
-				}
-
-				echo '<tr class="">
-						<td colspan="2" align="right"></br><b>On Account of:&nbsp; &nbsp;</b>' . $old_data['remarks'] . '<br></td>
-						<td></td>
-						<td></td>
-					  </tr>';
-
 				echo '<tr class="total-row">
-						<td colspan="2" align="right"></td>
+						<td colspan="2" align="right">Total</td>
 						<td class="debit">' . number_format($tot_debit, 2) . '</td>
 						<td class="credit">' . number_format($tot_credit, 2) . '</td>
+					  </tr>';
+
+				echo '<tr>
+						<td colspan="4"><b>Narration:</b> ' . htmlspecialchars($old_data['remarks'] ?? '') . '</td>
 					  </tr>';
 				?>
 			</tbody>

@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ALL);
-include ("scripts/settings.php");
+include("scripts/settings.php");
 $msg = '';
 page_header_start();
 page_header_end();
@@ -114,270 +114,271 @@ if (isset($_POST['submit'])) {
 
 if (!isset($_SESSION['session_id'])) {
 	?>
-<style>	
+	<style>
+		/* Main Container */
+		.full-screen-container {
+			display: flex;
+			flex: 1;
+			height: calc(100vh - 50px);
+			/* Adjust for footer height */
+			width: 100%;
+			overflow: hidden;
+		}
 
-/* Main Container */
-.full-screen-container {
-    display: flex;
-    flex: 1;
-    height: calc(100vh - 50px); /* Adjust for footer height */
-    width: 100%;
-    overflow: hidden;
-}
-
-/* Left Section (Image) */
-.left-section {
-    flex: 1;
-    background: url('images/bulding_uprnss.jpg') no-repeat center center/cover;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-	// opacity: 0.9;
-}
-
-
-.title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-top: 360px;
-    margin-bottom: 10px;
-}
-
-.description {
-    font-size: 1.2rem;
-    line-height: 1.5;
-}
-
-/* Right Section (Login) */
-.right-section {
-    flex: 1;
-	background: url('images/right_section_bg3.jpeg') no-repeat center center/cover;
-   
-    display: flex;
-    justify-content: center;
-    align-items: center;
-	opacity: 0.9;
-}
-
-.form-container {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
-
-.login-header {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.login-subtitle {
-  font-size: 1.2rem;
-  color: #666;
-  margin-bottom: 20px;
-  font-weight: bold;
-}
-
-.form-group {
-    text-align: left;
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    font-size: 0.9rem;
-    color: #555;
-}
-
-.form-control {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
-.form-control:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-}
-
-.btn-primary {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    width: 100%;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-}
-
-/* Footer Styling */
-.footer {
-    background-color: #93454d;
-    color: white;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    width: 100%;
-}
-
-.footer-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.footer-left, .footer-right {
-    flex: 1;
-}
-
-.footer-left {
-    text-align: left;
-}
-
-.footer-right {
-    text-align: right;
-}
-
-.footer a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-.footer a:hover {
-    text-decoration: underline;
-}
-
-.footer img {
-    vertical-align: middle;
-    max-height: 20px;
-    margin-left: 5px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .footer-container {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .footer-left, .footer-right {
-        text-align: center;
-        margin-bottom: 10px;
-    }
-}
+		/* Left Section (Image) */
+		.left-section {
+			flex: 1;
+			background: url('images/bulding_uprnss.jpg') no-repeat center center/cover;
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			// opacity: 0.9;
+		}
 
 
+		.title {
+			font-size: 2.5rem;
+			font-weight: bold;
+			margin-top: 360px;
+			margin-bottom: 10px;
+		}
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .full-screen-container {
-        flex-direction: column;
-    }
+		.description {
+			font-size: 1.2rem;
+			line-height: 1.5;
+		}
 
-    .left-section, .right-section {
-        flex: none;
-        width: 100%;
-        height: 50%;
-    }
+		/* Right Section (Login) */
+		.right-section {
+			flex: 1;
+			background: url('images/right_section_bg3.jpeg') no-repeat center center/cover;
 
-    .overlay {
-        padding: 15px;
-    }
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			opacity: 0.9;
+		}
 
-    .form-container {
-        padding: 20px;
-    }
+		.form-container {
+			background: white;
+			padding: 30px;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+			width: 100%;
+			max-width: 400px;
+			text-align: center;
+		}
 
-    .footer {
-        font-size: 0.8rem;
-    }
-}
+		.login-header {
+			font-size: 1.8rem;
+			margin-bottom: 10px;
+			color: #333;
+		}
+
+		.login-subtitle {
+			font-size: 1.2rem;
+			color: #666;
+			margin-bottom: 20px;
+			font-weight: bold;
+		}
+
+		.form-group {
+			text-align: left;
+			margin-bottom: 15px;
+		}
+
+		.form-group label {
+			font-size: 0.9rem;
+			color: #555;
+		}
+
+		.form-control {
+			width: 100%;
+			padding: 10px;
+			margin-top: 5px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			font-size: 1rem;
+		}
+
+		.form-control:focus {
+			border-color: #007bff;
+			outline: none;
+			box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+		}
+
+		.btn-primary {
+			background: #007bff;
+			color: white;
+			border: none;
+			padding: 10px 15px;
+			width: 100%;
+			border-radius: 5px;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+
+		.btn-primary:hover {
+			background: #0056b3;
+		}
+
+		/* Footer Styling */
+		.footer {
+			background-color: #93454d;
+			color: white;
+			padding: 10px 20px;
+			font-size: 0.9rem;
+			width: 100%;
+		}
+
+		.footer-container {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+
+		.footer-left,
+		.footer-right {
+			flex: 1;
+		}
+
+		.footer-left {
+			text-align: left;
+		}
+
+		.footer-right {
+			text-align: right;
+		}
+
+		.footer a {
+			color: #007bff;
+			text-decoration: none;
+		}
+
+		.footer a:hover {
+			text-decoration: underline;
+		}
+
+		.footer img {
+			vertical-align: middle;
+			max-height: 20px;
+			margin-left: 5px;
+		}
+
+		/* Responsive Design */
+		@media (max-width: 768px) {
+			.footer-container {
+				flex-direction: column;
+				text-align: center;
+			}
+
+			.footer-left,
+			.footer-right {
+				text-align: center;
+				margin-bottom: 10px;
+			}
+		}
 
 
 
-</style>	
-<div class="full-screen-container">
-    <!-- Left Section: Image -->
-    <div class="left-section">
-        <div class="overlay">
-            <h6 class="title"></h6>
-            <p class="description"></p>
-        </div>
-    </div>
+		/* Responsive Design */
+		@media (max-width: 768px) {
+			.full-screen-container {
+				flex-direction: column;
+			}
 
-    <!-- Right Section: Login Form -->
-    <div class="right-section">
-        <div class="form-container">
-            <p class="login-subtitle">Login to manage your projects</p>
-            <form id="loginform" method="post" action="index.php">
-                <div class="form-group">
-                    <label for="username">User ID</label>
-                    <input type="text" id="username" name="username" placeholder="Enter User ID" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="userpwd" placeholder="Enter Password" class="form-control">
-                </div>
-                <button type="submit" name="submit" class="btn btn-primary">Login</button>
-            </form>
-        </div>
-    </div>
-</div>
+			.left-section,
+			.right-section {
+				flex: none;
+				width: 100%;
+				height: 50%;
+			}
 
-<!-- Footer (Full Section) -->
-<footer class="footer">
-    <div class="footer-container">
-        <!-- Left Section -->
-		<div class="footer-left">
-            <p>
-                 
-                <a href="http://www.weknowtech.in" target="_blank">
-				Home
-                </a>
-            </p>
-        </div>
-		
-        <div class="footer-right">
-            <p>
-				<a href="http://www.weknowtech.in" target="_blank">
-				© 
-                <script>
-                    document.write(new Date().getFullYear());
-                </script>
-				Weknow Technologies
-                    <img src="images/logo-15.png" class="img-rounded" alt="Weknow Technologies">
-                </a>
-            </p>
-        </div>
+			.overlay {
+				padding: 15px;
+			}
 
-        <!-- Right Section -->
-        
-    </div>
-</footer>
+			.form-container {
+				padding: 20px;
+			}
+
+			.footer {
+				font-size: 0.8rem;
+			}
+		}
+	</style>
+	<div class="full-screen-container">
+		<!-- Left Section: Image -->
+		<div class="left-section">
+			<div class="overlay">
+				<h6 class="title"></h6>
+				<p class="description"></p>
+			</div>
+		</div>
+
+		<!-- Right Section: Login Form -->
+		<div class="right-section">
+			<div class="form-container">
+				<p class="login-subtitle">Login to manage your projects</p>
+				<form id="loginform" method="post" action="index.php">
+					<div class="form-group">
+						<label for="username">User ID</label>
+						<input type="text" id="username" name="username" placeholder="Enter User ID" class="form-control">
+					</div>
+					<div class="form-group">
+						<label for="password">Password</label>
+						<input type="password" id="password" name="userpwd" placeholder="Enter Password"
+							class="form-control">
+					</div>
+					<button type="submit" name="submit" class="btn btn-primary">Login</button>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Footer (Full Section) -->
+	<footer class="footer">
+		<div class="footer-container">
+			<!-- Left Section -->
+			<div class="footer-left">
+				<p>
+
+					<a href="http://www.weknowtech.in" target="_blank">
+						Home
+					</a>
+				</p>
+			</div>
+
+			<div class="footer-right">
+				<p>
+					<a href="http://www.weknowtech.in" target="_blank">
+						©
+						<script>
+							document.write(new Date().getFullYear());
+						</script>
+						Weknow Technologies
+						<img src="images/logo-15.png" class="img-rounded" alt="Weknow Technologies">
+					</a>
+				</p>
+			</div>
+
+			<!-- Right Section -->
+
+		</div>
+	</footer>
 
 
 
 
 
 
-	
 
-<?php
+
+	<?php
 } else {
 	if ($_SESSION['otp_verify'] == 1) {
 		$sql = 'select * from session where sno="' . $_SESSION['session_insert_id'] . '"';
@@ -448,9 +449,89 @@ if (!isset($_SESSION['session_id'])) {
 			goto login;
 		}
 	} else {
-		
+
 		login:
-page_sidebar();	
+		page_sidebar();
+
+		// --- Accountant Ledger Check ---
+		if (isset($_SESSION['usertype']) && in_array($_SESSION['usertype'], ['6', '9']) && !empty($_SESSION['divisions'])) {
+			$missing_ledgers = false;
+			foreach ($_SESSION['divisions'] as $d_id) {
+			    if ($_SESSION['usertype'] == '6') {
+                    $d_id = '53';
+                }
+				$chk = execute_query("SELECT `desc`, `rate` FROM general_settings WHERE unit_id='$d_id'");
+				$found = [];
+				while ($r = mysqli_fetch_assoc($chk)) {
+					if (trim($r['rate']) != '') {
+						$found[strtoupper(trim($r['desc']))] = true;
+					}
+				}
+
+				$isMapped = function ($k) use ($found) {
+					return isset($found[$k]);
+				};
+
+				$receive = (($isMapped('CGST') && $isMapped('SGST'))) &&
+					(($isMapped('CGSTTDS') && $isMapped('SGSTTDS'))) &&
+					$isMapped('ITTDS') && $isMapped('LABORCESS') && $isMapped('OTHER_CHARGES');
+
+				$transfer = (($isMapped('CGSTW') && $isMapped('SGSTW'))) &&
+					(($isMapped('CGSTTDSW') && $isMapped('SGSTTDSW'))) &&
+					$isMapped('ITTDSW') && $isMapped('LABOURCESSW') && $isMapped('ADVCEN');
+
+				$bill = (($isMapped('BILL_CGST') && $isMapped('BILL_SGST'))) &&
+					(($isMapped('BILL_CGST_TDS') && $isMapped('BILL_SGST_TDS'))) &&
+					$isMapped('BILL_IT') && $isMapped('BILL_LABOUR_CESS') && $isMapped('BILL_SECURITY') &&
+					$isMapped('BILL_OTHER_ADD') && $isMapped('BILL_OTHER_DED') && $isMapped('BILL_DED_CGST');
+
+				if ($d_id == '53') {
+					$bill = true;
+				} else {
+                    $transfer = true;
+                }
+				if (!$receive || !$transfer || !$bill) {
+					$missing_ledgers = true;
+					break;
+				}
+			}
+			echo '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>';
+			if ($missing_ledgers) {
+				echo "<script>
+				document.addEventListener('DOMContentLoaded', function() {
+				    Swal.fire({
+					  title: 'Action Required',
+					  text: 'Kindly map your ledger first',
+					  icon: 'warning',
+					  confirmButtonText: 'Go to Settings',
+					  allowOutsideClick: false,
+					  allowEscapeKey: false
+					}).then((result) => {
+					  if (result.isConfirmed) {
+					    window.location.href = 'unit_settings.php';
+					  }
+					});
+				});
+				</script>";
+			} else {
+				if (!isset($_SESSION['mapping_success_shown'])) {
+					echo "<script>
+					document.addEventListener('DOMContentLoaded', function() {
+						Swal.fire({
+						  title: 'Mapping Completed!',
+						  text: 'All ledgers are mapped.',
+						  icon: 'success',
+						  showConfirmButton: false,
+						  timer: 2000
+						});
+					});
+					</script>";
+					$_SESSION['mapping_success_shown'] = true;
+				}
+			}
+		}
+		// -------------------------------
+
 		$sql = 'select * from master_zone';
 		$result_division = execute_query($sql);
 		$zone = mysqli_num_rows($result_division);
@@ -541,19 +622,21 @@ page_sidebar();
 		</style>
 		<div class="row">
 			<div class="col-md-12">
-				<div class="card" style="border: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; overflow: hidden; ">
-					<div class="header" style="background-color: #ec414a; color: white; padding: 1px; display: flex; align-items: center; padding:10px 0px">
+				<div class="card"
+					style="border: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; overflow: hidden; ">
+					<div class="header"
+						style="background-color: #ec414a; color: white; padding: 1px; display: flex; align-items: center; padding:10px 0px">
 						<!-- Logo on the left -->
-						<img src="images/icon.png" alt="logo" 
-							 style="width: 90px; height: auto; margin-right: 2px; margin-left: 40px; filter: brightness(1.1) contrast(1.1);">
+						<img src="images/icon.png" alt="logo"
+							style="width: 90px; height: auto; margin-right: 2px; margin-left: 40px; filter: brightness(1.1) contrast(1.1);">
 						<!-- Centered Text -->
 						<div style="flex: 1; text-align: center;">
 							<h4 class="title" style="font-size: 1.5rem; font-weight: bold; margin: 0;">
 								उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)
 							</h4>
 						</div>
-						<img src="images/aippc_wite.png" alt="logo" 
-							 style="width: 200px; height: auto; margin-right: 40px; margin-left: 0px; filter: brightness(1.1) contrast(1.1);">
+						<img src="images/aippc_wite.png" alt="logo"
+							style="width: 200px; height: auto; margin-right: 40px; margin-left: 0px; filter: brightness(1.1) contrast(1.1);">
 					</div>
 					<!---<div class="content" style="padding: 10px; text-align: center; background-color: #f8f9fa;">
 						<p style="font-size: 1.2rem; font-weight: bold; color: #156a5b; margin: 0;">
@@ -563,10 +646,10 @@ page_sidebar();
 				</div>
 			</div>
 		</div>
-<?php
-switch ($_SESSION['usertype']) {
-case 'sadmin': {
-?>
+		<?php
+		switch ($_SESSION['usertype']) {
+			case 'sadmin': {
+				?>
 
 					<div class="container" id="sadmin_body">
 
@@ -588,7 +671,7 @@ case 'sadmin': {
 									</div>
 								</a>
 							</div>
-							
+
 							<div class="col-md-3 mb-2">
 								<a href="index_department.php" target="_blank">
 									<div class="box box4">
@@ -643,20 +726,20 @@ case 'sadmin': {
 							</div>
 
 						</div>
-						<?php 
+						<?php
 						////////////////////////////////1. ग्राहक विभाग मॉड्यूल///////////////////
-								// 1. Count total unique departments
+						// 1. Count total unique departments
 						$sql = 'SELECT COUNT(DISTINCT uprnss_project_temp.department_id) AS unique_department_count
 								FROM uprnss_project_temp
 								LEFT JOIN invoice_civil 
 								ON uprnss_project_temp.invoice_civil_sno = invoice_civil.sno
 								WHERE uprnss_project_temp.status != "5" AND uprnss_project_temp.reporting_status=0';
-								$count = execute_query($sql);
-								$depaertment_current= mysqli_fetch_assoc($count);
-								
+						$count = execute_query($sql);
+						$depaertment_current = mysqli_fetch_assoc($count);
+
 
 						// 2. Get top 10 departments with the most projects
-						$top_department='SELECT uprnss_department_name.department_name_hindi, 
+						$top_department = 'SELECT uprnss_department_name.department_name_hindi, 
 						SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 						COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -668,8 +751,8 @@ case 'sadmin': {
 						$top_department_result = execute_query($top_department);
 						$top_department = mysqli_fetch_assoc($top_department_result);
 
-								// 3. Get bottom 10 departments with the least projects
-							$bottom_department='SELECT uprnss_department_name.department_name_hindi, 
+						// 3. Get bottom 10 departments with the least projects
+						$bottom_department = 'SELECT uprnss_department_name.department_name_hindi, 
 							SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 							COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -680,20 +763,20 @@ case 'sadmin': {
 						LIMIT 1';
 						$bottom_department_result = execute_query($bottom_department);
 						$bottom_department = mysqli_fetch_assoc($bottom_department_result);
-						
+
 						////////////////////////////////2. प्रखण्ड मॉड्यूल///////////////////
-								// 1. Count total unique departments
+						// 1. Count total unique departments
 						$sql = 'SELECT COUNT(DISTINCT uprnss_project_temp.division_id) AS unique_department_count
 								FROM uprnss_project_temp
 								LEFT JOIN invoice_civil 
 								ON uprnss_project_temp.invoice_civil_sno = invoice_civil.sno
 								WHERE uprnss_project_temp.status != "5" AND uprnss_project_temp.reporting_status=0';
-								$counts = execute_query($sql);
-								$division_current= mysqli_fetch_assoc($counts);
-								
+						$counts = execute_query($sql);
+						$division_current = mysqli_fetch_assoc($counts);
+
 
 						// 2. Get top 10 departments with the most projects
-						$top_division='SELECT uprnss_division.division_name, 
+						$top_division = 'SELECT uprnss_division.division_name, 
 						SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 						COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -704,8 +787,8 @@ case 'sadmin': {
 						LIMIT 1';
 						$top_division_result = execute_query($top_division);
 						$top_division = mysqli_fetch_assoc($top_division_result);
-						
-						$bottom_divisioncost='SELECT uprnss_division.division_name, 
+
+						$bottom_divisioncost = 'SELECT uprnss_division.division_name, 
 						SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 						COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -716,9 +799,9 @@ case 'sadmin': {
 						LIMIT 1';
 						$bottom_division_results = execute_query($bottom_divisioncost);
 						$bottom_division_cost = mysqli_fetch_assoc($bottom_division_results);
-						
-						
-						$top_divisioncost='SELECT uprnss_division.division_name, 
+
+
+						$top_divisioncost = 'SELECT uprnss_division.division_name, 
 						SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 						COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -729,10 +812,10 @@ case 'sadmin': {
 						LIMIT 1';
 						$top_division_results = execute_query($top_divisioncost);
 						$top_division_cost = mysqli_fetch_assoc($top_division_results);
-						
 
-								// 3. Get bottom 10 departments with the least projects
-						$bottom_division='SELECT uprnss_division.division_name, 
+
+						// 3. Get bottom 10 departments with the least projects
+						$bottom_division = 'SELECT uprnss_division.division_name, 
 							SUM(uprnss_project_temp.sanction_cost) AS max_sanction_cost,
 							COUNT(*) AS project_count FROM uprnss_project_temp 
 						LEFT JOIN invoice_civil ON uprnss_project_temp.invoice_civil_sno=invoice_civil.sno
@@ -743,9 +826,9 @@ case 'sadmin': {
 						LIMIT 1';
 						$bottom_division_result = execute_query($bottom_division);
 						$bottom_division = mysqli_fetch_assoc($bottom_division_result);
-						
+
 						////////////////////////////////3.  परियोजना मॉड्यूल///////////////////
-							$sql ='SELECT  COUNT(*) AS total_projects,
+						$sql = 'SELECT  COUNT(*) AS total_projects,
 								SUM(invoice_civil.sanction_cost) AS total_sanction_cost,
 								
 								SUM(CASE WHEN invoice_civil.project_status_1 = 8 THEN 1 ELSE 0 END) AS handed_over_count,
@@ -772,21 +855,21 @@ case 'sadmin': {
 							WHERE 
 								uprnss_project_temp.status != "5" 
 								AND uprnss_project_temp.reporting_status = 0';
-								$allotted = mysqli_fetch_assoc(execute_query($sql));
-									
+						$allotted = mysqli_fetch_assoc(execute_query($sql));
+
 						////////////////////////////////3.  परियोजना मॉड्यूल///////////////////
-						
-						$sql_finance='SELECT
+		
+						$sql_finance = 'SELECT
 								SUM(sb_details_trans.closing_amt) AS total_closing_amt FROM sb_details_trans
 								LEFT JOIN  sb_fd_acount_details_invoice ON sb_fd_acount_details_invoice.sno = sb_details_trans.invoice_id';
-							$saving_account = mysqli_fetch_assoc(execute_query($sql_finance));	
-							
-						$sql_finance='SELECT
+						$saving_account = mysqli_fetch_assoc(execute_query($sql_finance));
+
+						$sql_finance = 'SELECT
 								SUM(fd_details_trans.principal_amt) AS total_principal_amt FROM fd_details_trans
 								LEFT JOIN  sb_fd_acount_details_invoice ON sb_fd_acount_details_invoice.sno = fd_details_trans.invoice_id';
-							$fd_account = mysqli_fetch_assoc(execute_query($sql_finance));
-							
-						$sql ='SELECT  COUNT(*) AS total_projects,
+						$fd_account = mysqli_fetch_assoc(execute_query($sql_finance));
+
+						$sql = 'SELECT  COUNT(*) AS total_projects,
 								SUM(invoice_civil.current_fy_tot_exp) AS current_fy_tot_exp
 							FROM 
 								uprnss_project_temp 
@@ -797,11 +880,11 @@ case 'sadmin': {
 							WHERE 
 								uprnss_project_temp.status != "5" 
 								AND uprnss_project_temp.reporting_status = 0';
-								$current_fy_tot_exp = mysqli_fetch_assoc(execute_query($sql));
-						
+						$current_fy_tot_exp = mysqli_fetch_assoc(execute_query($sql));
+
 						////////////////////////////////3.कार्मिक मॉड्यूल///////////////////
-						
-						$sql_emp='SELECT  COUNT(*) AS total_emp,
+		
+						$sql_emp = 'SELECT  COUNT(*) AS total_emp,
 							SUM(CASE WHEN employee.employee_designation = 3 THEN 1 ELSE 0 END) AS ee_emp_count,
 							SUM(CASE WHEN employee.employee_designation = 2 THEN 1 ELSE 0 END) AS ae_emp_count,
 							SUM(CASE WHEN employee.employee_designation = 1 THEN 1 ELSE 0 END) AS je_emp_count,
@@ -809,93 +892,93 @@ case 'sadmin': {
 							FROM 
 								employee 
 							WHERE employee.working_status = 0';
-							$result_emp = mysqli_query($db_payroll, $sql_emp);
-							$row_emp=mysqli_fetch_assoc($result_emp);
-							
-							/////////////////////पेरोल मॉड्यूल //////////////////////
-							
-							
-							
-							
-						
-				$array = array(
-					"ग्राहक विभाग मॉड्यूल" => array(
-						array("label" => "कुल ग्राहक विभाग:-", "file" => "civil_report_13.php","value" => "". $depaertment_current['unique_department_count'].""),
-						array("label" => "सर्वाधिक परियोजना वाला विभाग:-", "file" => "civil_report_13.php","value" => "" . $top_department['department_name_hindi'] . " (" . $top_department['project_count'] . " परियोजनाएँ )"),
-						array("label" => "निम्नतम परियोजना वाला विभाग:-", "file" => "civil_report_13.php","value" => "" . $bottom_department['department_name_hindi'] . " (" . $bottom_department['project_count'] . " परियोजनाएँ )"),
-						array("label" => "सर्वाधिक परियोजना लागत वाला विभाग:-", "file" => "customer_department.php","value" => "" . $top_department['department_name_hindi'] . " (" . round($top_department['max_sanction_cost'],2) . " लाख)"),
-						array("label" => "निम्नतम परियोजना लागत वाला विभाग:-", "file" => "customer_department.php","value" => "" . $bottom_department['department_name_hindi'] . " (" . round($bottom_department['max_sanction_cost'],2) . " लाख )"),
-					),
+						$result_emp = mysqli_query($db_payroll, $sql_emp);
+						$row_emp = mysqli_fetch_assoc($result_emp);
 
-					"प्रखण्ड मॉड्यूल" => array(
-						array("label" => "कुल प्रखण्ड ", "file" => "master_division.php","value" => "$divisions"),
-						array("label" => "सर्वाधिक परियोजना वाला प्रखण्ड ", "file" => "Project_status_report.php?id=max","value" =>"" . $top_division['division_name'] . " (" . $top_division['project_count'] . " परियोजनाएँ )"),
-						array("label" => "निम्नतम परियोजना वाला प्रखण्ड", "file" => "Project_status_report.php?id=min", "value" => "" . $bottom_division['division_name'] . " (" . $bottom_division['project_count'] . " परियोजनाएँ )"),
-						array("label" => "सर्वाधिक परियोजना लागत वाला प्रखण्ड", "file" => "customer_department.php","value" => "" . $top_division_cost['division_name'] . "(" . $top_division_cost['project_count'] . "&nbsp;परियोजनाएँ &nbsp;" . round($top_division_cost['max_sanction_cost'],2) . " लाख )"),
-						array("label" => "निम्नतम परियोजना लागत वाला प्रखण्ड", "file" => "customer_department.php","value" => "" . $bottom_division_cost['division_name'] . "(" . $bottom_division_cost['project_count'] . "&nbsp;परियोजनाएँ &nbsp;" . round($bottom_division_cost['max_sanction_cost'],2) . " लाख )"),
-					),
+						/////////////////////पेरोल मॉड्यूल //////////////////////
+		
 
-					"परियोजना मॉड्यूल" => array(
-						array("label" => "कुल परियोजना और उनकी लागत ", "file" => "civil_report_10.php","value" => "" . $allotted['total_projects'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['total_sanction_cost'], 2) . "&nbsp; लाख "),
-						array("label" => "हस्तगत परियोजना और उनकी लागत", "file" => "project_module.php","value" => "" . $allotted['handed_over_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['handed_over_amount'], 2) . "&nbsp; लाख "),
-						array("label" => "पूर्ण परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php","value" => "" . $allotted['in_complete_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_complete_amount'], 2) . "&nbsp; लाख "),
-						array("label" => "प्रगतिपर परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php","value" => "" . $allotted['in_progress_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_progress_amount'], 2) . "&nbsp; लाख "),
-						
-						array("label" => "बाधित परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php","value" => "" . $allotted['in_interpted_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_interpted_amount'], 2) . "&nbsp; लाख "),
-						array("label" => "अनारंभ परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php","value" => "" . $allotted['unstarted_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['unstarted_amount'], 2) . "&nbsp; लाख "),
-						
-					),
 
-					"मानचित्र मॉड्यूल" => array(
-						array("label" => "ऐसी परियोजनाये जिनका सर्वे हो चुका है ", "file" => "map_module.php","value" => ""),
-						array("label" => "ऐसी परियोजना जिनका मानचित्र प्राप्त हो चुका है ", "file" => "map_module.php","value" => ""),
-						array("label" => "ऐसी परियोजना जिनपे वास्तुकार आवंटित हो चुके है", "file" => "map_module.php","value" => ""),
-					),
 
-					"वित्तीय मॉड्यूल" => array(
-						array("label" => "बचत खाते मे मौजूद कुल राशि", "file" => "financial_module.php","value" => "" . round($saving_account['total_closing_amt'], 2) . "&nbsp; रुपये "),
-						array("label" => "सावधि खाते मे मौजूद कुल राशि", "file" => "financial_module.php","value" => "" . round($fd_account['total_principal_amt'], 2) . "&nbsp; रुपये "),
-						array("label" => "वर्तमान वित्तीय वर्ष में परियोजनाओ पर व्यय", "file" => "financial_module.php","value" => "" . round($current_fy_tot_exp['current_fy_tot_exp'], 2) . "&nbsp; लाख "),
-						
-					),
 
-					"कार्मिक मॉड्यूल" => array(
-						array("label" => "कुल कर्मचारी की संख्या ", "file" => "personnel_module.php","value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "नियमित कर्मचारी की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "प्रतिनियुक्ति कर्मचारी की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "अधिशाषी अभियंता(EE)  की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['ee_emp_count'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "सहायक अभियंता(AE) की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['ae_emp_count'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "अवर अभियंता(JE) की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['je_emp_count'], 2) . "&nbsp; कर्मचारी "),
-						array("label" => "लेखाकार की संख्या", "file" => "personnel_module.php","value" => "" . round($row_emp['accountant_emp_count'], 2) . "&nbsp; कर्मचारी "),
-					),
-					"पेरोल मॉड्यूल" => array(
-						array("label" => "माह मे वेतन खर्च ", "file" => "payroll_module.php","value" => ""),
-						array("label" => "वर्तमान वित्तीय वर्ष में वेतन खर्च", "file" => "payroll_module.php","value" => ""),
-						array("label" => "माह मे आयकर कटौती ", "file" => "payroll_module.php","value" => ""),
-						array("label" => "माह मे EPF कटौती ", "file" => "payroll_module.php","value" => ""),
-						
-						
-					),
-					"E-MB मॉड्यूल" => array(
-						array("label" => "कुल ई-Measurement", "file" => "e-mb_module.php","value" => "24133"),
-						array("label" => "कुल ई-Bill", "file" => "e-mb_module.php","value" => "22356"),
-					),
+						$array = array(
+							"ग्राहक विभाग मॉड्यूल" => array(
+								array("label" => "कुल ग्राहक विभाग:-", "file" => "civil_report_13.php", "value" => "" . $depaertment_current['unique_department_count'] . ""),
+								array("label" => "सर्वाधिक परियोजना वाला विभाग:-", "file" => "civil_report_13.php", "value" => "" . $top_department['department_name_english'] . " (" . $top_department['department_name_hindi'] . ")" . " (" . $top_department['project_count'] . " परियोजनाएँ )"),
+								array("label" => "निम्नतम परियोजना वाला विभाग:-", "file" => "civil_report_13.php", "value" => "" . $bottom_department['department_name_english'] . " (" . $bottom_department['department_name_hindi'] . ")" . " (" . $bottom_department['project_count'] . " परियोजनाएँ )"),
+								array("label" => "सर्वाधिक परियोजना लागत वाला विभाग:-", "file" => "customer_department.php", "value" => "" . $top_department['department_name_english'] . " (" . $top_department['department_name_hindi'] . ")" . " (" . round($top_department['max_sanction_cost'], 2) . " लाख)"),
+								array("label" => "निम्नतम परियोजना लागत वाला विभाग:-", "file" => "customer_department.php", "value" => "" . $bottom_department['department_name_english'] . " (" . $bottom_department['department_name_hindi'] . ")" . " (" . round($bottom_department['max_sanction_cost'], 2) . " लाख )"),
+							),
 
-					"गैलरी मॉड्यूल" => array(
-						array("label" => "कुल उपलब्ध फोटो", "file" => "mis_albums.php","value" => ""),
-						array("label" => "फीचर्ड फोटो", "file" => "mis_albums.php?spcl","value" => ""),
-					),
-				);
-				?>
-				<div class="row">
-    <div class="col-md-12">
-        <div class="">
-            <div class="content">
-                <div class="row mt-4">
-                    <?php
-                    $i = 1;
-                    foreach ($array as $module => $items) {
-                        echo '
+							"प्रखण्ड मॉड्यूल" => array(
+								array("label" => "कुल प्रखण्ड ", "file" => "master_division.php", "value" => "$divisions"),
+								array("label" => "सर्वाधिक परियोजना वाला प्रखण्ड ", "file" => "Project_status_report.php?id=max", "value" => "" . $top_division['division_name'] . " (" . $top_division['project_count'] . " परियोजनाएँ )"),
+								array("label" => "निम्नतम परियोजना वाला प्रखण्ड", "file" => "Project_status_report.php?id=min", "value" => "" . $bottom_division['division_name'] . " (" . $bottom_division['project_count'] . " परियोजनाएँ )"),
+								array("label" => "सर्वाधिक परियोजना लागत वाला प्रखण्ड", "file" => "customer_department.php", "value" => "" . $top_division_cost['division_name'] . "(" . $top_division_cost['project_count'] . "&nbsp;परियोजनाएँ &nbsp;" . round($top_division_cost['max_sanction_cost'], 2) . " लाख )"),
+								array("label" => "निम्नतम परियोजना लागत वाला प्रखण्ड", "file" => "customer_department.php", "value" => "" . $bottom_division_cost['division_name'] . "(" . $bottom_division_cost['project_count'] . "&nbsp;परियोजनाएँ &nbsp;" . round($bottom_division_cost['max_sanction_cost'], 2) . " लाख )"),
+							),
+
+							"परियोजना मॉड्यूल" => array(
+								array("label" => "कुल परियोजना और उनकी लागत ", "file" => "civil_report_10.php", "value" => "" . $allotted['total_projects'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['total_sanction_cost'], 2) . "&nbsp; लाख "),
+								array("label" => "हस्तगत परियोजना और उनकी लागत", "file" => "project_module.php", "value" => "" . $allotted['handed_over_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['handed_over_amount'], 2) . "&nbsp; लाख "),
+								array("label" => "पूर्ण परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php", "value" => "" . $allotted['in_complete_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_complete_amount'], 2) . "&nbsp; लाख "),
+								array("label" => "प्रगतिपर परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php", "value" => "" . $allotted['in_progress_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_progress_amount'], 2) . "&nbsp; लाख "),
+
+								array("label" => "बाधित परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php", "value" => "" . $allotted['in_interpted_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['in_interpted_amount'], 2) . "&nbsp; लाख "),
+								array("label" => "अनारंभ परियोजनाओं की संख्या और उनकी लागत", "file" => "project_module.php", "value" => "" . $allotted['unstarted_count'] . "&nbsp;परियोजना &nbsp;लागत&nbsp;" . round($allotted['unstarted_amount'], 2) . "&nbsp; लाख "),
+
+							),
+
+							"मानचित्र मॉड्यूल" => array(
+								array("label" => "ऐसी परियोजनाये जिनका सर्वे हो चुका है ", "file" => "map_module.php", "value" => ""),
+								array("label" => "ऐसी परियोजना जिनका मानचित्र प्राप्त हो चुका है ", "file" => "map_module.php", "value" => ""),
+								array("label" => "ऐसी परियोजना जिनपे वास्तुकार आवंटित हो चुके है", "file" => "map_module.php", "value" => ""),
+							),
+
+							"वित्तीय मॉड्यूल" => array(
+								array("label" => "बचत खाते मे मौजूद कुल राशि", "file" => "financial_module.php", "value" => "" . round($saving_account['total_closing_amt'], 2) . "&nbsp; रुपये "),
+								array("label" => "सावधि खाते मे मौजूद कुल राशि", "file" => "financial_module.php", "value" => "" . round($fd_account['total_principal_amt'], 2) . "&nbsp; रुपये "),
+								array("label" => "वर्तमान वित्तीय वर्ष में परियोजनाओ पर व्यय", "file" => "financial_module.php", "value" => "" . round($current_fy_tot_exp['current_fy_tot_exp'], 2) . "&nbsp; लाख "),
+
+							),
+
+							"कार्मिक मॉड्यूल" => array(
+								array("label" => "कुल कर्मचारी की संख्या ", "file" => "personnel_module.php", "value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "नियमित कर्मचारी की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "प्रतिनियुक्ति कर्मचारी की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['total_emp'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "अधिशाषी अभियंता(EE)  की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['ee_emp_count'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "सहायक अभियंता(AE) की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['ae_emp_count'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "अवर अभियंता(JE) की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['je_emp_count'], 2) . "&nbsp; कर्मचारी "),
+								array("label" => "लेखाकार की संख्या", "file" => "personnel_module.php", "value" => "" . round($row_emp['accountant_emp_count'], 2) . "&nbsp; कर्मचारी "),
+							),
+							"पेरोल मॉड्यूल" => array(
+								array("label" => "माह मे वेतन खर्च ", "file" => "payroll_module.php", "value" => ""),
+								array("label" => "वर्तमान वित्तीय वर्ष में वेतन खर्च", "file" => "payroll_module.php", "value" => ""),
+								array("label" => "माह मे आयकर कटौती ", "file" => "payroll_module.php", "value" => ""),
+								array("label" => "माह मे EPF कटौती ", "file" => "payroll_module.php", "value" => ""),
+
+
+							),
+							"E-MB मॉड्यूल" => array(
+								array("label" => "कुल ई-Measurement", "file" => "e-mb_module.php", "value" => "24133"),
+								array("label" => "कुल ई-Bill", "file" => "e-mb_module.php", "value" => "22356"),
+							),
+
+							"गैलरी मॉड्यूल" => array(
+								array("label" => "कुल उपलब्ध फोटो", "file" => "mis_albums.php", "value" => ""),
+								array("label" => "फीचर्ड फोटो", "file" => "mis_albums.php?spcl", "value" => ""),
+							),
+						);
+						?>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="">
+									<div class="content">
+										<div class="row mt-4">
+											<?php
+											$i = 1;
+											foreach ($array as $module => $items) {
+												echo '
                         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                             <div class="module-card" style="border-radius: 12px; border: 5px solid #3598db; background: #ec414a; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
                                 <img src="images/logo/' . sprintf('%02d', $i) . '.png" height="80" style="margin-bottom: 15px;">
@@ -903,19 +986,19 @@ case 'sadmin': {
                                 <button class="btn btn-light" data-toggle="modal" data-target="#exampleModal' . sprintf('%02d', $i) . '" style="border-radius: 30px; font-size: 0.9rem; padding: 8px 20px; background-color: #ff8a00; color: white; border: none;">View Details</button>
                             </div>
                         </div>';
-                        $i++;
-                    }
-                    ?>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+												$i++;
+											}
+											?>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
 
-<?php
-$i = 1;
-foreach ($array as $module => $items) {
-    echo '
+						<?php
+						$i = 1;
+						foreach ($array as $module => $items) {
+							echo '
     <div class="modal fade" id="exampleModal' . sprintf('%02d', $i) . '" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -929,156 +1012,157 @@ foreach ($array as $module => $items) {
                 </div>
                 <div class="modal-body">
                     <div class="row">';
-                        $a = 1;
-                        foreach ($items as $item) {
-                            echo '
+							$a = 1;
+							foreach ($items as $item) {
+								echo '
                             <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
                                 <div class="module-item-card" style="border-radius: 10px; background: #9f393e; text-align: center; padding: 15px; transition: transform 0.3s ease;">
                                     <a href="' . $item['file'] . '" target="_blank" style="text-decoration: none; color: #333;">
                                         <img src="images/icons/' . sprintf('%02d', $i) . '-' . $a . '.png" height="50" style="margin-bottom: 10px;">
                                         <div style="font-size: 1rem; font-weight: bold; color: white;">' . $item['label'] . '</div>
-                                        <div class="badge text-wrap text-center shadow-md" style="font-size: 0.9rem; font-weight: 600; word-break: break-word; max-width: 100%; line-height: normal; color: #1b0507; background-color: #FFF;">' . $item['value']. '</div>
+                                        <div class="badge text-wrap text-center shadow-md" style="font-size: 0.9rem; font-weight: 600; word-break: break-word; max-width: 100%; line-height: normal; color: #1b0507; background-color: #FFF;">' . $item['value'] . '</div>
                                     </a>
                                 </div>
                             </div>';
-                            $a++;
-                        }
-                    echo '</div>
+								$a++;
+							}
+							echo '</div>
                 </div>
             </div>
         </div>
     </div>';
-    $i++;
-}
-?>
-				<div class="row">
-					<div class="col-md-12">
-						<div class="card">
-							<div class="content">
+							$i++;
+						}
+						?>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="card">
+									<div class="content">
 										<!------------------------------Unit wise ----------------------------->
-								<div class="row">
-									<table class="table table-striped table-bordered table-hover">
-										<div class="col-md-12 text-right">
-											<form method="post" action="project_data_xlxs.php">
-												<button type="submit" name="export_excel" class="btn btn-success text-right">Download as Excel</button>
-											</form>
-										</div>
-										<thead style="position:sticky;top:0; z-index:2;">
-											<tr>
-												<th rowspan="3">क्र.सं. </th>
-												<th rowspan="3">प्रखण्ड का नाम </th>
-												<th rowspan="3">कुल परियोजनाये</th>
-												
-												
-												<th colspan="7">वर्तमान में संचालित परियोजनाये</th>
-												<th rowspan="3">Running</th>
-												<th colspan="2">MPR Report as on</th>
-											</tr>
-											<tr>
-												<th rowspan="2">Close</th>
-												<th rowspan="2">हस्तगत परियोजनाये</th>
-												<th rowspan="2">Not Updated Project</th>
-												<th rowspan="2">अनारम्भ परियोजनाये</th>
-												<th rowspan="2">बाधित परियोजनाये</th>
-												<th rowspan="2">प्रगति पर परियोजनाये</th>
-												<th rowspan="2">पूर्ण परियोजनाये</th>
-												
-												<th rowspan="2">4th</th>
-												<th rowspan="2">16th</th>
-											</tr>
-										</thead>
-										<tbody>
-											<?php
-											$sql = 'select * from uprnss_division where s_no!=53 order by division_name ASC';
-											$result_div = execute_query($sql);
-											$i = 1;
-											$tot_allotted = 0;
-											$tot_close_allotted = 0;
-											$tot_running_allotted = 0;
-											$tot_running_project = 0;
-											$tot_interrupted_project = 0;
-											$tot_unstarted_project = 0;
-											$tot_complete_project = 0;
-											$tot_handover_project = 0;
-											$tot_allotted_not_update= 0;
-											
-
-											$tot_master = 0;
-											$tot_mpr4 = 0;
-											$tot_mpr16 = 0;
-											while ($row_div = mysqli_fetch_assoc($result_div)) {
-												$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5"  ';
-												$allotted = mysqli_num_rows(execute_query($sql));
-												
-								//////Close  Projects /////////////			
-									
-												$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=1';
-												$close_allotted = mysqli_num_rows(execute_query($sql));
-												
-										//////Running Projects /////////////	
-										
-												$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=0';
-												$running_allotted = mysqli_num_rows(execute_query($sql));
-												
-								//////Running Projects Brekup/////////////		
-					
-												$sql ='SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
-												$allotted_not_update = mysqli_num_rows(execute_query($sql));
-												
-												
-												$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
-												
-												$unstarted_project = mysqli_num_rows(execute_query($sql));
-
-												$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
-												$interrupted_project = mysqli_num_rows(execute_query($sql));
-												
-												$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
-												$running_project = mysqli_num_rows(execute_query($sql));
-												
-
-												$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
-												$complete_project = mysqli_num_rows(execute_query($sql));
-												
-												$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
-												$handover_project = mysqli_num_rows(execute_query($sql));
+					<div class="row">
+						<table class="table table-striped table-bordered table-hover">
+							<div class="col-md-12 text-right">
+								<form method="post" action="project_data_xlxs.php">
+									<button type="submit" name="export_excel"
+										class="btn btn-success text-right">Download as Excel</button>
+								</form>
+							</div>
+							<thead style="position:sticky;top:0; z-index:2;">
+								<tr>
+									<th rowspan="3">क्र.सं. </th>
+									<th rowspan="3">प्रखण्ड का नाम </th>
+									<th rowspan="3">कुल परियोजनाये</th>
 
 
-												$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
-												$mpr_4 = mysqli_num_rows(execute_query($sql));
+									<th colspan="7">वर्तमान में संचालित परियोजनाये</th>
+									<th rowspan="3">Running</th>
+									<th colspan="2">MPR Report as on</th>
+								</tr>
+								<tr>
+									<th rowspan="2">Close</th>
+									<th rowspan="2">हस्तगत परियोजनाये</th>
+									<th rowspan="2">Not Updated Project</th>
+									<th rowspan="2">अनारम्भ परियोजनाये</th>
+									<th rowspan="2">बाधित परियोजनाये</th>
+									<th rowspan="2">प्रगति पर परियोजनाये</th>
+									<th rowspan="2">पूर्ण परियोजनाये</th>
 
-												$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
-												$mpr_16 = mysqli_num_rows(execute_query($sql));
+									<th rowspan="2">4th</th>
+									<th rowspan="2">16th</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php
+								$sql = 'select * from uprnss_division where s_no!=53 order by division_name ASC';
+								$result_div = execute_query($sql);
+								$i = 1;
+								$tot_allotted = 0;
+								$tot_close_allotted = 0;
+								$tot_running_allotted = 0;
+								$tot_running_project = 0;
+								$tot_interrupted_project = 0;
+								$tot_unstarted_project = 0;
+								$tot_complete_project = 0;
+								$tot_handover_project = 0;
+								$tot_allotted_not_update = 0;
 
-												$tot_allotted += $allotted;
-												$tot_close_allotted += $close_allotted;
-												$tot_running_allotted += $running_allotted;
-												$tot_running_project += $running_project;
-												$tot_interrupted_project += $interrupted_project;
-												$tot_unstarted_project += $unstarted_project;
-												$tot_complete_project += $complete_project;
-												$tot_handover_project += $handover_project;
-												$tot_allotted_not_update += $allotted_not_update;
 
-												$tot_mpr4 += $mpr_4;
-												$tot_mpr16 += $mpr_16;
-												echo '<tr>
+								$tot_master = 0;
+								$tot_mpr4 = 0;
+								$tot_mpr16 = 0;
+								while ($row_div = mysqli_fetch_assoc($result_div)) {
+									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5"  ';
+									$allotted = mysqli_num_rows(execute_query($sql));
+
+									//////Close  Projects /////////////			
+				
+									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=1';
+									$close_allotted = mysqli_num_rows(execute_query($sql));
+
+									//////Running Projects /////////////	
+				
+									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=0';
+									$running_allotted = mysqli_num_rows(execute_query($sql));
+
+									//////Running Projects Brekup/////////////		
+				
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
+									$allotted_not_update = mysqli_num_rows(execute_query($sql));
+
+
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
+
+									$unstarted_project = mysqli_num_rows(execute_query($sql));
+
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
+									$interrupted_project = mysqli_num_rows(execute_query($sql));
+
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
+									$running_project = mysqli_num_rows(execute_query($sql));
+
+
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
+									$complete_project = mysqli_num_rows(execute_query($sql));
+
+									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
+									$handover_project = mysqli_num_rows(execute_query($sql));
+
+
+									$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
+									$mpr_4 = mysqli_num_rows(execute_query($sql));
+
+									$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
+									$mpr_16 = mysqli_num_rows(execute_query($sql));
+
+									$tot_allotted += $allotted;
+									$tot_close_allotted += $close_allotted;
+									$tot_running_allotted += $running_allotted;
+									$tot_running_project += $running_project;
+									$tot_interrupted_project += $interrupted_project;
+									$tot_unstarted_project += $unstarted_project;
+									$tot_complete_project += $complete_project;
+									$tot_handover_project += $handover_project;
+									$tot_allotted_not_update += $allotted_not_update;
+
+									$tot_mpr4 += $mpr_4;
+									$tot_mpr16 += $mpr_16;
+									echo '<tr>
 												<td>' . $i++ . '</td>
 												<td><a href="dashboard_division.php?id=' . $row_div['s_no'] . '" target="_blank">' . $row_div['division_name'] . '</a></td>
 												<td>' . $allotted . '</td>
 												<td>' . $close_allotted . '</td>
 												<td>' . $handover_project . '</td>
-												<td>' . $allotted_not_update.'</td>
+												<td>' . $allotted_not_update . '</td>
 												<td>' . $unstarted_project . '</td>
 												<td>' . $interrupted_project . '</td>
 												<td>' . $running_project . '</td>
 												<td>' . $complete_project . '</td>
-												<td>' . ($running_allotted-$handover_project) . '</td>
+												<td>' . ($running_allotted - $handover_project) . '</td>
 												<td>' . $mpr_4 . '</td>
 												<td>' . $mpr_16 . '</td>
 												</tr>';
-											}
-											echo '
+								}
+								echo '
 											</tbody>
 											<tfoot><tr>
 											<th>&nbsp;</th>
@@ -1087,83 +1171,83 @@ foreach ($array as $module => $items) {
 											<th>' . $tot_close_allotted . '</th>
 											
 											<th>' . $tot_handover_project . '</th>
-											<th>'.$tot_allotted_not_update.'</th>
+											<th>' . $tot_allotted_not_update . '</th>
 											<th>' . $tot_unstarted_project . '</th>
 											<th>' . $tot_interrupted_project . '</th>
 											<th>' . $tot_running_project . '</th>
 											<th>' . $tot_complete_project . '</th>
-											<th>' . ($tot_running_allotted-$tot_handover_project) . '</th>
+											<th>' . ($tot_running_allotted - $tot_handover_project) . '</th>
 											<th>' . $tot_mpr4 . '</th>
 											<th>' . $tot_mpr16 . '</th>
 											</tr>';
-											?>
-											</tfoot>
-									</table>
-								</div>
-							</div>
-						</div>
+								?>
+								</tfoot>
+						</table>
 					</div>
 				</div>
 			</div>
-			<script>
-				document.addEventListener("DOMContentLoaded", () => {
-					function counter(id, start, end, duration) {
-						let obj = document.getElementById(id),
-							current = start,
-							range = end - start,
-							increment = end > start ? 1 : -1,
-							step = Math.abs(Math.floor(duration / range)),
-							timer = setInterval(() => {
-								current += increment;
-								obj.textContent = current;
-								if (current == end) {
-									clearInterval(timer);
-								}
-							}, step);
+		</div>
+	</div>
+</div>
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		function counter(id, start, end, duration) {
+			let obj = document.getElementById(id),
+				current = start,
+				range = end - start,
+				increment = end > start ? 1 : -1,
+				step = Math.abs(Math.floor(duration / range)),
+				timer = setInterval(() => {
+					current += increment;
+					obj.textContent = current;
+					if (current == end) {
+						clearInterval(timer);
 					}
-					
-					function counter1(id, start, end, duration) {
-						let obj = document.getElementById(id),
-							current = start,
-							range = end - start,
-							increment = end > start ? 100 : -100,
-							step = Math.abs(Math.floor(duration / range)),
-							timer = setInterval(() => {
-								current += increment;
-								obj.textContent = current;
-								if (current >= end) {
-									clearInterval(timer);
-									obj.textContent = end;
-								}
-							}, step);
-					}
+				}, step);
+		}
 
-				counter1("count1", 0, <?php echo $projects; ?>, 1000);
-				counter("count2", 0, <?php echo $divisions; ?>, 2000);
-				counter("count3", 0, <?php echo $districts; ?>, 2000);
-				counter("count4", 0, <?php echo $departments; ?>, 2000);
+		function counter1(id, start, end, duration) {
+			let obj = document.getElementById(id),
+				current = start,
+				range = end - start,
+				increment = end > start ? 100 : -100,
+				step = Math.abs(Math.floor(duration / range)),
+				timer = setInterval(() => {
+					current += increment;
+					obj.textContent = current;
+					if (current >= end) {
+						clearInterval(timer);
+						obj.textContent = end;
+					}
+				}, step);
+		}
+
+		counter1("count1", 0, <?php echo $projects; ?>, 1000);
+	counter("count2", 0, <?php echo $divisions; ?>, 2000);
+	counter("count3", 0, <?php echo $districts; ?>, 2000);
+	counter("count4", 0, <?php echo $departments; ?>, 2000);
 			}, { once: true });
 
-			</script>
+</script>
 
 <?php
 
-		break;
-	}
-case '1': {
-?>
+								break;
+			}
+			case '1': {
+				?>
 <!------------------------------Unit Dashboard ----------------------------->
 
 <?php
 
-			$sql = 'select * from uprnss_department_name';
-			$result_division = execute_query($sql);
-			$departments = mysqli_num_rows($result_division);
+								$sql = 'select * from uprnss_department_name';
+								$result_division = execute_query($sql);
+								$departments = mysqli_num_rows($result_division);
 
-			$sql = 'select * from uprnss_project_temp where division_id in (' . implode(",", $_SESSION['divisions']) . ') and (status="0" or status is null or status="1")   ';
-			// echo $sql;
-			$result_division = execute_query($sql);
-			$unit_projects = mysqli_num_rows($result_division);
+								$sql = 'select * from uprnss_project_temp where division_id in (' . implode(",", $_SESSION['divisions']) . ') and (status="0" or status is null or status="1")   ';
+								// echo $sql;
+								$result_division = execute_query($sql);
+								$unit_projects = mysqli_num_rows($result_division);
 
 
 
@@ -1184,13 +1268,17 @@ case '1': {
 							<?php echo $unit_projects; ?>Project
 						</h4>
 					</div>
-					<div class="col-2"></div><div class="col-2"></div>
+					<div class="col-2"></div>
+					<div class="col-2"></div>
 					<style>
 						/* Add keyframe animation for a bouncing effect */
 						@keyframes bounce {
-							0%, 100% {
+
+							0%,
+							100% {
 								transform: translateY(0);
 							}
+
 							50% {
 								transform: translateY(10px);
 							}
@@ -1198,18 +1286,20 @@ case '1': {
 
 						/* Styling for the animated icon */
 						.animated-arrow {
-							animation: bounce 1s infinite; /* Bounces every 1 second */
+							animation: bounce 1s infinite;
+							/* Bounces every 1 second */
 						}
 					</style>
 					<div class="col-2 text-center">
 						<a target="_blank" href="sb_fd_account_details.php">
-							<img src="images/down_arrow.png" class="img-fluid stat-icon animated-arrow" alt="Down Arrow">
+							<img src="images/down_arrow.png" class="img-fluid stat-icon animated-arrow"
+								alt="Down Arrow">
 							<h5 class="m-2 p-2 text-danger">
 								Click here and fill details Urgent
 							</h5>
 						</a>
-					</div> 
-					
+					</div>
+
 				</div>
 				<div class="row">
 					<table class="table table-striped table-bordered table-hover">
@@ -1247,8 +1337,8 @@ case '1': {
 							$tot_unstarted_project = 0;
 							$tot_complete_project = 0;
 							$tot_handover_project = 0;
-							$tot_allotted_not_update= 0;
-							
+							$tot_allotted_not_update = 0;
+
 
 							$tot_master = 0;
 							$tot_mpr4 = 0;
@@ -1256,37 +1346,37 @@ case '1': {
 							while ($row_div = mysqli_fetch_assoc($result_div)) {
 								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5"  ';
 								$allotted = mysqli_num_rows(execute_query($sql));
-								
-				//////Close  Projects /////////////			
-					
+
+								//////Close  Projects /////////////			
+			
 								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=1';
 								$close_allotted = mysqli_num_rows(execute_query($sql));
-								
-						//////Running Projects /////////////	
-						
+
+								//////Running Projects /////////////	
+			
 								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=0';
 								$running_allotted = mysqli_num_rows(execute_query($sql));
-								
-				//////Running Projects Brekup/////////////		
-	
-								$sql ='SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
+
+								//////Running Projects Brekup/////////////		
+			
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
 								$allotted_not_update = mysqli_num_rows(execute_query($sql));
-								
-								
+
+
 								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
-								
+
 								$unstarted_project = mysqli_num_rows(execute_query($sql));
 
 								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
 								$interrupted_project = mysqli_num_rows(execute_query($sql));
-								
+
 								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
 								$running_project = mysqli_num_rows(execute_query($sql));
-								
+
 
 								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
 								$complete_project = mysqli_num_rows(execute_query($sql));
-								
+
 								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
 								$handover_project = mysqli_num_rows(execute_query($sql));
 
@@ -1316,7 +1406,7 @@ case '1': {
 								<td>' . $close_allotted . '</td>
 								<td>' . $running_allotted . '</td>
 								
-								<td>' . $allotted_not_update.'</td>
+								<td>' . $allotted_not_update . '</td>
 								<td>' . $unstarted_project . '</td>
 								<td>' . $interrupted_project . '</td>
 								<td>' . $running_project . '</td>
@@ -1334,7 +1424,7 @@ case '1': {
 							<th>' . $tot_allotted . '</th>
 							<th>' . $tot_close_allotted . '</th>
 							<th>' . $tot_running_allotted . '</th>
-							<th>'.$tot_allotted_not_update.'</th>
+							<th>' . $tot_allotted_not_update . '</th>
 							<th>' . $tot_unstarted_project . '</th>
 							<th>' . $tot_interrupted_project . '</th>
 							<th>' . $tot_running_project . '</th>
@@ -1374,7 +1464,7 @@ case '1': {
 							</tr>
 						</thead>
 						<tbody>
-						<?php
+							<?php
 							$sql = 'SELECT uprnss_project_temp.sno as sno, project_name_hindi, master_freeze, district_name_hindi, admin_go_no  FROM `uprnss_project_temp` left join uprnss_district on uprnss_district.sno = district_id where uprnss_project_temp.division_id in (' . implode(",", $_SESSION['divisions']) . ') and (status="0" or status is null or status="1") and uprnss_project_temp.reporting_status=0 ORDER BY sno DESC';
 							// echo $sql;
 							$result = execute_query($sql);
@@ -1396,33 +1486,32 @@ case '1': {
 								} else {
 									$report_16 = '<p class="text text-danger">No</p>';
 								}
-								
-								$sql = 'select * from invoice_civil where project_name="'.$row['sno'].'" and division_id!="" order by sno desc limit 1';
-									
-									$status = mysqli_fetch_assoc(execute_query($sql));
-									$sql = 'select * from master_projoect_status_1 where sno="'.$status['project_status_1'].'"';
-										// echo $sql;
-										// $status1 = mysqli_fetch_assoc(execute_query($sql));
-										$status1 = execute_query($sql);
-										if(mysqli_num_rows($status1)!=0){
-											$status1 = mysqli_fetch_assoc($status1);
-										}
-										else{
-											unset($status1);
-											$status1['status_1'] = '';
-										}
+
+								$sql = 'select * from invoice_civil where project_name="' . $row['sno'] . '" and division_id!="" order by sno desc limit 1';
+
+								$status = mysqli_fetch_assoc(execute_query($sql));
+								$sql = 'select * from master_projoect_status_1 where sno="' . $status['project_status_1'] . '"';
+								// echo $sql;
+								// $status1 = mysqli_fetch_assoc(execute_query($sql));
+								$status1 = execute_query($sql);
+								if (mysqli_num_rows($status1) != 0) {
+									$status1 = mysqli_fetch_assoc($status1);
+								} else {
+									unset($status1);
+									$status1['status_1'] = '';
+								}
 
 								echo '<tr>
 								<td>' . $i++ . '</td>
 								<td>' . $row['district_name_hindi'] . '</td>
 								<td>' . $row['project_name_hindi'] . '<h6> ' . $row['admin_go_no'] . '</h6></td>
-								<td>' . $status1['status_1'].'</td>
+								<td>' . $status1['status_1'] . '</td>
 								<td>' . $report_4 . '</td>
 								<td>' . $report_16 . '</td>
 								</tr>
 								';
 							}
-							?>	
+							?>
 						</tbody>
 					</table>
 				</div>
@@ -1455,29 +1544,28 @@ case '1': {
 							$result = execute_query($sql);
 							$i = 1;
 							while ($row = mysqli_fetch_assoc($result)) {
-								
-								$sql = 'select * from invoice_civil where project_name="'.$row['sno'].'" and division_id!="" order by sno desc limit 1';
-									
-									$status = mysqli_fetch_assoc(execute_query($sql));
-									$sql = 'select * from master_projoect_status_1 where sno="'.$status['project_status_1'].'"';
-										// echo $sql;
-										// $status1 = mysqli_fetch_assoc(execute_query($sql));
-										$status1 = execute_query($sql);
-										if(mysqli_num_rows($status1)!=0){
-											$status1 = mysqli_fetch_assoc($status1);
-										}
-										else{
-											unset($status1);
-											$status1['status_1'] = '';
-										}
+
+								$sql = 'select * from invoice_civil where project_name="' . $row['sno'] . '" and division_id!="" order by sno desc limit 1';
+
+								$status = mysqli_fetch_assoc(execute_query($sql));
+								$sql = 'select * from master_projoect_status_1 where sno="' . $status['project_status_1'] . '"';
+								// echo $sql;
+								// $status1 = mysqli_fetch_assoc(execute_query($sql));
+								$status1 = execute_query($sql);
+								if (mysqli_num_rows($status1) != 0) {
+									$status1 = mysqli_fetch_assoc($status1);
+								} else {
+									unset($status1);
+									$status1['status_1'] = '';
+								}
 
 								echo '<tr>
 								<td>' . $i++ . '</td>
 								<td>' . $row['district_name_hindi'] . '</td>
 								<td>' . $row['project_name_hindi'] . '<h6> ' . $row['admin_go_no'] . '</h6></td>
-								<td>' . $status1['status_1'].'</td>
-								<td>' . $row['closing_remark']. '</td>
-								<td>'. date('d-M-Y', strtotime($row['closing_date'])).'</td>
+								<td>' . $status1['status_1'] . '</td>
+								<td>' . $row['closing_remark'] . '</td>
+								<td>' . date('d-M-Y', strtotime($row['closing_date'])) . '</td>
 								</tr>
 								';
 							}
@@ -1599,7 +1687,7 @@ case '1': {
 									</td>
 									<td>' . $row['division_name'] . '</td>
 									<td>' . $row['district_name_hindi'] . '</td>
-									<td>' . $row['department_name_hindi'] . '</br><h6>' . $row['sub_department_hindi'] . '</h6></td>
+									<td>' . $row['department_name_english'] . " (" . $row['department_name_hindi'] . ")" . '</br><h6>' . $row['sub_department_hindi'] . '</h6></td>
 									<td>' . $row['project_name'] . '</td>
 									<td>' . $row['project_name_hindi'] . '</td>'; ?>
 							<td>
@@ -1700,54 +1788,54 @@ case '1': {
 							$tot_unstarted_project = 0;
 							$tot_complete_project = 0;
 							$tot_handover_project = 0;
-							$tot_allotted_not_update= 0;
-							
+							$tot_allotted_not_update = 0;
+
 
 							$tot_master = 0;
 							$tot_mpr4 = 0;
 							$tot_mpr16 = 0;
-							while($row_dep = mysqli_fetch_assoc($result_dep)){
-								$sql = 'select * from uprnss_project_temp where department_id="'.$row_dep['sno'].'" and status!="5"  ';
+							while ($row_dep = mysqli_fetch_assoc($result_dep)) {
+								$sql = 'select * from uprnss_project_temp where department_id="' . $row_dep['sno'] . '" and status!="5"  ';
 								$allotted = mysqli_num_rows(execute_query($sql));
-								
-				//////Close  Projects /////////////			
-					
-								$sql = 'select * from uprnss_project_temp where department_id="'.$row_dep['sno'].'" and status!="5" and reporting_status=1';
-								$close_allotted = mysqli_num_rows(execute_query($sql));
-								
-						//////Running Projects /////////////	
-						
-								$sql = 'select * from uprnss_project_temp where department_id="'.$row_dep['sno'].'" and status!="5" and reporting_status=0';
-								$running_allotted = mysqli_num_rows(execute_query($sql));
-								
-				//////Running Projects Brekup/////////////		
 
-								$sql ='SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.department_id="'.$row_dep['sno'].'" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
+								//////Close  Projects /////////////			
+			
+								$sql = 'select * from uprnss_project_temp where department_id="' . $row_dep['sno'] . '" and status!="5" and reporting_status=1';
+								$close_allotted = mysqli_num_rows(execute_query($sql));
+
+								//////Running Projects /////////////	
+			
+								$sql = 'select * from uprnss_project_temp where department_id="' . $row_dep['sno'] . '" and status!="5" and reporting_status=0';
+								$running_allotted = mysqli_num_rows(execute_query($sql));
+
+								//////Running Projects Brekup/////////////		
+			
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.department_id="' . $row_dep['sno'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
 								$allotted_not_update = mysqli_num_rows(execute_query($sql));
-								
-								
-								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="'.$row_dep['sno'].'" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
-								
+
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="' . $row_dep['sno'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
+
 								$unstarted_project = mysqli_num_rows(execute_query($sql));
 
-								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="'.$row_dep['sno'].'" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="' . $row_dep['sno'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
 								$interrupted_project = mysqli_num_rows(execute_query($sql));
-								
-								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="'.$row_dep['sno'].'" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
-								$running_project = mysqli_num_rows(execute_query($sql));
-								
 
-								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="'.$row_dep['sno'].'" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="' . $row_dep['sno'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
+								$running_project = mysqli_num_rows(execute_query($sql));
+
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="' . $row_dep['sno'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
 								$complete_project = mysqli_num_rows(execute_query($sql));
-								
-								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="'.$row_dep['sno'].'" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.department_id="' . $row_dep['sno'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
 								$handover_project = mysqli_num_rows(execute_query($sql));
 
 
-								$sql = 'SELECT * FROM `invoice_civil` where department_id="'.$row_dep['sno'].'"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
+								$sql = 'SELECT * FROM `invoice_civil` where department_id="' . $row_dep['sno'] . '"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
 								$mpr_4 = mysqli_num_rows(execute_query($sql));
 
-								$sql = 'SELECT * FROM `invoice_civil` where department_id="'.$row_dep['sno'].'"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
+								$sql = 'SELECT * FROM `invoice_civil` where department_id="' . $row_dep['sno'] . '"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
 								$mpr_16 = mysqli_num_rows(execute_query($sql));
 
 								$tot_allotted += $allotted;
@@ -1764,12 +1852,12 @@ case '1': {
 								$tot_mpr16 += $mpr_16;
 								echo '<tr>
 								<td>' . $i++ . '</td>
-								<td><a href="dashboard_department.php?id='.$row_dep['sno'].'" target="_blank">'.$row_dep['department_name_hindi'].'</a></td>
+								<td><a href="dashboard_department.php?id=' . $row_dep['sno'] . '" target="_blank">' . $row_dep['department_name_english'] . " (" . $row_dep['department_name_hindi'] . ")" . '</a></td>
 								<td>' . $allotted . '</td>
 								<td>' . $close_allotted . '</td>
 								<td>' . $running_allotted . '</td>
 								
-								<td>' . $allotted_not_update.'</td>
+								<td>' . $allotted_not_update . '</td>
 								<td>' . $unstarted_project . '</td>
 								<td>' . $interrupted_project . '</td>
 								<td>' . $running_project . '</td>
@@ -1787,7 +1875,7 @@ case '1': {
 							<th>' . $tot_allotted . '</th>
 							<th>' . $tot_close_allotted . '</th>
 							<th>' . $tot_running_allotted . '</th>
-							<th>'.$tot_allotted_not_update.'</th>
+							<th>' . $tot_allotted_not_update . '</th>
 							<th>' . $tot_unstarted_project . '</th>
 							<th>' . $tot_interrupted_project . '</th>
 							<th>' . $tot_running_project . '</th>
@@ -1810,111 +1898,111 @@ case '1': {
 		<div class="card">
 			<div class="content">
 				<div class="row">
-						<table class="table table-striped table-bordered table-hover">
-							<thead style="position:sticky;top:0; z-index:2;">
-								<tr>
-									<th rowspan="3">क्र.सं. </th>
-									<th rowspan="3">प्रखण्ड का नाम </th>
-									<th rowspan="3">कुल परियोजनाये</th>
-									<th rowspan="3">Close</th>
-									<th rowspan="3">Running</th>
-									<th colspan="6">वर्तमान में संचालित परियोजनाये</th>
-									<th colspan="2">MPR Report as on</th>
-								</tr>
-								<tr>
-									<th rowspan="2">Not Updated Project</th>
-									<th rowspan="2">अनारम्भ परियोजनाये</th>
-									<th rowspan="2">बाधित परियोजनाये</th>
-									<th rowspan="2">प्रगति पर परियोजनाये</th>
-									<th rowspan="2">पूर्ण परियोजनाये</th>
-									<th rowspan="2">हस्तगत परियोजनाये</th>
-									<th>4th</th>
-									<th>16th</th>
-								</tr>
-							</thead>
-							<tbody>
-								<?php
-								$sql = 'select * from uprnss_division where s_no!=53 order by division_name ASC';
-								$result_div = execute_query($sql);
-								$i = 1;
-								$tot_allotted = 0;
-								$tot_close_allotted = 0;
-								$tot_running_allotted = 0;
-								$tot_running_project = 0;
-								$tot_interrupted_project = 0;
-								$tot_unstarted_project = 0;
-								$tot_complete_project = 0;
-								$tot_handover_project = 0;
-								$tot_allotted_not_update= 0;
-								
-
-								$tot_master = 0;
-								$tot_mpr4 = 0;
-								$tot_mpr16 = 0;
-								while ($row_div = mysqli_fetch_assoc($result_div)) {
-									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5"  ';
-									$allotted = mysqli_num_rows(execute_query($sql));
-									
-					//////Close  Projects /////////////			
-						
-									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=1';
-									$close_allotted = mysqli_num_rows(execute_query($sql));
-									
-							//////Running Projects /////////////	
-							
-									$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=0';
-									$running_allotted = mysqli_num_rows(execute_query($sql));
-									
-					//////Running Projects Brekup/////////////		
-		
-									$sql ='SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
-									$allotted_not_update = mysqli_num_rows(execute_query($sql));
-									
-									
-									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
-									
-									$unstarted_project = mysqli_num_rows(execute_query($sql));
-
-									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
-									$interrupted_project = mysqli_num_rows(execute_query($sql));
-									
-									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
-									$running_project = mysqli_num_rows(execute_query($sql));
-									
-
-									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
-									$complete_project = mysqli_num_rows(execute_query($sql));
-									
-									$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
-									$handover_project = mysqli_num_rows(execute_query($sql));
+					<table class="table table-striped table-bordered table-hover">
+						<thead style="position:sticky;top:0; z-index:2;">
+							<tr>
+								<th rowspan="3">क्र.सं. </th>
+								<th rowspan="3">प्रखण्ड का नाम </th>
+								<th rowspan="3">कुल परियोजनाये</th>
+								<th rowspan="3">Close</th>
+								<th rowspan="3">Running</th>
+								<th colspan="6">वर्तमान में संचालित परियोजनाये</th>
+								<th colspan="2">MPR Report as on</th>
+							</tr>
+							<tr>
+								<th rowspan="2">Not Updated Project</th>
+								<th rowspan="2">अनारम्भ परियोजनाये</th>
+								<th rowspan="2">बाधित परियोजनाये</th>
+								<th rowspan="2">प्रगति पर परियोजनाये</th>
+								<th rowspan="2">पूर्ण परियोजनाये</th>
+								<th rowspan="2">हस्तगत परियोजनाये</th>
+								<th>4th</th>
+								<th>16th</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							$sql = 'select * from uprnss_division where s_no!=53 order by division_name ASC';
+							$result_div = execute_query($sql);
+							$i = 1;
+							$tot_allotted = 0;
+							$tot_close_allotted = 0;
+							$tot_running_allotted = 0;
+							$tot_running_project = 0;
+							$tot_interrupted_project = 0;
+							$tot_unstarted_project = 0;
+							$tot_complete_project = 0;
+							$tot_handover_project = 0;
+							$tot_allotted_not_update = 0;
 
 
-									$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
-									$mpr_4 = mysqli_num_rows(execute_query($sql));
+							$tot_master = 0;
+							$tot_mpr4 = 0;
+							$tot_mpr16 = 0;
+							while ($row_div = mysqli_fetch_assoc($result_div)) {
+								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5"  ';
+								$allotted = mysqli_num_rows(execute_query($sql));
 
-									$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
-									$mpr_16 = mysqli_num_rows(execute_query($sql));
+								//////Close  Projects /////////////			
+			
+								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=1';
+								$close_allotted = mysqli_num_rows(execute_query($sql));
 
-									$tot_allotted += $allotted;
-									$tot_close_allotted += $close_allotted;
-									$tot_running_allotted += $running_allotted;
-									$tot_running_project += $running_project;
-									$tot_interrupted_project += $interrupted_project;
-									$tot_unstarted_project += $unstarted_project;
-									$tot_complete_project += $complete_project;
-									$tot_handover_project += $handover_project;
-									$tot_allotted_not_update += $allotted_not_update;
+								//////Running Projects /////////////	
+			
+								$sql = 'select * from uprnss_project_temp where division_id="' . $row_div['s_no'] . '" and status!="5" and reporting_status=0';
+								$running_allotted = mysqli_num_rows(execute_query($sql));
 
-									$tot_mpr4 += $mpr_4;
-									$tot_mpr16 += $mpr_16;
-									echo '<tr>
+								//////Running Projects Brekup/////////////		
+			
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where uprnss_project_temp.division_id="' . $row_div['s_no'] . '" and  uprnss_project_temp.status!="5" and( invoice_civil.project_status_1="" or invoice_civil.project_status_1 IS NUll ) and uprnss_project_temp.reporting_status=0';
+								$allotted_not_update = mysqli_num_rows(execute_query($sql));
+
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and invoice_civil.project_status_1="5" and uprnss_project_temp.reporting_status=0';
+
+								$unstarted_project = mysqli_num_rows(execute_query($sql));
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="4" or invoice_civil.project_status_1="6"or invoice_civil.project_status_1="13") and uprnss_project_temp.reporting_status=0';
+								$interrupted_project = mysqli_num_rows(execute_query($sql));
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5"  and (invoice_civil.project_status_1="10" or invoice_civil.project_status_1="12") and uprnss_project_temp.reporting_status=0';
+								$running_project = mysqli_num_rows(execute_query($sql));
+
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="7" or invoice_civil.project_status_1="11") and uprnss_project_temp.reporting_status=0';
+								$complete_project = mysqli_num_rows(execute_query($sql));
+
+								$sql = 'SELECT invoice_civil.department_id,uprnss_project_temp.project_type, invoice_civil.project_status_1  FROM `uprnss_project_temp` left join invoice_civil on invoice_civil_sno = invoice_civil.sno where invoice_civil.division_id="' . $row_div['s_no'] . '" and uprnss_project_temp.status!="5" and (invoice_civil.project_status_1="8") and uprnss_project_temp.reporting_status=0';
+								$handover_project = mysqli_num_rows(execute_query($sql));
+
+
+								$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-01") . '" and last_update<="' . date("Y-m-12") . '"';
+								$mpr_4 = mysqli_num_rows(execute_query($sql));
+
+								$sql = 'SELECT * FROM `invoice_civil` where division_id="' . $row_div['s_no'] . '"  and last_update>="' . date("Y-m-13") . '" and last_update<="' . date("Y-m-t") . '"';
+								$mpr_16 = mysqli_num_rows(execute_query($sql));
+
+								$tot_allotted += $allotted;
+								$tot_close_allotted += $close_allotted;
+								$tot_running_allotted += $running_allotted;
+								$tot_running_project += $running_project;
+								$tot_interrupted_project += $interrupted_project;
+								$tot_unstarted_project += $unstarted_project;
+								$tot_complete_project += $complete_project;
+								$tot_handover_project += $handover_project;
+								$tot_allotted_not_update += $allotted_not_update;
+
+								$tot_mpr4 += $mpr_4;
+								$tot_mpr16 += $mpr_16;
+								echo '<tr>
 									<td>' . $i++ . '</td>
 									<td><a href="dashboard_division.php?id=' . $row_div['s_no'] . '" target="_blank">' . $row_div['division_name'] . '</a></td>
 									<td>' . $allotted . '</td>
 									<td>' . $close_allotted . '</td>
 									<td>' . $running_allotted . '</td>
 									
-									<td>' . $allotted_not_update.'</td>
+									<td>' . $allotted_not_update . '</td>
 									<td>' . $unstarted_project . '</td>
 									<td>' . $interrupted_project . '</td>
 									<td>' . $running_project . '</td>
@@ -1923,8 +2011,8 @@ case '1': {
 									<td>' . $mpr_4 . '</td>
 									<td>' . $mpr_16 . '</td>
 									</tr>';
-								}
-								echo '
+							}
+							echo '
 								</tbody>
 								<tfoot><tr>
 								<th>&nbsp;</th>
@@ -1932,7 +2020,7 @@ case '1': {
 								<th>' . $tot_allotted . '</th>
 								<th>' . $tot_close_allotted . '</th>
 								<th>' . $tot_running_allotted . '</th>
-								<th>'.$tot_allotted_not_update.'</th>
+								<th>' . $tot_allotted_not_update . '</th>
 								<th>' . $tot_unstarted_project . '</th>
 								<th>' . $tot_interrupted_project . '</th>
 								<th>' . $tot_running_project . '</th>
@@ -1941,10 +2029,10 @@ case '1': {
 								<th>' . $tot_mpr4 . '</th>
 								<th>' . $tot_mpr16 . '</th>
 								</tr>';
-								?>
-								</tfoot>
-						</table>
-					</div>
+							?>
+							</tfoot>
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -2059,7 +2147,7 @@ case '1': {
 
 											echo '<tr>
 								<td>' . $i++ . '</td>
-								<td>' . $department['department_name_hindi'] . '</td>
+								<td>' . $department['department_name_english'] . " (" . $department['department_name_hindi'] . ")" . '</td>
 								<td>' . $division['division_name'] . '</td>
 								<td>' . $district['district_name_hindi'] . '</td>
 								<td>' . $project['project_name_hindi'] . '</td>
@@ -2139,74 +2227,74 @@ case '1': {
 
 							?>
 	<div class="col-md-3 mb-2">
-    <div class="box box<?php echo $i++; ?>">
-        <a href="karmik_division.php" target="_blank"> <!-- Link to the output page -->
-            <div class="heads">
-                <div class="left-heads">
-                    <?php echo $tot_employees; ?>
-                </div>
-                <div class="right-heads">
-                    <i class="fas fa-users"></i>
-                </div>
-            </div>
-            <div class="foot" style="font-size:0.8rem;">
-                TOTAL EMPLOYEE
-            </div>
-        </a>
-    </div>
-</div>
+		<div class="box box<?php echo $i++; ?>">
+			<a href="karmik_division.php" target="_blank"> <!-- Link to the output page -->
+									<div class="heads">
+										<div class="left-heads">
+										<?php echo $tot_employees; ?>
+										</div>
+										<div class="right-heads">
+											<i class="fas fa-users"></i>
+										</div>
+									</div>
+									<div class="foot" style="font-size:0.8rem;">
+										TOTAL EMPLOYEE
+									</div>
+								</a>
+							</div>
+						</div>
 
 
 
-<script>
-    function showEmployees() {
-        document.getElementById('employeeTable').style.display = 'block';
-    }
-</script>
-	<?php
+						<script>
+							function showEmployees() {
+								document.getElementById('employeeTable').style.display = 'block';
+							}
+						</script>
+						<?php
 
-		echo $details;
-		?>
+						echo $details;
+						?>
 
-</div>
+					</div>
 
-<div class="row" id="employeeTable" style="display: none;">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="content">
-                <div class="row">
-                    <table class="table table-striped table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                <th>S.No.</th>
-                                <th>Employee Division</th>
-                                <th>Number of Employees</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $sql = 'SELECT * FROM `uprnss_division` ORDER BY `division_name` ASC';
-                            $result_div = execute_query($sql);
-                            $i = 1;
-                            $tot_employees = 0;
+					<div class="row" id="employeeTable" style="display: none;">
+						<div class="col-md-12">
+							<div class="card">
+								<div class="content">
+									<div class="row">
+										<table class="table table-striped table-bordered table-hover">
+											<thead>
+												<tr>
+													<th>S.No.</th>
+													<th>Employee Division</th>
+													<th>Number of Employees</th>
+												</tr>
+											</thead>
+											<tbody>
+												<?php
+												$sql = 'SELECT * FROM `uprnss_division` ORDER BY `division_name` ASC';
+												$result_div = execute_query($sql);
+												$i = 1;
+												$tot_employees = 0;
 
-                            while ($row_des = mysqli_fetch_assoc($result_div)) {
+												while ($row_des = mysqli_fetch_assoc($result_div)) {
 
-                                $sql = 'select * from dp_personal_info where division_id="' . $row_des['s_no'] . '"';
-                                $employees = mysqli_num_rows(execute_query($sql));
+													$sql = 'select * from dp_personal_info where division_id="' . $row_des['s_no'] . '"';
+													$employees = mysqli_num_rows(execute_query($sql));
 
 
-                                $tot_employees += $employees;
+													$tot_employees += $employees;
 
-                                echo '<tr>
+													echo '<tr>
                                         <td>' . $i++ . '</td>
                                         <td>' . strtoupper($row_des['division_name']) . '</td>
                                         <td>' . $employees . '</td>
                                         <td>&nbsp;</td>
                                         
                                         </tr>';
-                            }
-                            echo '
+												}
+												echo '
                                     </tbody>
                                     <tfoot><tr>
                                     <th>&nbsp;</th>
@@ -2214,51 +2302,51 @@ case '1': {
                                     <th>' . $tot_employees . '</th>
                                     <th>&nbsp;</th>
                                     </tr>';
-                            ?>
-                            </tfoot>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row">
-	<div class="col-md-12">
-		<div class="card">
-			<div class="content">
-				<div class="row">
-					<table class="table table-striped table-bordered table-hover">
-						<thead>
-							<tr>
-								<th>S.No.</th>
-								<th>Employee Designation</th>
-								<th>Number of Employees</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php
-							$sql = 'select * from dp_designation order by abs(sort_no) ';
-							$result_div = execute_query($sql);
-							$i = 1;
-							$tot_employees = 0;
+												?>
+												</tfoot>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div class="card">
+								<div class="content">
+									<div class="row">
+										<table class="table table-striped table-bordered table-hover">
+											<thead>
+												<tr>
+													<th>S.No.</th>
+													<th>Employee Designation</th>
+													<th>Number of Employees</th>
+												</tr>
+											</thead>
+											<tbody>
+												<?php
+												$sql = 'select * from dp_designation order by abs(sort_no) ';
+												$result_div = execute_query($sql);
+												$i = 1;
+												$tot_employees = 0;
 
-							while ($row_des = mysqli_fetch_assoc($result_div)) {
+												while ($row_des = mysqli_fetch_assoc($result_div)) {
 
-								$sql = 'select * from dp_personal_info where employee_designation_id="' . $row_des['sno'] . '"';
-								$employees = mysqli_num_rows(execute_query($sql));
+													$sql = 'select * from dp_personal_info where employee_designation_id="' . $row_des['sno'] . '"';
+													$employees = mysqli_num_rows(execute_query($sql));
 
 
-								$tot_employees += $employees;
+													$tot_employees += $employees;
 
-								echo '<tr>
+													echo '<tr>
 										<td>' . $i++ . '</td>
 										<td>' . strtoupper($row_des['designation']) . '</td>
 										<td>' . $employees . '</td>
 										<td>&nbsp;</td>
 										
 										</tr>';
-							}
-							echo '
+												}
+												echo '
 									</tbody>
 									<tfoot><tr>
 									<th>&nbsp;</th>
@@ -2266,22 +2354,61 @@ case '1': {
 									<th>' . $tot_employees . '</th>
 									<th>&nbsp;</th>
 									</tr>';
-							?>
-							</tfoot>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+												?>
+												</tfoot>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 
-<?php
+					<?php
 
-								break;
+					break;
 			}
 			case '6': {
 				?>
-<!------------------------------Account Dashboard   6 ----------------------------->
+					<!------------------------------Account Dashboard   6 ----------------------------->
+
+<div class="card">
+	<div class="card-header bg-danger text-white mt-3">
+		<h4 class="card-title text-center text-white">Recent Fund Received by Units</h4>
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<table class="table table-hover table-striped table-bordered">
+				<thead>
+					<tr>
+						<th>S.No.</th>
+						<th>Sender Unit</th>
+						<th>Message</th>
+						<th>Date & Time</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php
+					$sql_notif = 'SELECT n.*, d.division_name FROM ho_notifications n LEFT JOIN uprnss_division d ON n.sender_unit_id = d.s_no ORDER BY n.sno DESC LIMIT 10';
+					$result_notif = execute_query($sql_notif);
+					$i_notif = 1;
+					if ($result_notif && mysqli_num_rows($result_notif) > 0) {
+						while ($row_notif = mysqli_fetch_assoc($result_notif)) {
+							echo '<tr>';
+							echo '<td>' . $i_notif++ . '</td>';
+							echo '<td>' . ($row_notif['division_name'] ? $row_notif['division_name'] : $row_notif['sender_unit_id']) . '</td>';
+							echo '<td>' . $row_notif['message'] . '</td>';
+							echo '<td>' . date('d-M-Y h:i A', strtotime($row_notif['created_time'])) . '</td>';
+							echo '</tr>';
+						}
+					} else {
+						echo '<tr><td colspan="4" class="text-center">No recent fund received notifications.</td></tr>';
+					}
+					?>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
 
 <div class="card">
 	<div class="card-header ">
@@ -2395,8 +2522,7 @@ case '1': {
 						<thead>
 							<tr>
 								<th>S.No.</th>
-								<th>Division
-								</th>
+								<th>Division </th>
 								<th>District</th>
 								<th>Unit Name</th>
 								<th>Project Name</th>
@@ -2433,359 +2559,450 @@ case '1': {
 						</tbody>
 					</table>
 				</div>
-			</div>
-		</div>
-	</div>
+				<?php
+				break;
+			}
+			case '9': {
+				?>
+				<div class="row">
+					<div class="col-md-12">
+						<div class="card">
+							<div class="card-header bg-primary fw-bold text-white">
+								<h4 class="card-title text-white">Incoming Fund Transfers</h4>
+							</div>
+							<div class="card-body">
+								<div class="table-responsive">
+									<table class="table table-hover table-striped table-bordered">
+										<thead>
+											<tr>
+												<th class="text-center">S.No.</th>
+												<th>Voucher Details</th>
+												<th>Source Account</th>
+												<th class="text-right">Amount</th>
+												<th class="text-center">Status</th>
+												<th class="text-center">Action</th>
+											</tr>
+										</thead>
+										<tbody>
+											<?php
+											$divIds = implode(',', array_map('intval', $_SESSION['divisions']));
+											$sql = "SELECT h.*, bc.cus_name AS from_acc 
+													FROM invoice_fund_transfer h 
+													LEFT JOIN billit_customer bc2 ON bc2.sno = h.fund_transfer_to
+													LEFT JOIN billit_customer bc ON bc.sno = h.from_account_no
+													WHERE h.status != '5' AND bc2.unit_id IN ($divIds) AND h.unit_confirmation_status = 0
+													ORDER BY h.sno DESC LIMIT 100";
+											$result = execute_query($sql);
+											$i = 1;
+											if ($result && mysqli_num_rows($result) > 0) {
+												while ($row = mysqli_fetch_assoc($result)) {
+													echo '<tr>';
+													echo '<td class="text-center">' . $i++ . '</td>';
+													echo '<td>
+															<div class="font-weight-bold">' . htmlspecialchars($row['order_no']) . '</div>
+															<div class="text-muted small">' . date('d-M-Y', strtotime($row['transfer_date'])) . '</div>
+														  </td>';
+													echo '<td>' . htmlspecialchars($row['from_acc']) . '</td>';
+													echo '<td class="text-right font-weight-bold">₹' . number_format($row['total_transfer_amount'], 2) . '</td>';
+													echo '<td class="text-center"><span class="badge badge-warning">Pending</span></td>';
+													echo '<td class="text-center" style="min-width: 200px;">';
+													echo '<button class="btn btn-sm btn-success mr-1" onclick="confirmFund(' . $row['sno'] . ', 1)"><i class="fa fa-check"></i> Accept</button>';
+													echo '<button class="btn btn-sm btn-danger" onclick="confirmFund(' . $row['sno'] . ', 2)"><i class="fa fa-times"></i> Reject</button>';
+													echo '</td>';
+													echo '</tr>';
+												}
+											} else {
+												echo '<tr><td colspan="6" class="text-center py-4">No incoming fund transfers found.</td></tr>';
 
-</div>
-<?php
+											}
+											?>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 
-								break;
+				<script>
+					function confirmFund(headerId, status) {
+						const actionText = status == 1 ? "Accept" : "Reject";
+						const promptMsg = status == 1 ? "Are you sure you want to Accept this fund? Please enter a remark:" : "Are you sure you want to Reject this fund? Please enter the reason/remark:";
+
+						const remark = prompt(promptMsg);
+
+						if (remark === null) return;
+
+						if (remark.trim() === "") {
+							alert("Remark is mandatory for " + actionText);
+							return;
+						}
+						var data = { "term": "b", "header_id": headerId, "status": status, "remark": remark };
+						$.ajax({
+							url: 'scripts/ajax.php?id=confirm_fund',
+							type: 'POST',
+							data: data,
+							dataType: 'json',
+							success: function (response) {
+								if (response.success) {
+									location.reload();
+								} else {
+									alert("Error: " + response.message);
+								}
+							},
+							error: function () {
+								alert("AJAX error occurred.");
+							}
+						});
+					}
+				</script>
+				<?php
+				break;
 			}
 		}
 		?>
-<?php
+				<?php
 				page_footer_start();
 				?>
 
 
-<!-- Light Bootstrap Table Core javascript and methods for Demo purpose -->
-		<script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
+				<!-- Light Bootstrap Table Core javascript and methods for Demo purpose -->
+						<script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
 
-		<script>
-			function open_dropdown(id) {
-				var upto_dropdown = document.getElementById('upto_dropdown').value;
-				for (var i = 1; i < upto_dropdown; i++) {
-					if (id == i) {
-						if ($("#drop_" + i).css("display") == "none") {
-							$("#drop_" + i).show();
-						}
-						else {
-							$("#drop_" + i).hide();
-						}
-					}
-					else {
-						$("#drop_" + i).hide();
-					}
+						<script>
+							function open_dropdown(id) {
+								var upto_dropdown = document.getElementById('upto_dropdown').value;
+								for (var i = 1; i < upto_dropdown; i++) {
+									if (id == i) {
+										if ($("#drop_" + i).css("display") == "none") {
+											$("#drop_" + i).show();
+										}
+										else {
+											$("#drop_" + i).hide();
+										}
+									}
+									else {
+										$("#drop_" + i).hide();
+									}
 
-				}
-			}
-
-		</script>
-		<!--  Charts Plugin -->
-		<script src="js/chartist.min.js"></script>
-
-		<!-- Light Bootstrap Table DEMO methods, don't include it in your project! -->
-
-
-
-		<script>
-			type = ['', 'info', 'success', 'warning', 'danger'];
-
-
-			demo = {
-				initPickColor: function () {
-					$('.pick-class-label').click(function () {
-						var new_class = $(this).attr('new-class');
-						var old_class = $('#display-buttons').attr('data-class');
-						var display_div = $('#display-buttons');
-						if (display_div.length) {
-							var display_buttons = display_div.find('.btn');
-							display_buttons.removeClass(old_class);
-							display_buttons.addClass(new_class);
-							display_div.attr('data-class', new_class);
-						}
-					});
-				},
-
-				checkScrollForTransparentNavbar: debounce(function () {
-					$navbar = $('.navbar[color-on-scroll]');
-					scroll_distance = $navbar.attr('color-on-scroll') || 500;
-
-					if ($(document).scrollTop() > scroll_distance) {
-						if (transparent) {
-							transparent = false;
-							$('.navbar[color-on-scroll]').removeClass('navbar-transparent');
-							$('.navbar[color-on-scroll]').addClass('navbar-default');
-						}
-					} else {
-						if (!transparent) {
-							transparent = true;
-							$('.navbar[color-on-scroll]').addClass('navbar-transparent');
-							$('.navbar[color-on-scroll]').removeClass('navbar-default');
-						}
-					}
-				}, 17),
-
-				initDocChartist: function () {
-					var dataSales = {
-						labels: ['9:00AM', '12:00AM', '3:00PM', '6:00PM', '9:00PM', '12:00PM', '3:00AM', '6:00AM'],
-						series: [
-							[287, 385, 490, 492, 554, 586, 698, 695, 752, 788, 846, 944],
-							[67, 152, 143, 240, 287, 335, 435, 437, 539, 542, 544, 647],
-							[23, 113, 67, 108, 190, 239, 307, 308, 439, 410, 410, 509]
-						]
-					};
-
-					var optionsSales = {
-						lineSmooth: false,
-						low: 0,
-						high: 800,
-						showArea: true,
-						height: "245px",
-						axisX: {
-							showGrid: false,
-						},
-						lineSmooth: Chartist.Interpolation.simple({
-							divisor: 3
-						}),
-						showLine: false,
-						showPoint: false,
-					};
-
-					var responsiveSales = [
-						['screen and (max-width: 640px)', {
-							axisX: {
-								labelInterpolationFnc: function (value) {
-									return value[0];
 								}
 							}
-						}]
-					];
 
-					Chartist.Line('#chartHours', dataSales, optionsSales, responsiveSales);
+						</script>
+						<!--  Charts Plugin -->
+						<script src="js/chartist.min.js"></script>
 
-					<?php
-					$monthly_sales = array();
-					$date_start = "2019-01-01";
-					$date_end = "2019-01-31";
-					for ($i = 1; $i <= 12; $i++) {
-						$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="' . $date_start . '" and dateofdispatch<="' . $date_end . '"';
-						//echo $sql.'<br>';
-						$date_start = date("Y-m-d", strtotime("+1 month", strtotime($date_start)));
-						$date_end = date("Y-m-d", strtotime("+1 month", strtotime($date_end)));
-						$q1 = mysqli_fetch_assoc(execute_query($sql));
-						$monthly_sales[$i] = $q1['total'];
-					}
+						<!-- Light Bootstrap Table DEMO methods, don't include it in your project! -->
 
-					?>
 
-					var data = {
-						labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-						series: [
-							[542, 443, 320, 780, 553, 453, 326, 434, 568, 610, 756, 895],
-							[412, 243, 280, 580, 453, 353, 300, 364, 368, 410, 636, 695]
-						]
-					};
 
-					var options = {
-						seriesBarDistance: 10,
-						axisX: {
-							showGrid: false
-						},
-						height: "245px"
-					};
+						<script>
+							type = ['', 'info', 'success', 'warning', 'danger'];
 
-					var responsiveOptions = [
-						['screen and (max-width: 640px)', {
-							seriesBarDistance: 5,
-							axisX: {
-								labelInterpolationFnc: function (value) {
-									return value[0];
-								}
+
+							demo = {
+								initPickColor: function () {
+									$('.pick-class-label').click(function () {
+										var new_class = $(this).attr('new-class');
+										var old_class = $('#display-buttons').attr('data-class');
+										var display_div = $('#display-buttons');
+										if (display_div.length) {
+											var display_buttons = display_div.find('.btn');
+											display_buttons.removeClass(old_class);
+											display_buttons.addClass(new_class);
+											display_div.attr('data-class', new_class);
+										}
+									});
+								},
+
+								checkScrollForTransparentNavbar: debounce(function () {
+									$navbar = $('.navbar[color-on-scroll]');
+									scroll_distance = $navbar.attr('color-on-scroll') || 500;
+
+									if ($(document).scrollTop() > scroll_distance) {
+										if (transparent) {
+											transparent = false;
+											$('.navbar[color-on-scroll]').removeClass('navbar-transparent');
+											$('.navbar[color-on-scroll]').addClass('navbar-default');
+										}
+									} else {
+										if (!transparent) {
+											transparent = true;
+											$('.navbar[color-on-scroll]').addClass('navbar-transparent');
+											$('.navbar[color-on-scroll]').removeClass('navbar-default');
+										}
+									}
+								}, 17),
+
+								initDocChartist: function () {
+									var dataSales = {
+										labels: ['9:00AM', '12:00AM', '3:00PM', '6:00PM', '9:00PM', '12:00PM', '3:00AM', '6:00AM'],
+										series: [
+											[287, 385, 490, 492, 554, 586, 698, 695, 752, 788, 846, 944],
+											[67, 152, 143, 240, 287, 335, 435, 437, 539, 542, 544, 647],
+											[23, 113, 67, 108, 190, 239, 307, 308, 439, 410, 410, 509]
+										]
+									};
+
+									var optionsSales = {
+										lineSmooth: false,
+										low: 0,
+										high: 800,
+										showArea: true,
+										height: "245px",
+										axisX: {
+											showGrid: false,
+										},
+										lineSmooth: Chartist.Interpolation.simple({
+											divisor: 3
+										}),
+										showLine: false,
+										showPoint: false,
+									};
+
+									var responsiveSales = [
+										['screen and (max-width: 640px)', {
+											axisX: {
+												labelInterpolationFnc: function (value) {
+													return value[0];
+												}
+											}
+										}]
+									];
+
+									Chartist.Line('#chartHours', dataSales, optionsSales, responsiveSales);
+
+									<?php
+									$monthly_sales = array();
+									$date_start = "2019-01-01";
+									$date_end = "2019-01-31";
+									for ($i = 1; $i <= 12; $i++) {
+										$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="' . $date_start . '" and dateofdispatch<="' . $date_end . '"';
+										//echo $sql.'<br>';
+										$date_start = date("Y-m-d", strtotime("+1 month", strtotime($date_start)));
+										$date_end = date("Y-m-d", strtotime("+1 month", strtotime($date_end)));
+										$q1 = mysqli_fetch_assoc(execute_query($sql));
+										$monthly_sales[$i] = $q1['total'];
+									}
+
+									?>
+
+									var data = {
+										labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+										series: [
+											[542, 443, 320, 780, 553, 453, 326, 434, 568, 610, 756, 895],
+											[412, 243, 280, 580, 453, 353, 300, 364, 368, 410, 636, 695]
+										]
+									};
+
+									var options = {
+										seriesBarDistance: 10,
+										axisX: {
+											showGrid: false
+										},
+										height: "245px"
+									};
+
+									var responsiveOptions = [
+										['screen and (max-width: 640px)', {
+											seriesBarDistance: 5,
+											axisX: {
+												labelInterpolationFnc: function (value) {
+													return value[0];
+												}
+											}
+										}]
+									];
+
+									Chartist.Bar('#chartActivity', data, options, responsiveOptions);
+
+									var dataPreferences = {
+										series: [
+											[25, 30, 20, 25]
+										]
+									};
+
+
+									var optionsPreferences = {
+										donut: true,
+										donutWidth: 40,
+										startAngle: 0,
+										total: 100,
+										showLabel: false,
+										axisX: {
+											showGrid: false
+										}
+									};
+
+									Chartist.Pie('#chartPreferences', dataPreferences, optionsPreferences);
+
+									Chartist.Pie('#chartPreferences', {
+										labels: ['62%', '32%', '6%'],
+										series: [62, 32, 6]
+									});
+								},
+
+								initChartist: function () {
+
+									var dataSales = {
+										labels: ['9:00AM', '12:00AM', '3:00PM', '6:00PM', '9:00PM', '12:00PM', '3:00AM', '6:00AM'],
+										series: [
+											[287, 385, 490, 492, 554, 586, 698, 695, 752, 788, 846, 944],
+											[67, 152, 143, 240, 287, 335, 435, 437, 539, 542, 544, 647],
+											[23, 113, 67, 108, 190, 239, 307, 308, 439, 410, 410, 509]
+										]
+									};
+
+									var optionsSales = {
+										lineSmooth: false,
+										low: 0,
+										high: 800,
+										showArea: true,
+										height: "245px",
+										axisX: {
+											showGrid: false,
+										},
+										lineSmooth: Chartist.Interpolation.simple({
+											divisor: 3
+										}),
+										showLine: false,
+										showPoint: false,
+									};
+
+									var responsiveSales = [
+										['screen and (max-width: 640px)', {
+											axisX: {
+												labelInterpolationFnc: function (value) {
+													return value[0];
+												}
+											}
+										}]
+									];
+
+									Chartist.Line('#chartHours', dataSales, optionsSales, responsiveSales);
+
+
+									var dataPreferences = {
+										series: [
+											[25, 30, 20, 25]
+										]
+									};
+
+									var optionsPreferences = {
+										donut: true,
+										donutWidth: 40,
+										startAngle: 0,
+										total: 100,
+										showLabel: false,
+										axisX: {
+											showGrid: false
+										}
+									};
+
+									Chartist.Pie('#chartPreferences', dataPreferences, optionsPreferences);
+									<?php
+									$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-04-01" and dateofdispatch<="2019-06-30"';
+									$q1 = mysqli_fetch_assoc(execute_query($sql));
+									$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-07-01" and dateofdispatch<="2019-09-30"';
+									$q2 = mysqli_fetch_assoc(execute_query($sql));
+									$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-10-01" and dateofdispatch<="2019-12-31"';
+									$q3 = mysqli_fetch_assoc(execute_query($sql));
+									$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2020-01-01" and dateofdispatch<="2020-03-31"';
+									$q4 = mysqli_fetch_assoc(execute_query($sql));
+									?>
+									Chartist.Pie('#chartPreferences', {
+										labels: ['Rs.<?php echo $q1['total']; ?>', 'Rs.<?php echo $q2['total']; ?>', 'Rs.<?php echo $q3['total']; ?>', 'Rs.<?php echo $q4['total']; ?>'],
+										series: [<?php echo $q1['total']; ?>, <?php echo $q2['total']; ?>, <?php echo $q3['total']; ?>, <?php echo $q4['total']; ?>]
+									});
+								},
+
+								initGoogleMaps: function () {
+									var myLatlng = new google.maps.LatLng(40.748817, -73.985428);
+									var mapOptions = {
+										zoom: 13,
+										center: myLatlng,
+										scrollwheel: false, //we disable de scroll over the map, it is a really annoing when you scroll through page
+										styles: [{ "featureType": "water", "stylers": [{ "saturation": 43 }, { "lightness": -11 }, { "hue": "#0088ff" }] }, { "featureType": "road", "elementType": "geometry.fill", "stylers": [{ "hue": "#ff0000" }, { "saturation": -100 }, { "lightness": 99 }] }, { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#808080" }, { "lightness": 54 }] }, { "featureType": "landscape.man_made", "elementType": "geometry.fill", "stylers": [{ "color": "#ece2d9" }] }, { "featureType": "poi.park", "elementType": "geometry.fill", "stylers": [{ "color": "#ccdca1" }] }, { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#767676" }] }, { "featureType": "road", "elementType": "labels.text.stroke", "stylers": [{ "color": "#ffffff" }] }, { "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "landscape.natural", "elementType": "geometry.fill", "stylers": [{ "visibility": "on" }, { "color": "#b8cb93" }] }, { "featureType": "poi.park", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.sports_complex", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.medical", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.business", "stylers": [{ "visibility": "simplified" }] }]
+
+									}
+									var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+									var marker = new google.maps.Marker({
+										position: myLatlng,
+										title: "Hello World!"
+									});
+
+									// To add the marker to the map, call setMap();
+									marker.setMap(map);
+								},
+
+
+
 							}
-						}]
-					];
 
-					Chartist.Bar('#chartActivity', data, options, responsiveOptions);
-
-					var dataPreferences = {
-						series: [
-							[25, 30, 20, 25]
-						]
-					};
-
-
-					var optionsPreferences = {
-						donut: true,
-						donutWidth: 40,
-						startAngle: 0,
-						total: 100,
-						showLabel: false,
-						axisX: {
-							showGrid: false
-						}
-					};
-
-					Chartist.Pie('#chartPreferences', dataPreferences, optionsPreferences);
-
-					Chartist.Pie('#chartPreferences', {
-						labels: ['62%', '32%', '6%'],
-						series: [62, 32, 6]
-					});
-				},
-
-				initChartist: function () {
-
-					var dataSales = {
-						labels: ['9:00AM', '12:00AM', '3:00PM', '6:00PM', '9:00PM', '12:00PM', '3:00AM', '6:00AM'],
-						series: [
-							[287, 385, 490, 492, 554, 586, 698, 695, 752, 788, 846, 944],
-							[67, 152, 143, 240, 287, 335, 435, 437, 539, 542, 544, 647],
-							[23, 113, 67, 108, 190, 239, 307, 308, 439, 410, 410, 509]
-						]
-					};
-
-					var optionsSales = {
-						lineSmooth: false,
-						low: 0,
-						high: 800,
-						showArea: true,
-						height: "245px",
-						axisX: {
-							showGrid: false,
-						},
-						lineSmooth: Chartist.Interpolation.simple({
-							divisor: 3
-						}),
-						showLine: false,
-						showPoint: false,
-					};
-
-					var responsiveSales = [
-						['screen and (max-width: 640px)', {
-							axisX: {
-								labelInterpolationFnc: function (value) {
-									return value[0];
-								}
+							<?php
+							$monthly_sales = array();
+							$monthly_receipts = array();
+							$date_start = "2019-01-01";
+							$date_end = "2019-01-31";
+							for ($i = 1; $i <= 12; $i++) {
+								$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="' . $date_start . '" and dateofdispatch<="' . $date_end . '"';
+								$q1 = mysqli_fetch_assoc(execute_query($sql));
+								$sql = 'SELECT sum(amount) as total FROM `customer_transactions` where timestamp>="' . $date_start . '" and timestamp<="' . $date_end . '" and type in ("RECEIPT", "RECIEPT")';
+								//echo $sql.'###<br>';
+								$receipts = mysqli_fetch_assoc(execute_query($sql));
+								$date_start = date("Y-m-d", strtotime("+1 month", strtotime($date_start)));
+								$date_end = date("Y-m-d", strtotime("+1 month", strtotime($date_end)));
+								$monthly_sales[$i] = $q1['total'];
+								$monthly_receipts[$i] = $receipts['total'];
 							}
-						}]
-					];
 
-					Chartist.Line('#chartHours', dataSales, optionsSales, responsiveSales);
+							?>
 
+							var data = {
+								labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+								series: [
+									[<?php echo implode(", ", $monthly_sales); ?>],
+									[<?php echo implode(", ", $monthly_receipts); ?>]
+								]
+							};
 
-					var dataPreferences = {
-						series: [
-							[25, 30, 20, 25]
-						]
-					};
+							var options = {
+								seriesBarDistance: 10,
+								axisX: {
+									showGrid: false
+								},
+								height: "245px"
+							};
 
-					var optionsPreferences = {
-						donut: true,
-						donutWidth: 40,
-						startAngle: 0,
-						total: 100,
-						showLabel: false,
-						axisX: {
-							showGrid: false
-						}
-					};
+							var responsiveOptions = [
+								['screen and (max-width: 640px)', {
+									seriesBarDistance: 5,
+									axisX: {
+										labelInterpolationFnc: function (value) {
+											return value[0];
+										}
+									}
+								}]
+							];
 
-					Chartist.Pie('#chartPreferences', dataPreferences, optionsPreferences);
-					<?php
-					$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-04-01" and dateofdispatch<="2019-06-30"';
-					$q1 = mysqli_fetch_assoc(execute_query($sql));
-					$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-07-01" and dateofdispatch<="2019-09-30"';
-					$q2 = mysqli_fetch_assoc(execute_query($sql));
-					$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2019-10-01" and dateofdispatch<="2019-12-31"';
-					$q3 = mysqli_fetch_assoc(execute_query($sql));
-					$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="2020-01-01" and dateofdispatch<="2020-03-31"';
-					$q4 = mysqli_fetch_assoc(execute_query($sql));
-					?>
-					Chartist.Pie('#chartPreferences', {
-						labels: ['Rs.<?php echo $q1['total']; ?>', 'Rs.<?php echo $q2['total']; ?>', 'Rs.<?php echo $q3['total']; ?>', 'Rs.<?php echo $q4['total']; ?>'],
-						series: [<?php echo $q1['total']; ?>, <?php echo $q2['total']; ?>, <?php echo $q3['total']; ?>, <?php echo $q4['total']; ?>]
-					});
-				},
+							Chartist.Bar('#chartActivity', data, options, responsiveOptions);
 
-				initGoogleMaps: function () {
-					var myLatlng = new google.maps.LatLng(40.748817, -73.985428);
-					var mapOptions = {
-						zoom: 13,
-						center: myLatlng,
-						scrollwheel: false, //we disable de scroll over the map, it is a really annoing when you scroll through page
-						styles: [{ "featureType": "water", "stylers": [{ "saturation": 43 }, { "lightness": -11 }, { "hue": "#0088ff" }] }, { "featureType": "road", "elementType": "geometry.fill", "stylers": [{ "hue": "#ff0000" }, { "saturation": -100 }, { "lightness": 99 }] }, { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#808080" }, { "lightness": 54 }] }, { "featureType": "landscape.man_made", "elementType": "geometry.fill", "stylers": [{ "color": "#ece2d9" }] }, { "featureType": "poi.park", "elementType": "geometry.fill", "stylers": [{ "color": "#ccdca1" }] }, { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#767676" }] }, { "featureType": "road", "elementType": "labels.text.stroke", "stylers": [{ "color": "#ffffff" }] }, { "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "landscape.natural", "elementType": "geometry.fill", "stylers": [{ "visibility": "on" }, { "color": "#b8cb93" }] }, { "featureType": "poi.park", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.sports_complex", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.medical", "stylers": [{ "visibility": "on" }] }, { "featureType": "poi.business", "stylers": [{ "visibility": "simplified" }] }]
+							var dataPreferences = {
+								series: [
+									[25, 30, 20, 25]
+								]
+							};
+						</script>
+						<script type="text/javascript">
+							$(document).ready(function () {
 
-					}
-					var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+								demo.initChartist();
 
-					var marker = new google.maps.Marker({
-						position: myLatlng,
-						title: "Hello World!"
-					});
-
-					// To add the marker to the map, call setMap();
-					marker.setMap(map);
-				},
-
-
-
-			}
-
-			<?php
-			$monthly_sales = array();
-			$monthly_receipts = array();
-			$date_start = "2019-01-01";
-			$date_end = "2019-01-31";
-			for ($i = 1; $i <= 12; $i++) {
-				$sql = 'SELECT sum(total_amount1) as total FROM `invoice_sale` where dateofdispatch>="' . $date_start . '" and dateofdispatch<="' . $date_end . '"';
-				$q1 = mysqli_fetch_assoc(execute_query($sql));
-				$sql = 'SELECT sum(amount) as total FROM `customer_transactions` where timestamp>="' . $date_start . '" and timestamp<="' . $date_end . '" and type in ("RECEIPT", "RECIEPT")';
-				//echo $sql.'###<br>';
-				$receipts = mysqli_fetch_assoc(execute_query($sql));
-				$date_start = date("Y-m-d", strtotime("+1 month", strtotime($date_start)));
-				$date_end = date("Y-m-d", strtotime("+1 month", strtotime($date_end)));
-				$monthly_sales[$i] = $q1['total'];
-				$monthly_receipts[$i] = $receipts['total'];
-			}
-
-			?>
-
-			var data = {
-				labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-				series: [
-					[<?php echo implode(", ", $monthly_sales); ?>],
-					[<?php echo implode(", ", $monthly_receipts); ?>]
-				]
-			};
-
-			var options = {
-				seriesBarDistance: 10,
-				axisX: {
-					showGrid: false
-				},
-				height: "245px"
-			};
-
-			var responsiveOptions = [
-				['screen and (max-width: 640px)', {
-					seriesBarDistance: 5,
-					axisX: {
-						labelInterpolationFnc: function (value) {
-							return value[0];
-						}
-					}
-				}]
-			];
-
-			Chartist.Bar('#chartActivity', data, options, responsiveOptions);
-
-			var dataPreferences = {
-				series: [
-					[25, 30, 20, 25]
-				]
-			};
-		</script>
-		<script type="text/javascript">
-			$(document).ready(function () {
-
-				demo.initChartist();
-
-			});
-		</script>
-		<?php
-		page_footer_end();
+							});
+						</script>
+						<?php
+						page_footer_end();
 	}
 }
 ?>

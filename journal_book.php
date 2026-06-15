@@ -94,37 +94,37 @@ if ($monthParam !== 'all') {
 */
 $sql = "
 SELECT * FROM (
-  /* RECEIPTS */
+  /* JOURNAL ENTRIES */
   SELECT 
     DATE(i.`timestamp`)      AS dt,
-    i.`voucher_no`           AS voucher_no,
-    i.`remarks`              AS inv_remarks,
-    s.`by`                   AS by_ac,
-    s.`to`                   AS to_ac,
-    IFNULL(s.`amount`,0.00)  AS amount,
-    s.`remarks`              AS s_remarks,
-    s.`sno`                  AS line_sno,
-    'receipt'                AS src
-  FROM `billit_invoice_erp_receipt` i
-  LEFT JOIN `billit_stock_erp_receipt` s
+    CONVERT(i.`voucher_no` USING utf8mb4) AS voucher_no,
+    CONVERT('' USING utf8mb4)             AS inv_remarks,
+    CONVERT(COALESCE(s.`by`, i.`first_by`) USING utf8mb4) AS by_ac,
+    CONVERT(COALESCE(s.`to`, i.`first_to`) USING utf8mb4) AS to_ac,
+    CAST(COALESCE(s.`amount`, i.`tot_debit`, 0) AS DECIMAL(12,2)) AS amount,
+    CONVERT(s.`remarks` USING utf8mb4)    AS s_remarks,
+    COALESCE(s.`sno`, i.`sno`)            AS line_sno,
+    CONVERT('journal' USING utf8mb4)      AS src
+  FROM `billit_invoice_journal` i
+  LEFT JOIN `billit_stock_journal` s
     ON s.`journal_id` = i.`sno`
   WHERE i.`timestamp` BETWEEN ? AND ?
 
   UNION ALL
 
-  /* PAYMENTS */
+  /* CASH VOUCHERS */
   SELECT 
     DATE(i.`timestamp`)      AS dt,
-    i.`voucher_no`           AS voucher_no,
-    i.`admin_remarks`        AS inv_remarks,
-    s.`by`                   AS by_ac,
-    s.`to`                   AS to_ac,
-    IFNULL(s.`amount`,0.00)  AS amount,
-    s.`remarks`              AS s_remarks,
-    s.`sno`                  AS line_sno,
-    'payment'                AS src
-  FROM `billit_invoice_erp_payment` i
-  LEFT JOIN `billit_stock_erp_payment` s
+    CONVERT(i.`voucher_no` USING utf8mb4) AS voucher_no,
+    CONVERT('' USING utf8mb4)             AS inv_remarks,
+    CONVERT(COALESCE(s.`by`, i.`first_by`) USING utf8mb4) AS by_ac,
+    CONVERT(COALESCE(s.`to`, i.`first_to`) USING utf8mb4) AS to_ac,
+    CAST(COALESCE(s.`amount`, i.`tot_debit`, 0) AS DECIMAL(12,2)) AS amount,
+    CONVERT(s.`remarks` USING utf8mb4)    AS s_remarks,
+    COALESCE(s.`sno`, i.`sno`)            AS line_sno,
+    CONVERT('cash_voucher' USING utf8mb4) AS src
+  FROM `billit_invoice_cash_voucher` i
+  LEFT JOIN `billit_cash_voucher_journal` s
     ON s.`journal_id` = i.`sno`
   WHERE i.`timestamp` BETWEEN ? AND ?
 ) u
@@ -141,15 +141,15 @@ $res = mysqli_stmt_get_result($stmt);
 $data = []; $order = []; $grandDr = 0.0; $grandCr = 0.0;
 while($row = $res->fetch_assoc()){
     $vno = (string)$row['voucher_no'];
-    $src = ($row['src'] === 'payment') ? 'payment' : 'receipt';
-    // composite key so receipt & payment with same voucher don't collide
+    $src = $row['src'];
+    // composite key so different sources with same voucher don't collide
     $key = $src . '|' . $vno;
 
     if(!isset($data[$key])){
         $data[$key] = [
             'dt' => $row['dt'] ?: '',
             'inv_remarks' => (string)$row['inv_remarks'],
-            'type' => ($src==='payment' ? 'Payment' : 'Receipt'),
+            'type' => ($src==='journal' ? 'Journal' : 'Cash Voucher'),
             'voucher_no' => $vno,
             'dr' => [], 'cr' => [],
             'stock_remarks' => []
@@ -194,10 +194,10 @@ page_header_start();
   /* Thicker, high-contrast header */
   .journal-table thead th {
     padding: 0.9rem 0.75rem !important;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #fff;
-    background-color: #ec414a !important; /* your red */
+    font-weight: 900 !important;
+    font-size: 1.20rem !important;
+    color: #000 !important;
+    background-color: #d9edf7 !important; /* light blue */
     border-bottom: 2px solid #dee2e6 !important;
   }
 
@@ -226,6 +226,9 @@ page_header_start();
 
   /* Right-align numbers */
   .text-end { text-align: right !important; }
+  
+  /* Left-align text */
+  .text-left { text-align: left !important; }
 
   /* Top summary (table-like & sticky under app header) */
   .summary-total-row td {
@@ -235,6 +238,17 @@ page_header_start();
     font-weight: 700;
   }
   
+  /* Filter Labels and Selects */
+  .form-label {
+    color: #000 !important;
+    font-weight: 800 !important;
+    font-size: 1.15rem !important;
+  }
+  select.form-control {
+    color: #000 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+  }
 </style>
 <?php
 page_header_end();
@@ -277,34 +291,19 @@ page_sidebar();
   </div>
 
   <div class="card">
-    <!-- Top Grand Total as a table-like row (matches footer) -->
-    <div class="summary-stick">
-      <div class="table-responsive">
-        <table class="table table-sm mb-0 align-middle journal-table">
-          <tbody>
-            <tr class="table-light summary-total-row">
-              <td style="width:220px;"></td>
-              <td style="width:180px;"></td>
-              <td style="width:110px;"></td>
-              <td class="text-end"><strong>Grand Total</strong></td>
-              <td class="text-end" style="width:140px;"><strong><?= number_format($grandDr, 2) ?></strong></td>
-              <td class="text-end" style="width:140px;"><strong><?= number_format($grandCr, 2) ?></strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="card-header d-flex justify-content-end bg-light" style="border-bottom: 2px solid #ec414a; padding: 10px 20px;">
+      <h5 class="mb-0" style="color: #000000;"><strong>Grand Total Dr:</strong> <?= number_format($grandDr, 2) ?> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Grand Total Cr:</strong> <?= number_format($grandCr, 2) ?></h5>
     </div>
-
     <div class="card-body p-0">
       <!-- Scrollable area with sticky header -->
       <div class="table-responsive table-scroll">
         <table class="table table-sm table-striped table-hover mb-0 align-middle journal-table">
           <thead>
             <tr>
-              <th style="width: 220px;">Date</th>
-              <th style="width: 180px;">Voucher No</th>
-             <!-- <th style="width: 110px;">Type</th>-->
-              <th>Transaction</th>
+              <th class="text-end" style="width: 180px;">Date</th>
+              <th class="text-end" style="width: 180px;">Voucher No</th>
+              <th class="text-left" style="width: 160px;">Voucher Type</th>
+              <th class="text-left">Particulars</th>
               <th class="text-end" style="width: 140px;">Dr (Rs)</th>
               <th class="text-end" style="width: 140px;">Cr (Rs)</th>
             </tr>
@@ -325,10 +324,10 @@ page_sidebar();
                 ?>
                 <?php foreach($lines as $idx=>$r): ?>
                   <tr>
-                    <td><?= $idx===0 ? h($dateDisp) : '' ?></td>
-                    <td><?= $idx===0 ? h($entry['voucher_no']) : '' ?></td>
-                    <!--<td><?= $idx===0 ? h($entry['type']) : '' ?></td>-->
-                    <td<?= $idx>0 ? ' style="padding-left:0px;"' : '' ?>><?= h($r['acc']) ?></td>
+                    <td class="text-end"><?= $idx===0 ? h($dateDisp) : '' ?></td>
+                    <td class="text-end"><?= $idx===0 ? h($entry['voucher_no']) : '' ?></td>
+                    <td class="text-left"><?= $idx===0 ? h($entry['type']) : '' ?></td>
+                    <td class="text-left"<?= $idx>0 ? ' style="padding-left:0px;"' : '' ?>><?= h($r['acc']) ?></td>
                     <td class="text-end"><?= $r['dr']>0 ? number_format($r['dr'], 2) : '' ?></td>
                     <td class="text-end"><?= $r['cr']>0 ? number_format($r['cr'], 2) : '' ?></td>
                   </tr>
@@ -336,7 +335,7 @@ page_sidebar();
                 <?php if($narr!==''): ?>
                   <tr class="table-active">
                     <td></td><td></td><td></td>
-                    <td colspan="3"><em>(<?= h($narr) ?>)</em></td>
+                    <td colspan="3" class="text-left"><em>(<?= h($narr) ?>)</em></td>
                   </tr>
                 <?php endif; ?>
                 <tr><td colspan="6" class="p-1"></td></tr>
@@ -345,7 +344,8 @@ page_sidebar();
           </tbody>
           <tfoot class="table-light">
             <tr>
-              <td colspan="3" class="text-end"><strong>Grand Total</strong></td>
+              <td colspan="3"></td>
+              <td class="text-left"><strong>Grand Total</strong></td>
               <td class="text-end"><strong><?= number_format($grandDr, 2) ?></strong></td>
               <td class="text-end"><strong><?= number_format($grandCr, 2) ?></strong></td>
             </tr>

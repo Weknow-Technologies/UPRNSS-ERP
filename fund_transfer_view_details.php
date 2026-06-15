@@ -1,237 +1,219 @@
 <?php
 include("scripts/settings.php");
-$msg='';
+$msg = '';
 
 /* Safety */
-if (!isset($_POST) || !is_array($_POST)) { $_POST = []; }
-if (!isset($_SESSION)) { session_start(); }
+if (!isset($_POST) || !is_array($_POST)) {
+  $_POST = [];
+}
+if (!isset($_SESSION)) {
+  session_start();
+}
 
 page_header_start();
 page_header_end();
 page_sidebar();
 
-/* ---------------- Helpers ---------------- */
-function q($s){ global $db; return mysqli_real_escape_string($db, (string)$s); }
-function money($v){ return number_format((float)$v,2,'.',''); }
+function q($s)
+{
+  global $db;
+  return mysqli_real_escape_string($db, (string) $s);
+}
+function money($v)
+{
+  return number_format((float) $v, 2, '.', '');
+}
 
-/* ---------------- Get Header Details ---------------- */
-$header_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if(!$header_id){
-    $msg = '<div class="alert alert-danger">Invalid Transfer ID</div>';
+$header_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$header = null;
+
+if (!$header_id) {
+  $msg = '<div class="alert alert-danger">Invalid Transfer ID</div>';
 } else {
-    $header = mysqli_fetch_assoc(execute_query('
-        SELECT h.*, tt.transfer_to, bc.cus_name AS from_acc 
+  $header = mysqli_fetch_assoc(execute_query('
+        SELECT h.*, bc2.cus_name AS transfer_to_name, bc.cus_name AS from_acc 
         FROM invoice_fund_transfer h 
-        LEFT JOIN transfer_to_type tt ON tt.sno=h.fund_transfer_to
-        LEFT JOIN billit_customer bc ON bc.sno=h.from_account_no
-        WHERE h.sno="'.q($header_id).'" AND h.status!="5"
+        LEFT JOIN billit_customer bc2 ON bc2.sno = h.fund_transfer_to
+        LEFT JOIN billit_customer bc ON bc.sno = h.from_account_no
+        WHERE h.sno="' . q($header_id) . '" AND h.status!="5"
     '));
-    
-    if(!$header){
-        $msg = '<div class="alert alert-danger">Transfer not found</div>';
-    }
+
+  if (!$header) {
+    $msg = '<div class="alert alert-danger">Transfer not found or deleted.</div>';
+  }
 }
 ?>
 
-<div class="card">
-  <div class="card-header">
-    <h4 class="card-title text-center">Fund Transfer Details</h4>
-    <div class="text-right">
-      <a href="fund_transfer_report_new.php" class="btn btn-secondary">← Back to Report</a>
-      <a href="fund_transfer1.php?edit_header_id=<?php echo $header_id; ?>" class="btn btn-warning">✏️ Edit Transfer</a>
-      <?php if($header && $header['journal_id']): ?>
-      <a href="billit_payment_print.php?id=<?php echo $header['journal_id']; ?>" target="_blank" class="btn btn-success">🧾 View Voucher</a>
-      <?php endif; ?>
-    </div>
-  </div>
-  <div class="card-body">
-    <?php echo $msg; ?>
-    
-    <?php if($header): ?>
-    <!-- Header Information -->
-    <div class="row mb-4">
-      <div class="col-md-12">
-        <h5>Transfer Information</h5>
-        <div class="table-responsive">
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Fund Transfer Details</h4>
+        <div class="no-print" style="margin-top: 10px; margin-bottom: 20px;">
+          <a href="fund_transfer1.php" class="btn btn-info btn-fill btn-sm">Back</a>
+          <a href="fund_transfer1.php?edit_header_id=<?php echo $header_id; ?>"
+            class="btn btn-warning btn-fill btn-sm">Edit</a>
+          <?php if ($header && $header['journal_id']): ?>
+            <a href="billit_payment_print.php?id=<?php echo $header['journal_id']; ?>" target="_blank"
+              class="btn btn-danger btn-fill btn-sm">Voucher</a>
+          <?php endif; ?>
+        </div>
+      </div>
+      <div class="card-body">
+        <?php echo $msg; ?>
+
+        <?php if ($header): ?>
+          <!-- Basic Table Layout -->
           <table class="table table-bordered">
-            <tr>
-              <th width="20%">Header ID</th>
-              <td><?php echo $header['sno']; ?></td>
-              <th width="20%">Voucher ID</th>
-              <td><?php echo $header['journal_id'] ?: 'N/A'; ?></td>
-            </tr>
-            <tr>
-              <th>Order No.</th>
-              <td><?php echo htmlspecialchars($header['order_no']); ?></td>
-              <th>Order Date</th>
-              <td><?php echo date("d-m-Y", strtotime($header['order_date'])); ?></td>
-            </tr>
-            <tr>
-              <th>Transfer Date</th>
-              <td><?php echo date("d-m-Y", strtotime($header['transfer_date'])); ?></td>
-              <th>Fund Transfer To</th>
-              <td><?php echo htmlspecialchars($header['transfer_to']); ?></td>
-            </tr>
-            <tr>
-              <th>From Account</th>
-              <td><?php echo htmlspecialchars($header['from_acc']); ?></td>
-              <th>Created By</th>
-              <td><?php echo htmlspecialchars($header['created_by']); ?></td>
-            </tr>
-            <tr>
-              <th>Creation Time</th>
-              <td><?php echo date("d-m-Y H:i:s", strtotime($header['creation_time'])); ?></td>
-              <th>Status</th>
-              <td><span class="badge badge-success">Active</span></td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Deduction Percentages -->
-    <div class="row mb-4">
-      <div class="col-md-12">
-        <h5>Deduction Percentages</h5>
-        <div class="table-responsive">
-          <table class="table table-bordered">
-            <tr>
-              <th width="20%">GST %</th>
-              <td><?php echo $header['gst_per']; ?>%</td>
-              <th width="20%">Advance Centage %</th>
-              <td><?php echo $header['centage_per']; ?>%</td>
-            </tr>
-            <tr>
-              <th>GST-TDS %</th>
-              <td><?php echo $header['gsttds_per']; ?>%</td>
-              <th>Income Tax %</th>
-              <td><?php echo $header['it_per']; ?>%</td>
-            </tr>
-            <tr>
-              <th>Labour Cess (Amount)</th>
-              <td><?php echo money($header['labour_abs']); ?></td>
-              <th></th>
-              <td></td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary Totals -->
-    <div class="row mb-4">
-      <div class="col-md-12">
-        <h5>Summary Totals</h5>
-        <div class="table-responsive">
-          <table class="table table-bordered table-striped">
-            <tr class="bg-light">
-              <th>Total Transfer Amount</th>
-              <th>Total GST</th>
-              <th>Total Remain After GST</th>
-              <th>Total Advance Centage</th>
-              <th>Total GST-TDS</th>
-              <th>Total Labour</th>
-              <th>Total Income Tax</th>
-              <th>Total Proposed</th>
-            </tr>
-            <tr>
-              <td class="text-right font-weight-bold"><?php echo money($header['total_transfer_amount']); ?></td>
-              <td class="text-right"><?php echo money($header['total_gst']); ?></td>
-              <td class="text-right"><?php echo money($header['total_remain_after_gst']); ?></td>
-              <td class="text-right"><?php echo money($header['total_adv_centage']); ?></td>
-              <td class="text-right"><?php echo money($header['total_gst_tds']); ?></td>
-              <td class="text-right"><?php echo money($header['total_labour']); ?></td>
-              <td class="text-right"><?php echo money($header['total_income_tax']); ?></td>
-              <td class="text-right font-weight-bold text-success"><?php echo money($header['total_proposed']); ?></td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Transaction Details -->
-    <div class="row">
-      <div class="col-md-12">
-        <h5>Transaction Details</h5>
-        <div class="table-responsive">
-          <table class="table table-striped table-hover">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>Department</th>
-                <th>Sub Department</th>
-                <th>District</th>
-                <th>Project</th>
-                <th>Unit</th>
-                <th>To Bank</th>
-                <th>To IFSC</th>
-                <th>To Account No</th>
-                <th>Transfer Amount</th>
-                <th>GST</th>
-                <th>CGST</th>
-                <th>SGST</th>
-                <th>Remain</th>
-                <th>Advance</th>
-                <th>GST-TDS</th>
-                <th>CGST-TDS</th>
-                <th>SGST-TDS</th>
-                <th>Labour</th>
-                <th>IT</th>
-                <th>Proposed</th>
-                <th>Remark</th>
+              <tr class="bg-light">
+                <td colspan="4"><strong>Transfer Information</strong></td>
               </tr>
             </thead>
             <tbody>
-              <?php
-              $i=1;
-              $rs = execute_query('
-                SELECT t.*, d.department_name_hindi, sd.sub_department_hindi, 
-                       dist.district_name_hindi, p.project_name_hindi, u.unit as unit_name,
-                       bc.cus_name as bank_name
-                FROM transaction_fund_transfer t
-                LEFT JOIN uprnss_department_name d ON d.sno = t.department
-                LEFT JOIN uprnss_sub_department sd ON sd.sno = t.sub_department_id
-                LEFT JOIN uprnss_district dist ON dist.sno = t.district
-                LEFT JOIN uprnss_project_temp p ON p.sno = t.project_name
-                LEFT JOIN billit_unit u ON u.sno = t.unit_id
-                LEFT JOIN billit_customer bc ON bc.sno = t.to_bank_name
-                WHERE t.invoice_header_id="'.q($header_id).'" AND t.status!="5"
-                ORDER BY t.sno ASC
-              ');
-              
-              while($row = mysqli_fetch_assoc($rs)){
-                echo '<tr>
-                  <td>'.($i++).'</td>
-                  <td>'.htmlspecialchars($row['department_name_hindi']).'</td>
-                  <td>'.htmlspecialchars($row['sub_department_hindi']).'</td>
-                  <td>'.htmlspecialchars($row['district_name_hindi']).'</td>
-                  <td>'.htmlspecialchars($row['project_name_hindi']).'</td>
-                  <td>'.htmlspecialchars($row['unit_name']).'</td>
-                  <td>'.htmlspecialchars($row['bank_name']).'</td>
-                  <td>'.htmlspecialchars($row['to_bank_ifsc']).'</td>
-                  <td>'.htmlspecialchars($row['to_account_no']).'</td>
-                  <td class="text-right">'.money($row['transafer_amount']).'</td>
-                  <td class="text-right">'.money($row['gstdeduction']).'</td>
-                  <td class="text-right">'.money($row['cgst_amount']).'</td>
-                  <td class="text-right">'.money($row['sgst_amount']).'</td>
-                  <td class="text-right">'.money($row['totelmgst']).'</td>
-                  <td class="text-right">'.money($row['sentage']).'</td>
-                  <td class="text-right">'.money($row['gsttds']).'</td>
-                  <td class="text-right">'.money($row['tds_cgst']).'</td>
-                  <td class="text-right">'.money($row['tds_sgst']).'</td>
-                  <td class="text-right">'.money($row['leborses']).'</td>
-                  <td class="text-right">'.money($row['incometax']).'</td>
-                  <td class="text-right font-weight-bold">'.money($row['praposemoney']).'</td>
-                  <td>'.htmlspecialchars($row['remark']).'</td>
-                </tr>';
-              }
-              ?>
+              <tr>
+                <th width="15%">Voucher No</th>
+                <td width="35%"><?php echo htmlspecialchars($header['order_no']); ?></td>
+                <th width="15%">Voucher ID</th>
+                <td width="35%"><?php echo $header['journal_id'] ?: 'N/A'; ?></td>
+              </tr>
+              <tr>
+                <th>Order Date</th>
+                <td><?php echo date("d-m-Y", strtotime($header['order_date'])); ?></td>
+                <th>Transfer Date</th>
+                <td><?php echo date("d-m-Y", strtotime($header['transfer_date'])); ?></td>
+              </tr>
+              <tr>
+                <th>From Account</th>
+                <td><?php echo htmlspecialchars($header['from_acc']); ?></td>
+                <th>Transfer To</th>
+                <td><?php echo htmlspecialchars($header['transfer_to_name']); ?></td>
+              </tr>
+              <tr>
+                <th>Created By</th>
+                <td><?php echo htmlspecialchars($header['created_by']); ?></td>
+                <th>Creation Time</th>
+                <td><?php echo date("d-m-Y H:i:s", strtotime($header['creation_time'])); ?></td>
+              </tr>
             </tbody>
           </table>
-        </div>
+
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <table class="table table-bordered">
+                <tr class="bg-light">
+                  <td colspan="2"><strong>Deduction Percentages</strong></td>
+                </tr>
+                <tr>
+                  <th>GST %</th>
+                  <td><?php echo $header['gst_per']; ?>%</td>
+                </tr>
+                <tr>
+                  <th>Adv Centage %</th>
+                  <td><?php echo $header['centage_per']; ?>%</td>
+                </tr>
+                <tr>
+                  <th>GST-TDS %</th>
+                  <td><?php echo $header['gsttds_per']; ?>%</td>
+                </tr>
+                <tr>
+                  <th>Income Tax %</th>
+                  <td><?php echo $header['it_per']; ?>%</td>
+                </tr>
+                <tr>
+                  <th>Labour Cess (Amt)</th>
+                  <td><?php echo money($header['labour_abs']); ?></td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-bordered">
+                <tr class="bg-light">
+                  <td colspan="2"><strong>Summary Totals</strong></td>
+                </tr>
+                <tr>
+                  <th>Total Transfer Amount</th>
+                  <td class="text-right"><?php echo money($header['total_transfer_amount']); ?></td>
+                </tr>
+                <tr>
+                  <th>Total GST</th>
+                  <td class="text-right"><?php echo money($header['total_gst']); ?></td>
+                </tr>
+                <tr>
+                  <th>Total Adv Centage</th>
+                  <td class="text-right"><?php echo money($header['total_adv_centage']); ?></td>
+                </tr>
+                <tr>
+                  <th>Total GST-TDS</th>
+                  <td class="text-right"><?php echo money($header['total_gst_tds']); ?></td>
+                </tr>
+                <tr>
+                  <th>Total Proposed</th>
+                  <td class="text-right"><strong><?php echo money($header['total_proposed']); ?></strong></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <h5 class="mt-4 mb-2"><strong>Project Wise Details</strong></h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover mt-2">
+              <thead class="bg-dark text-white">
+                <tr>
+                  <th class="text-white">S.No</th>
+                  <th class="text-white">Department</th>
+                  <th class="text-white">District</th>
+                  <th width="35%" class="text-white">Project Name</th>
+                  <th class="text-right text-white">Amount</th>
+                  <th class="text-white">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                $i = 1;
+                $sql = '
+                  SELECT t.*, 
+                         COALESCE(d1.department_name_hindi, d2.department_name_hindi) as department_name,
+                         COALESCE(dist1.district_name_hindi, dist2.district_name_hindi) as district_name,
+                         p.project_name_hindi, p.project_name as project_name_eng,
+                         bc.cus_name as bank_name
+                  FROM transaction_fund_transfer t
+                  LEFT JOIN uprnss_project_temp p ON p.sno = t.project_name
+                  LEFT JOIN uprnss_department_name d1 ON d1.sno = t.department
+                  LEFT JOIN uprnss_department_name d2 ON d2.sno = p.department_id
+                  LEFT JOIN uprnss_district dist1 ON dist1.sno = t.district
+                  LEFT JOIN uprnss_district dist2 ON dist2.sno = p.district_id
+                  LEFT JOIN billit_customer bc ON bc.sno = t.to_bank_name
+                  WHERE t.invoice_header_id="' . q($header_id) . '" AND (t.status <> \'5\' OR t.status IS NULL)
+                  ORDER BY t.sno ASC
+                ';
+                $rs = execute_query($sql);
+
+                while ($row = mysqli_fetch_assoc($rs)) {
+                  $pname_display = '<strong>' . htmlspecialchars($row['project_name_eng'] ?: 'N/A') . '</strong>';
+                  if ($row['project_name_hindi']) {
+                    $pname_display .= '<br><small class="text-muted">' . htmlspecialchars($row['project_name_hindi']) . '</small>';
+                  }
+                  if (!$row['project_name_eng'] && !$row['project_name_hindi']) {
+                    $pname_display = '<span class="text-danger">ID: ' . $row['project_name'] . ' (Not Found)</span>';
+                  }
+
+                  echo '<tr>
+                    <td class="text-center">' . ($i++) . '</td>
+                    <td>' . htmlspecialchars($row['department_name'] ?: 'N/A') . '</td>
+                    <td>' . htmlspecialchars($row['district_name'] ?: 'N/A') . '</td>
+                    <td>' . $pname_display . '</td>
+                    <td class="text-right">' . money($row['transafer_amount']) . '</td>
+                    <td>' . htmlspecialchars($row['remark'] ?? '') . '</td>
+                  </tr>';
+                }
+                ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
-    <?php endif; ?>
   </div>
 </div>
 

@@ -1,4 +1,4 @@
-<?php
+ff<?php
 include("scripts/settings.php");
 include("scripts/billit_settings.php");
 include("scripts/alerts.php");
@@ -91,15 +91,10 @@ if (isset($_POST['cust_name'])) {
 		}
 	}
 	$_SESSION['sql_ledger_result_filter'] = "(select sno, cus_name, category, cus_type, address, mobile, 'billit_customer' as type, parent, auto_ledger, auto_ledger_value from billit_customer where 0=0 $filter) union all (select sno, description as cus_name, 0 as category, 0 as cus_type, '' as address, '' as mobile, 'stock' as type, treat_as_ledger as parent, '' as auto_ledger, '' as auto_ledger_value from billit_stock_available where treat_as_ledger!='' and treat_as_ledger is not null $filter_stock)";
-
-	//$_SESSION['sql_ledger_result_filter'] .= ' order by cus_name';
-	//echo $_SESSION['sql_ledger_result_filter'];
 } elseif (!isset($_SESSION['sql_ledger_result_filter'])) {
 	$_SESSION['sql_ledger_result_filter'] = "(select sno, cus_name, category, cus_type, address, mobile, 'billit_customer' as type, parent, auto_ledger, auto_ledger_value from billit_customer where 0=0) union all (select sno, description as cus_name, 0 as category, 0 as cus_type, '' as address, '' as mobile, 'stock' as type, treat_as_ledger as parent, '' as auto_ledger, '' as auto_ledger_value from billit_stock_available where treat_as_ledger!='' and treat_as_ledger is not null)";
 	$_SESSION['sql_ledger_result_filter'] .= ' order by cus_name';
 }
-// echo $_SESSION['sql_ledger_result_filter'];
-// exit;
 $result_data = execute_query($_SESSION['sql_ledger_result_filter']);
 
 ?>
@@ -115,29 +110,30 @@ $result_data = execute_query($_SESSION['sql_ledger_result_filter']);
 		color: #fff;
 	}
 
-	/* Table Layout 
-table {
- border:3px solid lavender;
- border-radius:3px;
-}
+	/* Table Layout */
+	table {
+		border: 3px solid lavender;
+		border-radius: 3px;
+	}
 
-table tr:nth-child(1){
- background-color:dodgerblue;
-}
-table tr:nth-child(1) th{
- color:white;
- padding:10px 0px;
- letter-spacing: 1px;
-}
+	table tr:nth-child(1) {
+		background-color: dodgerblue;
+	}
 
-/* Table rows and columns 
-table td{
- padding:10px;
-}
-table tr:nth-child(even){
- background-color:lavender;
- color:black;
-}
+	table tr:nth-child(1) th {
+		padding: 10px 0px;
+		letter-spacing: 1px;
+	}
+
+	/* Table rows and columns */
+	table td {
+		padding: 10px;
+	}
+
+	table tr:nth-child(even) {
+		background-color: lavender;
+		color: black;
+	}
 </style>
 <script language="javascript" type="text/javascript">
 
@@ -692,8 +688,17 @@ switch ($response) {
 									}
 
 
-									$sql = "$sql_auto (SELECT cust_id as cust_by, null as cust_to, type, number, amount, billit_customer_transactions.timestamp, remarks, billit_customer_transactions.sno as ct_sno, account, mop, chq_no, status FROM `billit_customer_transactions` where cust_id=" . $billit_customer['sno'] . " and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_ledger $filter_ledger_credit $filter_ledger_debit) union all (SELECT `by` as cust_by, `to` as cust_to, 'journal' as type, sno as number, amount, timestamp, remarks,sno as jr_sno, '' as account, '' as mop, '' as chq_no, status FROM `billit_stock_journal` where (`to`=" . $billit_customer['sno'] . " or `by`=" . $billit_customer['sno'] . ") and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_journal $filter_journal_debit $filter_journal_credit) union all (SELECT `by` as cust_by, `to` as cust_to, 'receipt' as type, sno as number, amount, timestamp, remarks,sno as jr_sno, '' as account, '' as mop, '' as chq_no, status FROM `billit_stock_erp_receipt` where (`to`=" . $billit_customer['sno'] . " or `by`=" . $billit_customer['sno'] . ") and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_journal $filter_journal_debit $filter_journal_credit)  order by timestamp";
-									//echo $sql;
+									$sql = "$sql_auto (SELECT cust_id as cust_by, null as cust_to, type, number, amount, billit_customer_transactions.timestamp, remarks, billit_customer_transactions.sno as ct_sno, account, mop, chq_no, status FROM `billit_customer_transactions` where cust_id=" . $billit_customer['sno'] . " and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_ledger $filter_ledger_credit $filter_ledger_debit) 
+									
+									union all (SELECT `by` as cust_by, `to` as cust_to, 'journal' as type, sno as number, amount, timestamp, remarks,sno as jr_sno, '' as account, '' as mop, '' as chq_no, status FROM `billit_stock_journal` where (`to`=" . $billit_customer['sno'] . " or `by`=" . $billit_customer['sno'] . ") and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_journal $filter_journal_debit $filter_journal_credit) 
+									
+									union all (SELECT `by` as cust_by, `to` as cust_to, 'journal' as type, sno as number, amount, timestamp, remarks,sno as jr_sno, '' as account, '' as mop, '' as chq_no, status FROM `billit_stock_erp_receipt` where (`to`=" . $billit_customer['sno'] . " or `by`=" . $billit_customer['sno'] . ") and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_journal $filter_journal_debit $filter_journal_credit)
+									
+									union all (SELECT `by` as cust_by, `to` as cust_to, 'journal' as type, sno as number, amount, timestamp, remarks,sno as jr_sno, '' as account, '' as mop, '' as chq_no, status FROM `billit_stock_erp_payment` where (`to`=" . $billit_customer['sno'] . " or `by`=" . $billit_customer['sno'] . ") and timestamp>='" . $_GET['df'] . "' and timestamp<='" . $_GET['dt'] . "' $filter_journal $filter_journal_debit $filter_journal_credit)  order by timestamp";
+
+									
+									
+									// echo $sql;
 									$billit_customer['opening_balance'] = get_cust_balace("1970-01-01", date("Y-m-d", strtotime($_GET['df']) - 86400), $billit_customer['sno'], '', $_SESSION['report_ledger_division'] ?? '');
 								}
 							} elseif (isset($_GET['t'])) {
@@ -957,21 +962,21 @@ switch ($response) {
 										}
 
 										echo '" onclick="return confirm(\'Are you sure?\');" style="color:#F00;">(Delete)</a></small>
-					<div id="' . $i . '">
-					' . $trans['remarks'] . '
-					</div></td>
-					<td class="right green">' . amount_format($trans['amount']) . '</td>
-					<td>&nbsp;</td>';
+											<div id="' . $i . '">
+											' . $trans['remarks'] . '
+											</div></td>
+											<td class="right green">' . amount_format($trans['amount']) . '</td>
+											<td>&nbsp;</td>';
 									} elseif ($trans['cust_to'] == $billit_customer['sno']) {
 										$balance -= $trans['amount'];
 										$tot_credit += $trans['amount'];
 										echo '<a href="journal.php?id=' . $trans['number'] . '">Journal : By ';
 										echo get_ledger($trans['cust_by']) . '</a>&nbsp;' . $stat . '<small><a href="journal.php?del=' . $trans['number'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#F00;">(Delete)</a></small>
-					<div id="' . $i . '">
-					' . $trans['remarks'] . '
-					</div></td>
-					<td>&nbsp;</td>
-					<td class="right red">' . amount_format($trans['amount']) . '</td>';
+											<div id="' . $i . '">
+											' . $trans['remarks'] . '
+											</div></td>
+											<td>&nbsp;</td>
+											<td class="right red">' . amount_format($trans['amount']) . '</td>';
 									}
 								} elseif (strtolower($trans['type']) == 'contra') {
 									if ($trans['cust_by'] == $billit_customer['sno']) {

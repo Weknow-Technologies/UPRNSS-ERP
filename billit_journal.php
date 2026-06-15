@@ -750,7 +750,7 @@ if (isset($_GET['id'])) {
 	echo "<script>
 			$(document).ready(function() {
 				$('#unit_id').val('" . $old_data['unit_id'] . "');
-		";
+			}";
 
 	echo "$('#header_description').val('" . $description . "');";
 

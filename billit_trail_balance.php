@@ -5,6 +5,123 @@ include("scripts/alerts.php");
 set_time_limit(0);
 $msg = '';
 
+
+function get_trial_balance_details($db, $sno, $from, $to, $division) {
+    // We will do exact same sum as get_cust_balace but purely mathematical.
+    $unit_filter = "";
+    if ($division != '' && $division != 'all') {
+        $unit_filter = " and unit_id='" . mysqli_real_escape_string($db, $division) . "'";
+    }
+    
+    // Fetch initial opening balance from master
+    $sql = 'select opening_balance, parent from billit_customer where sno=' . (int)$sno;
+    $customer = mysqli_fetch_array(mysqli_query($db, $sql));
+    $master_opening = (float)($customer['opening_balance'] ?? 0);
+    
+    $pl_heads = array("DirectIncome"=>11, "DirectExpense"=>10, "IndirectIncome"=>19, "IndirectExpense"=>18);
+    
+    // 1. Opening up to $from - 1 day
+    $op_dr = 0.0;
+    $op_cr = 0.0;
+    
+    if (!in_array($customer['parent'], $pl_heads)) {
+        // Dr components
+        $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"'.$from.'" and type in ("PAYMENT", "sale", "purchase_revert") and cust_id='.(int)$sno;
+        $t1 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+        $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp<"'.$from.'" and `by`='.(int)$sno.' and status="1" '.$unit_filter;
+        $t2 = mysqli_fetch_array(mysqli_query($db, $sql_journal));
+        $sql_erp_receipt_dr = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp<"'.$from.'" and `by`='.(int)$sno;
+        $t2r = mysqli_fetch_array(mysqli_query($db, $sql_erp_receipt_dr));
+        $sql_erp_payment_dr = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp<"'.$from.'" and `by`='.(int)$sno;
+        $t2p = mysqli_fetch_array(mysqli_query($db, $sql_erp_payment_dr));
+        $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp<"'.$from.'" and `by`='.(int)$sno.' and status="1" '.$unit_filter;
+        $t3 = mysqli_fetch_array(mysqli_query($db, $sql_cash));
+        $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp<"'.$from.'" and `to`='.(int)$sno.$unit_filter;
+        $t4 = mysqli_fetch_array(mysqli_query($db, $sql_contra));
+        $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"'.$from.'" and type="debit_note" and cust_id='.(int)$sno;
+        $t5 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+        
+        $op_dr = (float)$t1['trans'] + (float)$t2['journal'] + (float)$t2r['journal'] + (float)$t2p['journal'] + (float)$t3['cash'] + (float)$t4['contra'] + (float)$t5['trans'];
+        
+        // Cr components
+        $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"'.$from.'" and type="credit_note" and cust_id='.(int)$sno;
+        $c1 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+        $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp<"'.$from.'" and type in ("RECIEPT","purchase", "RECEIPT", "sale_revert") and cust_id='.(int)$sno;
+        $c2 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+        $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp<"'.$from.'" and `to`='.(int)$sno.' and status="1" '.$unit_filter;
+        $c3 = mysqli_fetch_array(mysqli_query($db, $sql_journal));
+        $sql_erp_receipt_cr = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp<"'.$from.'" and `to`='.(int)$sno;
+        $c3r = mysqli_fetch_array(mysqli_query($db, $sql_erp_receipt_cr));
+        $sql_erp_payment_cr = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp<"'.$from.'" and `to`='.(int)$sno;
+        $c3p = mysqli_fetch_array(mysqli_query($db, $sql_erp_payment_cr));
+        $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp<"'.$from.'" and `to`='.(int)$sno.' and status="1" '.$unit_filter;
+        $c4 = mysqli_fetch_array(mysqli_query($db, $sql_cash));
+        $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp<"'.$from.'" and `by`='.(int)$sno.$unit_filter;
+        $c5 = mysqli_fetch_array(mysqli_query($db, $sql_contra));
+        
+        $op_cr = (float)$c1['trans'] + (float)$c2['trans'] + (float)$c3['journal'] + (float)$c3r['journal'] + (float)$c3p['journal'] + (float)$c4['cash'] + (float)$c5['contra'];
+        
+        // Master opening balance is typically debit, adjust based on your logic
+        // Original logic: $cust_opening = (float)$customer['opening_balance'] + ((float)$opening_tot_dr - (float)$opening_tot_cr);
+        $op_dr += $master_opening;
+    }
+    
+    // 2. Transactions during period
+    $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp>="'.$from.'" and timestamp<="'.$to.'" and type in ("PAYMENT","sale", "purchase_revert") and cust_id='.(int)$sno;
+    $d1 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+    $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp>="'.$from.'" and timestamp<="'.$to.'" and type="debit_note" and cust_id='.(int)$sno;
+    $d2 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+    $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `to`='.(int)$sno.$unit_filter;
+    $d3 = mysqli_fetch_array(mysqli_query($db, $sql_contra));
+    $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `by`='.(int)$sno.' and status="1" '.$unit_filter;
+    $d4 = mysqli_fetch_array(mysqli_query($db, $sql_journal));
+    $sql_erp_receipt_txdr = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `by`='.(int)$sno;
+    $d4r = mysqli_fetch_array(mysqli_query($db, $sql_erp_receipt_txdr));
+    $sql_erp_payment_txdr = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `by`='.(int)$sno;
+    $d4p = mysqli_fetch_array(mysqli_query($db, $sql_erp_payment_txdr));
+    $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `by`='.(int)$sno.' and status="1" '.$unit_filter;
+    $d5 = mysqli_fetch_array(mysqli_query($db, $sql_cash));
+    
+    $txn_dr = (float)$d1['trans'] + (float)$d2['trans'] + (float)$d3['contra'] + (float)$d4['journal'] + (float)$d4r['journal'] + (float)$d4p['journal'] + (float)$d5['cash'];
+    
+    $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp>="'.$from.'" and timestamp<="'.$to.'" and type in ("RECIEPT","purchase", "RECEIPT", "sale_revert") and cust_id='.(int)$sno;
+    $x1 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+    $sql_trans = 'select sum(amount) as trans from billit_customer_transactions where timestamp>="'.$from.'" and timestamp<="'.$to.'" and type="credit_note" and cust_id='.(int)$sno;
+    $x2 = mysqli_fetch_array(mysqli_query($db, $sql_trans));
+    $sql_journal = 'select sum(amount) as journal from billit_stock_journal where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `to`='.(int)$sno.' and status="1" '.$unit_filter;
+    $x3 = mysqli_fetch_array(mysqli_query($db, $sql_journal));
+    $sql_erp_receipt_txcr = 'select sum(amount) as journal from billit_stock_erp_receipt where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `to`='.(int)$sno;
+    $x3r = mysqli_fetch_array(mysqli_query($db, $sql_erp_receipt_txcr));
+    $sql_erp_payment_txcr = 'select sum(amount) as journal from billit_stock_erp_payment where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `to`='.(int)$sno;
+    $x3p = mysqli_fetch_array(mysqli_query($db, $sql_erp_payment_txcr));
+    $sql_cash = 'select sum(amount) as cash from billit_cash_voucher_journal where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `to`='.(int)$sno.' and status="1" '.$unit_filter;
+    $x4 = mysqli_fetch_array(mysqli_query($db, $sql_cash));
+    $sql_contra = 'select sum(amount) as contra from billit_contra_entry where timestamp>="'.$from.'" and timestamp<="'.$to.'" and `by`='.(int)$sno.$unit_filter;
+    $x5 = mysqli_fetch_array(mysqli_query($db, $sql_contra));
+    
+    $txn_cr = (float)$x1['trans'] + (float)$x2['trans'] + (float)$x3['journal'] + (float)$x3r['journal'] + (float)$x3p['journal'] + (float)$x4['cash'] + (float)$x5['contra'];
+    
+    // Resolve pure Opening Balance Dr/Cr
+    $net_opening = $op_dr - $op_cr;
+    $resolved_op_dr = $net_opening > 0 ? $net_opening : 0;
+    $resolved_op_cr = $net_opening < 0 ? abs($net_opening) : 0;
+    
+    // Resolve pure Closing Balance Dr/Cr
+    $net_closing = $net_opening + $txn_dr - $txn_cr;
+    $resolved_cl_dr = $net_closing > 0 ? $net_closing : 0;
+    $resolved_cl_cr = $net_closing < 0 ? abs($net_closing) : 0;
+
+    return [
+        'op_dr' => $resolved_op_dr,
+        'op_cr' => $resolved_op_cr,
+        'tx_dr' => $txn_dr,
+        'tx_cr' => $txn_cr,
+        'cl_dr' => $resolved_cl_dr,
+        'cl_cr' => $resolved_cl_cr
+    ];
+}
+
+
 function get_ledger_filter($db, $selected_division)
 {
     if ($selected_division === 'all') {
@@ -17,11 +134,7 @@ function get_ledger_filter($db, $selected_division)
     }
 }
 
-function get_ledger_balance($db, $sno, $selected_division = '')
-{
-    $sno = (int) $sno;
-    return get_cust_balace('1970-01-01', date('Y-m-d'), $sno, '', $selected_division);
-}
+
 
 function get_head_visibility_filter($selected_division)
 {
@@ -34,9 +147,12 @@ function get_head_visibility_filter($selected_division)
     }
 }
 
-function get_descendant_total_balance($db, $headSno, $parentLedgerSno, $selected_division)
+function get_descendant_total_balance($db, $headSno, $parentLedgerSno, $selected_division, $from, $to)
 {
-    $total = 0.0;
+    $tot_op_dr = 0.0; $tot_op_cr = 0.0;
+    $tot_tx_dr = 0.0; $tot_tx_cr = 0.0;
+    $tot_cl_dr = 0.0; $tot_cl_cr = 0.0;
+    
     $children = [];
     $h = mysqli_real_escape_string($db, (string) $headSno);
     $p = mysqli_real_escape_string($db, (string) $parentLedgerSno);
@@ -45,48 +161,82 @@ function get_descendant_total_balance($db, $headSno, $parentLedgerSno, $selected
     $res = mysqli_query($db, "SELECT sno, cus_name FROM billit_customer WHERE parent='$h' AND parent_ledger='$p' AND $ledger_filter ORDER BY cus_name ASC");
     while ($row = mysqli_fetch_assoc($res)) {
         $sno = (int) $row['sno'];
-        $bal = get_ledger_balance($db, $sno, $selected_division);
-        $desc = get_descendant_total_balance($db, $headSno, $sno, $selected_division);
+        $bal = get_trial_balance_details($db, $sno, $from, $to, $selected_division);
+        $desc = get_descendant_total_balance($db, $headSno, $sno, $selected_division, $from, $to);
 
-        $ledg_total = $bal + $desc['total'];
-        if ($ledg_total != 0) {
-            $total += $ledg_total;
+        $op_dr = $bal['op_dr'] + $desc['op_dr'];
+        $op_cr = $bal['op_cr'] + $desc['op_cr'];
+        $tx_dr = $bal['tx_dr'] + $desc['tx_dr'];
+        $tx_cr = $bal['tx_cr'] + $desc['tx_cr'];
+        $cl_dr = $bal['cl_dr'] + $desc['cl_dr'];
+        $cl_cr = $bal['cl_cr'] + $desc['cl_cr'];
+
+        // Netting Opening and Closing for this node
+        $net_op = $op_dr - $op_cr;
+        $resolved_op_dr = $net_op > 0 ? $net_op : 0;
+        $resolved_op_cr = $net_op < 0 ? abs($net_op) : 0;
+        
+        $net_cl = $cl_dr - $cl_cr;
+        $resolved_cl_dr = $net_cl > 0 ? $net_cl : 0;
+        $resolved_cl_cr = $net_cl < 0 ? abs($net_cl) : 0;
+
+        if ($resolved_op_dr != 0 || $resolved_op_cr != 0 || $tx_dr != 0 || $tx_cr != 0 || $resolved_cl_dr != 0 || $resolved_cl_cr != 0) {
+            $tot_op_dr += $resolved_op_dr; $tot_op_cr += $resolved_op_cr;
+            $tot_tx_dr += $tx_dr; $tot_tx_cr += $tx_cr;
+            $tot_cl_dr += $resolved_cl_dr; $tot_cl_cr += $resolved_cl_cr;
+            
             $children[] = [
                 'type' => 'ledger',
                 'name' => htmlspecialchars($row['cus_name']),
-                'dr' => ($ledg_total > 0) ? abs($ledg_total) : 0,
-                'cr' => ($ledg_total < 0) ? abs($ledg_total) : 0,
+                'op_dr' => $resolved_op_dr, 'op_cr' => $resolved_op_cr,
+                'tx_dr' => $tx_dr, 'tx_cr' => $tx_cr,
+                'cl_dr' => $resolved_cl_dr, 'cl_cr' => $resolved_cl_cr,
                 'children' => $desc['children']
             ];
         }
     }
-    return ['total' => $total, 'children' => $children];
+    
+    // Netting for the group return
+    $group_net_op = $tot_op_dr - $tot_op_cr;
+    $group_net_cl = $tot_cl_dr - $tot_cl_cr;
+    
+    return [
+        'op_dr' => $group_net_op > 0 ? $group_net_op : 0, 
+        'op_cr' => $group_net_op < 0 ? abs($group_net_op) : 0,
+        'tx_dr' => $tot_tx_dr, 
+        'tx_cr' => $tot_tx_cr,
+        'cl_dr' => $group_net_cl > 0 ? $group_net_cl : 0, 
+        'cl_cr' => $group_net_cl < 0 ? abs($group_net_cl) : 0,
+        'children' => $children
+    ];
 }
 
-function get_head_total_balance($db, $headSno, $selected_division)
+function get_head_total_balance($db, $headSno, $selected_division, $from, $to)
 {
-    $total = 0.0;
+    $tot_op_dr = 0.0; $tot_op_cr = 0.0;
+    $tot_tx_dr = 0.0; $tot_tx_cr = 0.0;
+    $tot_cl_dr = 0.0; $tot_cl_cr = 0.0;
+    
     $children = [];
     $h = mysqli_real_escape_string($db, (string) $headSno);
     $ledger_filter = get_ledger_filter($db, $selected_division);
-
     $head_vis = get_head_visibility_filter($selected_division);
-    $resSub = mysqli_query(
-        $db,
-        "SELECT sno, description FROM billit_pl_heads h
-   WHERE h.parent='$h'
-     AND $head_vis
-   ORDER BY h.sort_no+0, h.sno ASC"
-    );
+
+    $resSub = mysqli_query($db, "SELECT sno, description FROM billit_pl_heads h WHERE h.parent='$h' AND $head_vis ORDER BY h.sort_no+0, h.sno ASC");
     while ($row = mysqli_fetch_assoc($resSub)) {
-        $sub = get_head_total_balance($db, (int) $row['sno'], $selected_division);
-        if ($sub['total'] != 0) {
-            $total += $sub['total'];
+        $sub = get_head_total_balance($db, (int) $row['sno'], $selected_division, $from, $to);
+        
+        if ($sub['op_dr'] != 0 || $sub['op_cr'] != 0 || $sub['tx_dr'] != 0 || $sub['tx_cr'] != 0 || $sub['cl_dr'] != 0 || $sub['cl_cr'] != 0) {
+            $tot_op_dr += $sub['op_dr']; $tot_op_cr += $sub['op_cr'];
+            $tot_tx_dr += $sub['tx_dr']; $tot_tx_cr += $sub['tx_cr'];
+            $tot_cl_dr += $sub['cl_dr']; $tot_cl_cr += $sub['cl_cr'];
+            
             $children[] = [
                 'type' => 'head',
                 'name' => htmlspecialchars($row['description']),
-                'dr' => ($sub['total'] > 0) ? abs($sub['total']) : 0,
-                'cr' => ($sub['total'] < 0) ? abs($sub['total']) : 0,
+                'op_dr' => $sub['op_dr'], 'op_cr' => $sub['op_cr'],
+                'tx_dr' => $sub['tx_dr'], 'tx_cr' => $sub['tx_cr'],
+                'cl_dr' => $sub['cl_dr'], 'cl_cr' => $sub['cl_cr'],
                 'children' => $sub['children']
             ];
         }
@@ -95,23 +245,52 @@ function get_head_total_balance($db, $headSno, $selected_division)
     $res = mysqli_query($db, "SELECT sno, cus_name FROM billit_customer WHERE parent='$h' AND (parent_ledger IS NULL OR parent_ledger='' OR parent_ledger='0') AND $ledger_filter ORDER BY cus_name ASC");
     while ($row = mysqli_fetch_assoc($res)) {
         $sno = (int) $row['sno'];
-        $bal = get_ledger_balance($db, $sno, $selected_division);
-        $desc = get_descendant_total_balance($db, $headSno, $sno, $selected_division);
+        $bal = get_trial_balance_details($db, $sno, $from, $to, $selected_division);
+        $desc = get_descendant_total_balance($db, $headSno, $sno, $selected_division, $from, $to);
 
-        $ledg_total = $bal + $desc['total'];
-        if ($ledg_total != 0) {
-            $total += $ledg_total;
+        $op_dr = $bal['op_dr'] + $desc['op_dr'];
+        $op_cr = $bal['op_cr'] + $desc['op_cr'];
+        $tx_dr = $bal['tx_dr'] + $desc['tx_dr'];
+        $tx_cr = $bal['tx_cr'] + $desc['tx_cr'];
+        $cl_dr = $bal['cl_dr'] + $desc['cl_dr'];
+        $cl_cr = $bal['cl_cr'] + $desc['cl_cr'];
+
+        $net_op = $op_dr - $op_cr;
+        $resolved_op_dr = $net_op > 0 ? $net_op : 0;
+        $resolved_op_cr = $net_op < 0 ? abs($net_op) : 0;
+        
+        $net_cl = $cl_dr - $cl_cr;
+        $resolved_cl_dr = $net_cl > 0 ? $net_cl : 0;
+        $resolved_cl_cr = $net_cl < 0 ? abs($net_cl) : 0;
+
+        if ($resolved_op_dr != 0 || $resolved_op_cr != 0 || $tx_dr != 0 || $tx_cr != 0 || $resolved_cl_dr != 0 || $resolved_cl_cr != 0) {
+            $tot_op_dr += $resolved_op_dr; $tot_op_cr += $resolved_op_cr;
+            $tot_tx_dr += $tx_dr; $tot_tx_cr += $tx_cr;
+            $tot_cl_dr += $resolved_cl_dr; $tot_cl_cr += $resolved_cl_cr;
+            
             $children[] = [
                 'type' => 'ledger',
                 'name' => htmlspecialchars($row['cus_name']),
-                'dr' => ($ledg_total > 0) ? abs($ledg_total) : 0,
-                'cr' => ($ledg_total < 0) ? abs($ledg_total) : 0,
+                'op_dr' => $resolved_op_dr, 'op_cr' => $resolved_op_cr,
+                'tx_dr' => $tx_dr, 'tx_cr' => $tx_cr,
+                'cl_dr' => $resolved_cl_dr, 'cl_cr' => $resolved_cl_cr,
                 'children' => $desc['children']
             ];
         }
     }
 
-    return ['total' => $total, 'children' => $children];
+    $group_net_op = $tot_op_dr - $tot_op_cr;
+    $group_net_cl = $tot_cl_dr - $tot_cl_cr;
+    
+    return [
+        'op_dr' => $group_net_op > 0 ? $group_net_op : 0, 
+        'op_cr' => $group_net_op < 0 ? abs($group_net_op) : 0,
+        'tx_dr' => $tot_tx_dr, 
+        'tx_cr' => $tot_tx_cr,
+        'cl_dr' => $group_net_cl > 0 ? $group_net_cl : 0, 
+        'cl_cr' => $group_net_cl < 0 ? abs($group_net_cl) : 0,
+        'children' => $children
+    ];
 }
 
 function render_tb_rows($nodes, $parentId, $level, &$global_id, &$sno_counter)
@@ -122,9 +301,7 @@ function render_tb_rows($nodes, $parentId, $level, &$global_id, &$sno_counter)
         $is_root = ($parentId === 0);
         $class_str = $is_root ? "tb-node root-node" : "tb-node child-node parent-$parentId";
         $display = $is_root ? "" : "style='display:none;'";
-
         $has_children = !empty($node['children']);
-
         $indent = str_repeat("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", $level);
         $icon = '';
         $row_attr = '';
@@ -139,20 +316,21 @@ function render_tb_rows($nodes, $parentId, $level, &$global_id, &$sno_counter)
             $icon = "<span style='display:inline-block; width:16px;'></span>";
         }
 
-        $dr_text = $node['dr'] > 0 ? number_format($node['dr'], 2) : '-';
-        $cr_text = $node['cr'] > 0 ? number_format($node['cr'], 2) : '-';
-        $dr_class = $node['dr'] > 0 ? "text-primary" : "text-muted";
-        $cr_class = $node['cr'] > 0 ? "text-success" : "text-muted";
+        $f = function($v) { return $v > 0 ? number_format($v, 2) : '-'; };
+        
+        $op_dr = $f($node['op_dr']); $op_cr = $f($node['op_cr']);
+        $tx_dr = $f($node['tx_dr']); $tx_cr = $f($node['tx_cr']);
+        $cl_dr = $f($node['cl_dr']); $cl_cr = $f($node['cl_cr']);
 
         $name_style = ($node['type'] === 'Group' || $node['type'] === 'head') ? "font-weight:bold;" : "";
-
         $sno_display = $is_root ? $sno_counter++ : '';
 
         $html .= "<tr class='$class_str' data-id='$myId' $display $row_attr>";
         $html .= "<td class='text-center'>$sno_display</td>";
-        $html .= "<td style='$name_style'>$indent $icon " . $node['name'] . "</td>";
-        $html .= "<td class='amt-col $dr_class'>$dr_text</td>";
-        $html .= "<td class='amt-col $cr_class'>$cr_text</td>";
+        $html .= "<td class='text-left' style='$name_style'>$indent $icon " . $node['name'] . "</td>";
+        $html .= "<td class='amt-col text-dark'>$op_dr</td><td class='amt-col text-dark'>$op_cr</td>";
+        $html .= "<td class='amt-col text-dark'>$tx_dr</td><td class='amt-col text-dark'>$tx_cr</td>";
+        $html .= "<td class='amt-col text-dark'>$cl_dr</td><td class='amt-col text-dark'>$cl_cr</td>";
         $html .= "</tr>";
 
         if ($has_children) {
@@ -165,6 +343,14 @@ function render_tb_rows($nodes, $parentId, $level, &$global_id, &$sno_counter)
 $is_sadmin = isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin';
 $user_divisions = (isset($_SESSION['divisions']) && is_array($_SESSION['divisions'])) ? $_SESSION['divisions'] : [];
 
+$start_m = (int)date('n');
+$start_y = (int)date('Y');
+$fy_start = ($start_m >= 4) ? $start_y : ($start_y - 1);
+$default_from = $fy_start . '-04-01';
+$default_to = ($fy_start + 1) . '-03-31';
+
+$from_date = isset($_GET['from_date']) ? $_GET['from_date'] : $default_from;
+$to_date = isset($_GET['to_date']) ? $_GET['to_date'] : $default_to;
 $selected_division = isset($_GET['division_id']) ? $_GET['division_id'] : '';
 
 if ($is_sadmin) {
@@ -182,8 +368,9 @@ if ($is_sadmin) {
 
 // Fetch Trial Balance Data
 $trial_balance = [];
-$total_debit = 0.0;
-$total_credit = 0.0;
+$gt_op_dr = 0.0; $gt_op_cr = 0.0;
+$gt_tx_dr = 0.0; $gt_tx_cr = 0.0;
+$gt_cl_dr = 0.0; $gt_cl_cr = 0.0;
 
 if ($selected_division !== '' || $is_sadmin) {
     $only_public = !($selected_division == 'all'
@@ -203,31 +390,29 @@ if ($selected_division !== '' || $is_sadmin) {
     while ($row = mysqli_fetch_assoc($res)) {
         $headSno = (int) $row['sno'];
 
-        $hier = get_head_total_balance($db, $headSno, $selected_division);
-        $balance = $hier['total'];
-
-        if ($balance == 0) {
+        $hier = get_head_total_balance($db, $headSno, $selected_division, $from_date, $to_date);
+        
+        if ($hier['op_dr'] == 0 && $hier['op_cr'] == 0 && $hier['tx_dr'] == 0 && $hier['tx_cr'] == 0 && $hier['cl_dr'] == 0 && $hier['cl_cr'] == 0) {
             continue;
         }
-
-        $dr = ($balance > 0) ? abs($balance) : 0;
-        $cr = ($balance < 0) ? abs($balance) : 0;
 
         $trial_balance[] = [
             'name' => htmlspecialchars($row['description']),
             'type' => 'Group',
-            'dr' => $dr,
-            'cr' => $cr,
+            'op_dr' => $hier['op_dr'], 'op_cr' => $hier['op_cr'],
+            'tx_dr' => $hier['tx_dr'], 'tx_cr' => $hier['tx_cr'],
+            'cl_dr' => $hier['cl_dr'], 'cl_cr' => $hier['cl_cr'],
             'children' => $hier['children']
         ];
 
-        $total_debit += $dr;
-        $total_credit += $cr;
+        $gt_op_dr += $hier['op_dr']; $gt_op_cr += $hier['op_cr'];
+        $gt_tx_dr += $hier['tx_dr']; $gt_tx_cr += $hier['tx_cr'];
+        $gt_cl_dr += $hier['cl_dr']; $gt_cl_cr += $hier['cl_cr'];
     }
 }
 
 // Check if Trial Balance matches
-$diff = abs($total_debit - $total_credit);
+$diff = abs($gt_cl_dr - $gt_cl_cr);
 $is_balanced = ($diff < 0.01);
 
 page_header_start();
@@ -272,11 +457,11 @@ page_sidebar();
     }
 
     .tb-table th {
-        background: #5e5555ff;
-        color: #495057;
-        font-weight: 600;
+        background: #e0f7fa !important;
+        color: #000000 !important;
+        font-weight: bold !important;
         text-transform: uppercase;
-        font-size: 13px;
+        font-size: 15px !important;
         letter-spacing: 0.5px;
     }
 
@@ -288,8 +473,10 @@ page_sidebar();
     .amt-col {
         text-align: right;
         font-family: 'Courier New', Courier, monospace;
-        font-weight: 600;
+        font-weight: 900;
         letter-spacing: 0.5px;
+        color: #000 !important;
+        font-size: 20px;
     }
 
     .tb-total-row {
@@ -348,8 +535,14 @@ page_sidebar();
     <div class="col-md-12">
 
         <?php if ($is_sadmin || count($user_divisions) > 1): ?>
-            <form method="GET" class="form-inline mb-4 bg-white p-3 rounded shadow-sm border" id="divForm">
-                <label class="mr-2 font-weight-bold"><i class="fa fa-building mr-2"></i>Select Division : </label>
+                        <form method="GET" class="form-inline mb-4 bg-white p-3 rounded shadow-sm border" id="divForm">
+                <label class="mr-2 font-weight-bold">From : </label>
+                <input type="date" name="from_date" class="form-control mr-3" value="<?php echo htmlspecialchars($from_date); ?>" onchange="document.getElementById('divForm').submit()">
+                
+                <label class="mr-2 font-weight-bold">To : </label>
+                <input type="date" name="to_date" class="form-control mr-3" value="<?php echo htmlspecialchars($to_date); ?>" onchange="document.getElementById('divForm').submit()">
+                
+                <label class="mr-2 font-weight-bold"><i class="fa fa-building mr-2"></i>Division : </label>
                 <select name="division_id" class="form-control mr-3" onchange="document.getElementById('divForm').submit()">
                     <?php
                     if ($is_sadmin) {
@@ -402,16 +595,25 @@ page_sidebar();
                     <table class="table table-hover table-bordered mb-0 tb-table">
                         <thead>
                             <tr>
-                                <th width="5%" class="text-center">S.No.</th>
-                                <th width="65%">Account Group / Ledger Name</th>
-                                <th width="15%" class="text-right">Debit (Dr) ₹</th>
-                                <th width="15%" class="text-right">Credit (Cr) ₹</th>
+                                <th width="5%" rowspan="2" class="text-center" style="vertical-align: middle;">S.No.</th>
+                                <th width="35%" rowspan="2" class="text-left" style="vertical-align: middle;">Account Group / Ledger Name</th>
+                                <th width="20%" colspan="2" class="text-center">Opening Balance</th>
+                                <th width="20%" colspan="2" class="text-center">Transactions</th>
+                                <th width="20%" colspan="2" class="text-center">Closing Balance</th>
+                            </tr>
+                            <tr>
+                                <th width="10%" class="text-right">Dr ₹</th>
+                                <th width="10%" class="text-right">Cr ₹</th>
+                                <th width="10%" class="text-right">Dr ₹</th>
+                                <th width="10%" class="text-right">Cr ₹</th>
+                                <th width="10%" class="text-right">Dr ₹</th>
+                                <th width="10%" class="text-right">Cr ₹</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
                             if (empty($trial_balance)) {
-                                echo '<tr><td colspan="4" class="text-center py-4 text-muted">No balances found for the selected division.</td></tr>';
+                                echo '<tr><td colspan="8" class="text-center py-4 text-muted">No balances found for the selected division.</td></tr>';
                             } else {
                                 $global_id = 0;
                                 $sno_counter = 1;
@@ -422,14 +624,18 @@ page_sidebar();
                             <?php if (!empty($trial_balance)): ?>
                                 <tr class="tb-total-row">
                                     <td colspan="2" class="text-right pr-4">GRAND TOTAL</td>
-                                    <td class="amt-col text-primary"><?php echo number_format($total_debit, 2); ?></td>
-                                    <td class="amt-col text-success"><?php echo number_format($total_credit, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_op_dr, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_op_cr, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_tx_dr, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_tx_cr, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_cl_dr, 2); ?></td>
+                                    <td class="amt-col text-dark"><?php echo number_format($gt_cl_cr, 2); ?></td>
                                 </tr>
                                 <?php if (!$is_balanced): ?>
                                     <tr>
-                                        <td colspan="2" class="text-right pr-4 text-danger"><strong>DIFFERENCE IN TRIAL
+                                        <td colspan="6" class="text-right pr-4 text-danger"><strong>DIFFERENCE IN TRIAL
                                                 BALANCE</strong></td>
-                                        <?php if ($total_debit > $total_credit): ?>
+                                        <?php if ($gt_cl_dr > $gt_cl_cr): ?>
                                             <td class="amt-col text-muted">-</td>
                                             <td class="amt-col text-danger"><strong><?php echo number_format($diff, 2); ?></strong></td>
                                         <?php else: ?>
@@ -438,8 +644,8 @@ page_sidebar();
                                         <?php endif; ?>
                                     </tr>
                                     <tr class="tb-total-row">
-                                        <td colspan="2" class="text-right pr-4">ADJUSTED TOTAL</td>
-                                        <?php $max_total = max($total_debit, $total_credit); ?>
+                                        <td colspan="6" class="text-right pr-4">ADJUSTED TOTAL</td>
+                                        <?php $max_total = max($gt_cl_dr, $gt_cl_cr); ?>
                                         <td class="amt-col text-primary"><?php echo number_format($max_total, 2); ?></td>
                                         <td class="amt-col text-success"><?php echo number_format($max_total, 2); ?></td>
                                     </tr>

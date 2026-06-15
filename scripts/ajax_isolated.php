@@ -207,6 +207,31 @@ if ($id == 'sub_dep') {
             'message' => 'Order number is required'
         );
     }
+} elseif ($id == 'fetch_transfer_row') {
+    $orderNo = mysqli_real_escape_string($db, $_POST['order_no'] ?? '');
+    $projectId = intval($_POST['project_id'] ?? 0);
+    
+    if ($orderNo != '' && $projectId > 0) {
+        $sql = "SELECT t.* FROM transaction_fund_transfer t 
+                JOIN invoice_fund_transfer i ON t.invoice_header_id = i.sno 
+                WHERE i.order_no = '$orderNo' AND t.project_name = '$projectId' AND i.status != '5' LIMIT 1";
+        $result = execute_query($sql);
+        if ($result && mysqli_num_rows($result) > 0) {
+            $row = mysqli_fetch_assoc($result);
+            $data = array(
+                'status' => 'success',
+                'transafer_amount' => $row['transafer_amount'],
+                'sentage' => $row['sentage'],
+                'gsttds' => $row['gsttds'],
+                'leborses' => $row['leborses'],
+                'incometax' => $row['incometax']
+            );
+        } else {
+            $data = array('status' => 'not_found');
+        }
+    } else {
+        $data = array('status' => 'error');
+    }
 }
 
 // Clean any buffered output

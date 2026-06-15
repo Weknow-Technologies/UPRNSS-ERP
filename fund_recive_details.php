@@ -85,7 +85,7 @@ page_sidebar();
 										$project = mysqli_fetch_assoc(execute_query($sql));
 												
 										$act_txt .= '<tr>
-											<td>'.$department['department_name_hindi'].'</td>
+											<td>'.$department['department_name_english'] . " (" . $department['department_name_hindi'] . ")".'</td>
 											<td>'.$district['district_name_english'].'</td>
 											<td>'.$project['project_name_hindi'].'</td>
 											<td>'.$row_transaction['p_receive_amount'].'</td>
@@ -187,7 +187,7 @@ page_footer_start();
 				}
 				$run = mysqli_query($db,$query);
 				while($data = mysqli_fetch_array($run)){
-					echo 'txt += "<option value=\''.$data['sno'].'\'>'.$data['department_name_hindi'].'</option>";'."\n";
+					echo 'txt += "<option value=\''.$data['sno'].'\'>'.$data['department_name_english'] . " (" . $data['department_name_hindi'] . ")".'</option>";'."\n";
 				}
 				?>
 				txt += '</select></div></div><div class="col-md-2"><div class="form-group"><label >उप विभाग</label><select class="form-control" name="sub_department_id_'+id+'" id="sub_department_id_'+id+'" value="" ></select></div></div><div class="col-md-2"><div class="form-group"><label >आच्छादित जनपद</label><select class="form-control" name="district_id_'+id+'" id="district_id_'+id+'" onChange="fill_project(this.value, '+id+')"></select></div></div><div class="col-md-3"><div class="form-group"><label>परियोजना का नाम</label><br><select class="form-control" name="project_id_'+id+'" id="project_id_'+id+'" ></select></div></div><div class="col-md-2"><div class="form-group"><label>Project Amount</label><br><input type="text" name="p_receive_amount_'+id+'" id="p_receive_amount_'+id+'" class="form-control" placeholder="" value="" onInput="addCalc('+id+')"></div></div><div class="col-md-1 d-flex justify-content- align-items-center"><button type="button" id="add_button" class="btn btn-info pull-right" onClick="add_rows()">Add</button></div></div>';

@@ -1,9 +1,20 @@
 <?php
+set_time_limit(0);
 include("scripts/settings.php");
 include("scripts/billit_settings.php");
 include("scripts/alerts.php");
-set_time_limit(0);
 $msg = '';
+
+$_billit_balance_cache = [];
+
+function get_cust_balace_cached($sno, $selected_division) {
+    global $_billit_balance_cache, $db;
+    $key = $sno . '||' . $selected_division;
+    if (!isset($_billit_balance_cache[$key])) {
+        $_billit_balance_cache[$key] = get_cust_balace('1970-01-01', date('Y-m-d'), $sno, '', $selected_division);
+    }
+    return $_billit_balance_cache[$key];
+}
 
 function get_ledger_filter($db, $selected_division)
 {
@@ -26,6 +37,72 @@ function get_head_visibility_filter($selected_division)
     } else {
         return "1=0";
     }
+}
+
+function get_head_total_balance($db, $headSno, $selected_division)
+{
+    $total = 0;
+    $h = mysqli_real_escape_string($db, (string) $headSno);
+    $ledger_filter = get_ledger_filter($db, $selected_division);
+    $head_vis_filter = get_head_visibility_filter($selected_division);
+    $head_vis_filter_bare = str_replace('h.', '', $head_vis_filter);
+
+    $res = mysqli_query($db, "SELECT sno FROM billit_customer
+        WHERE parent='$h'
+          AND (parent_ledger IS NULL OR parent_ledger='' OR parent_ledger='0')
+          AND $ledger_filter");
+
+    while ($row = mysqli_fetch_assoc($res)) {
+        $sno = intval($row['sno']);
+
+        $total += get_cust_balace_cached($sno, $selected_division);
+        $total += get_descendant_balance($db, $headSno, $sno, $selected_division);
+    }
+    $resSub = mysqli_query($db, "SELECT h.sno FROM billit_pl_heads h WHERE h.parent='$h' AND $head_vis_filter");
+    while ($row = mysqli_fetch_assoc($resSub)) {
+        $total += get_head_total_balance($db, (int) $row['sno'], $selected_division);
+    }
+
+    return $total;
+}
+
+
+if (isset($_GET['ajax_head_balance']) && $_GET['ajax_head_balance'] == '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    $head_sno_raw = isset($_GET['head_sno']) ? trim($_GET['head_sno']) : '0';
+    $selected_division = isset($_GET['division_id']) ? trim($_GET['division_id']) : '';
+    ini_set('display_errors', 0);
+    error_reporting(E_ALL);
+    set_error_handler(function($errno, $errstr, $errfile, $errline) {
+        echo json_encode(['sno' => 'ERR', 'balance' => 0, 'debug' => "$errstr in $errfile:$errline"]);
+        exit;
+    });
+    register_shutdown_function(function() {
+        $e = error_get_last();
+        if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            // clear any output
+            if (ob_get_level()) ob_end_clean();
+            echo json_encode(['sno' => 'FATAL', 'balance' => 0, 'debug' => $e['message'] . ' in ' . $e['file'] . ':' . $e['line']]);
+        }
+    });
+
+    if ($head_sno_raw === 'pl') {
+        $pl_sno_list = [4, 5, 6, 7, 12, 13];
+        $bal = 0;
+        foreach ($pl_sno_list as $pl_sno) {
+            $bal += get_head_total_balance($db, $pl_sno, $selected_division);
+        }
+        echo json_encode(['sno' => 'pl', 'balance' => $bal]);
+    } else {
+        $head_sno = intval($head_sno_raw);
+        if ($head_sno > 0) {
+            $bal = get_head_total_balance($db, $head_sno, $selected_division);
+            echo json_encode(['sno' => $head_sno, 'balance' => $bal]);
+        } else {
+            echo json_encode(['sno' => 0, 'balance' => 0]);
+        }
+    }
+    exit;
 }
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
@@ -131,36 +208,9 @@ function get_descendant_balance($db, $headSno, $parentLedgerSno, $selected_divis
     while ($row = mysqli_fetch_assoc($res)) {
         $sno = intval($row['sno']);
 
-        $total += get_cust_balace('1970-01-01', date('Y-m-d'), $sno, '', $selected_division);
+        $total += get_cust_balace_cached($sno, $selected_division);
         $total += get_descendant_balance($db, $headSno, $sno, $selected_division);
     }
-    return $total;
-}
-
-function get_head_total_balance($db, $headSno, $selected_division)
-{
-    $total = 0;
-    $h = mysqli_real_escape_string($db, (string) $headSno);
-    $ledger_filter = get_ledger_filter($db, $selected_division);
-    $head_vis_filter = get_head_visibility_filter($selected_division);
-    $head_vis_filter_bare = str_replace('h.', '', $head_vis_filter);
-
-    $res = mysqli_query($db, "SELECT sno FROM billit_customer
-        WHERE parent='$h'
-          AND (parent_ledger IS NULL OR parent_ledger='' OR parent_ledger='0')
-          AND $ledger_filter");
-
-    while ($row = mysqli_fetch_assoc($res)) {
-        $sno = intval($row['sno']);
-
-        $total += get_cust_balace('1970-01-01', date('Y-m-d'), $sno, '', $selected_division);
-        $total += get_descendant_balance($db, $headSno, $sno, $selected_division);
-    }
-    $resSub = mysqli_query($db, "SELECT h.sno FROM billit_pl_heads h WHERE h.parent='$h' AND $head_vis_filter");
-    while ($row = mysqli_fetch_assoc($resSub)) {
-        $total += get_head_total_balance($db, (int) $row['sno'], $selected_division);
-    }
-
     return $total;
 }
 
@@ -224,10 +274,50 @@ function fetch_heads_by_type($db, $fund_type, $selected_division, $only_public =
         $heads[] = [
             'sno' => $hid,
             'description' => $row['description'],
-            'total_balance' => get_head_total_balance($db, $hid, $selected_division)
+            'total_balance' => 0
         ];
     }
     return $heads;
+}
+if (isset($_GET['ajax_check_balance']) && $_GET['ajax_check_balance'] == '1') {
+    $selected_division = isset($_GET['division_id']) ? $_GET['division_id'] : '';
+    if ($selected_division == '53' || $selected_division == 'all' || $selected_division == '') {
+        $source_heads = fetch_heads_by_type($db, 'source', $selected_division);
+        $application_heads = fetch_heads_by_type($db, 'application', $selected_division);
+    } else {
+        $source_heads = fetch_heads_by_type($db, 'source', $selected_division, true);
+        $application_heads = fetch_heads_by_type($db, 'application', $selected_division, true);
+    }
+
+    $pl_sno_list = [4, 5, 6, 7, 12, 13];
+    $net_pl_balance = 0;
+    foreach ($pl_sno_list as $pl_sno) {
+        $net_pl_balance += get_head_total_balance($db, $pl_sno, $selected_division);
+    }
+
+    if (abs($net_pl_balance) > 0.001) {
+        $pl_node = [
+            'raw_balance' => $net_pl_balance
+        ];
+        if ($net_pl_balance < 0) {
+            $source_heads[] = $pl_node;
+        } else {
+            $application_heads[] = $pl_node;
+        }
+    }
+
+    $source_total_raw = array_sum(array_column($source_heads, 'raw_balance'));
+    $application_total_raw = array_sum(array_column($application_heads, 'raw_balance'));
+
+    $source_total = abs($source_total_raw);
+    $application_total = abs($application_total_raw);
+
+    $diff = abs($source_total - $application_total);
+    $is_completed = ($diff < 0.01);
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['division_id' => $selected_division, 'diff' => $diff, 'completed' => $is_completed]);
+    exit;
 }
 
 $is_sadmin = isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin';
@@ -295,6 +385,7 @@ if ($source_total > $application_total) {
     $source_total_abs += $diff_source;
 }
 
+// Map back to display variables if needed, though they are mostly used in number_format
 $source_total = $source_total_abs;
 $application_total = $application_total_abs;
 
@@ -304,7 +395,9 @@ function render_heads($heads)
     foreach ($heads as $h) {
         $sno = $h['sno'];
         $desc = htmlspecialchars($h['description']);
-        $total = number_format(abs((float) $h['total_balance']), 2);
+        $total = '<span class="head-bal-loading" data-sno="' . $sno . '">
+                    <i class="fa fa-spinner fa-spin" style="font-size:11px;"></i>
+                  </span>';
 
         if (isset($h['is_pl_node']) && $h['is_pl_node']) {
             $div_param = isset($_GET['division_id']) ? '?division_id=' . urlencode($_GET['division_id']) : '';
@@ -331,7 +424,9 @@ function render_heads($heads)
                                 </div>
                                 <div class="amt-col">
                                     <div class="bal-lbl">Total</div>
-                                    <strong class="text-primary">' . $total . '</strong>
+                                    <strong class="text-primary"><span class="head-bal-mirror" data-sno="pl">
+                                        <i class="fa fa-spinner fa-spin" style="font-size:11px;"></i>
+                                    </span></strong>
                                 </div>
                             </div>
                         </div>
@@ -611,28 +706,26 @@ page_sidebar();
                         <div class="side-title">SOURCE OF FUNDS</div>
                         <div class="side-content" id="sourceTree">
                             <?php echo render_heads($source_heads); ?>
-                            <?php if ($diff_source > 0): ?>
-                                <div class="ledger-node mt-2">
-                                    <div class="ledger-card head-card"
-                                        style="background:#fff3f3; border-color:#f5c2c7; cursor:default;">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="text-danger">
-                                                <i class="fa fa-exclamation-triangle mr-1"></i>
-                                                <strong>Difference in Opening Balance</strong>
-                                            </div>
-                                            <div class="amt-col">
-                                                <div class="bal-lbl text-danger">Total</div>
-                                                <strong
-                                                    class="text-danger"><?php echo number_format($diff_source, 2); ?></strong>
-                                            </div>
+                            <div id="diff-source-row" class="ledger-node mt-2" style="display:none;">
+                                <div class="ledger-card head-card" style="background:#fff3f3; border-color:#f5c2c7; cursor:default;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-danger">
+                                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                                            <strong>Difference in Opening Balance</strong>
+                                        </div>
+                                        <div class="amt-col">
+                                            <div class="bal-lbl text-danger">Total</div>
+                                            <strong class="text-danger" id="diff-source-amt">0.00</strong>
                                         </div>
                                     </div>
                                 </div>
-                            <?php endif; ?>
+                            </div>
                         </div>
                         <div class="side-total">
                             <span>TOTAL</span>
-                            <span><?php echo number_format($source_total, 2); ?></span>
+                            <span id="grand-total-source">
+                                <i class="fa fa-spinner fa-spin" style="font-size:11px;"></i>
+                            </span>
                         </div>
                     </div>
 
@@ -642,28 +735,26 @@ page_sidebar();
                         <div class="side-title">APPLICATION OF FUNDS</div>
                         <div class="side-content" id="applicationTree">
                             <?php echo render_heads($application_heads); ?>
-                            <?php if ($diff_application > 0): ?>
-                                <div class="ledger-node mt-2">
-                                    <div class="ledger-card head-card"
-                                        style="background:#fff3f3; border-color:#f5c2c7; cursor:default;">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="text-danger">
-                                                <i class="fa fa-exclamation-triangle mr-1"></i>
-                                                <strong>Difference in Opening Balance</strong>
-                                            </div>
-                                            <div class="amt-col">
-                                                <div class="bal-lbl text-danger">Total</div>
-                                                <strong
-                                                    class="text-danger"><?php echo number_format($diff_application, 2); ?></strong>
-                                            </div>
+                            <div id="diff-app-row" class="ledger-node mt-2" style="display:none;">
+                                <div class="ledger-card head-card" style="background:#fff3f3; border-color:#f5c2c7; cursor:default;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-danger">
+                                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                                            <strong>Difference in Opening Balance</strong>
+                                        </div>
+                                        <div class="amt-col">
+                                            <div class="bal-lbl text-danger">Total</div>
+                                            <strong class="text-danger" id="diff-app-amt">0.00</strong>
                                         </div>
                                     </div>
                                 </div>
-                            <?php endif; ?>
+                            </div>
                         </div>
                         <div class="side-total">
                             <span>TOTAL</span>
-                            <span><?php echo number_format($application_total, 2); ?></span>
+                            <span id="grand-total-application">
+                                <i class="fa fa-spinner fa-spin" style="font-size:11px;"></i>
+                            </span>
                         </div>
                     </div>
 
@@ -788,6 +879,94 @@ page_sidebar();
             .replace(/&/g, '&amp;').replace(/</g, '&lt;')
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    (function() {
+        var divisionId = '<?php echo urlencode($selected_division); ?>';
+        var spinners = document.querySelectorAll('.head-bal-loading');
+        var sourceTotal = 0, appTotal = 0;
+        var sourceCount = 0, appCount = 0;
+        var totalSourceSpinners = document.querySelectorAll('#sourceTree .head-bal-loading').length;
+        var totalAppSpinners = document.querySelectorAll('#applicationTree .head-bal-loading').length;
+
+        function finalizeGrandTotals() {
+            if (sourceCount < totalSourceSpinners || appCount < totalAppSpinners) return;
+
+            var grandTotal, diffAmt;
+
+            if (sourceTotal >= appTotal) {
+                diffAmt = sourceTotal - appTotal;
+                grandTotal = sourceTotal;
+                if (diffAmt > 0.01) {
+                    document.getElementById('diff-app-amt').innerHTML =
+                        diffAmt.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('diff-app-row').style.display = 'block';
+                }
+            } else {
+                diffAmt = appTotal - sourceTotal;
+                grandTotal = appTotal;
+                if (diffAmt > 0.01) {
+                    document.getElementById('diff-source-amt').innerHTML =
+                        diffAmt.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    document.getElementById('diff-source-row').style.display = 'block';
+                }
+            }
+
+            var fmt = grandTotal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('grand-total-source').innerHTML = fmt;
+            document.getElementById('grand-total-application').innerHTML = fmt;
+        }
+
+        spinners.forEach(function(el) {
+            var sno = el.getAttribute('data-sno');
+            var inSource = el.closest('#sourceTree') !== null;
+
+            fetch('<?php echo $_SERVER['PHP_SELF']; ?>?ajax_head_balance=1&head_sno=' + sno + '&division_id=' + divisionId)
+                .then(function(r) {
+                    return r.text().then(function(txt) {
+                        try {
+                            return JSON.parse(txt);
+                        } catch(e) {
+                            console.error('JSON parse failed for head_sno=' + sno + ':', txt);
+                            throw new Error('Invalid JSON: ' + txt.substring(0, 200));
+                        }
+                    });
+                })
+                .then(function(data) {
+                    if (data.debug) {
+                        console.error('PHP error for head_sno=' + sno + ':', data.debug);
+                        el.innerHTML = '<span class="text-danger" title="' + data.debug + '">Err</span>';
+                        if (inSource) { sourceCount++; } else { appCount++; }
+                        finalizeGrandTotals();
+                        return;
+                    }
+                    var bal = Math.abs(parseFloat(data.balance) || 0);
+                    var formatted = bal.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    el.innerHTML = formatted;
+
+                    document.querySelectorAll('.head-bal-mirror[data-sno="' + sno + '"]').forEach(function(m) {
+                        m.innerHTML = formatted;
+                    });
+
+                    if (inSource) {
+                        sourceTotal += bal;
+                        sourceCount++;
+                    } else {
+                        appTotal += bal;
+                        appCount++;
+                    }
+                    finalizeGrandTotals();
+                })
+                .catch(function(err) {
+                    el.innerHTML = '<span class="text-danger" title="' + err.message + '">Err</span>';
+                    console.error('head_sno=' + sno, err);
+                    if (inSource) { sourceCount++; } else { appCount++; }
+                    finalizeGrandTotals();
+                });
+        });
+    })();
 </script>
 
 <?php

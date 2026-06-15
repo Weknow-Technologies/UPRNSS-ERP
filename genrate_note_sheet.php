@@ -545,13 +545,13 @@ $erpOptions = $db->query($scopeErpSql);
     background: linear-gradient(45deg, var(--red-light), var(--red-dark));
     text-align: center;
     vertical-align: middle;
-    font-size: 13px;
+    font-size: 15px;
     white-space: nowrap;
-	color:white !important;
+	color: white;
   }
 
   table tbody td {
-    font-size: 12px;
+    font-size: 13px !important;
     text-align: center;
     vertical-align: middle;
   }
@@ -654,17 +654,17 @@ if (!empty($preview_bills)) {
                 <table class="table table-bordered table-striped table-hover" id="billTable" style="margin-bottom: 0;">
                 <thead>
                     <tr>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">
-                                <label style="margin:0; cursor: pointer;">
+                            <th class="text-dark h5 text-center" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">
+                                <label class="text-dark" style="margin:0; cursor: pointer;">
                                     <input type="checkbox" id="selectAllBills" style="margin-right: 5px; cursor: pointer;">
                                 Select
                             </label>
                         </th>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">S.No</th>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;color:black !important;">Bill No.</th>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;color:black !important;">Transfer Amount</th>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;color:black !important;">Net Payment</th>
-                            <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;color:black !important;">Total Expenses</th>
+                            <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">S.No</th>
+                            <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Bill No.</th>
+                            <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Transfer Amount</th>
+                            <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Net Payment</th>
+                            <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Total Expenses</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -681,11 +681,11 @@ if (!empty($preview_bills)) {
                                        checked
                                        style="cursor: pointer;">
                         </td>
-                            <td style="text-align: center; vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo $i++; ?></td>
-                            <td style="text-align: center; vertical-align: middle; padding: 10px;"><?php echo htmlspecialchars($bill['bill_no']); ?></td>
-                            <td style="text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['transafer_amount'], 2); ?></td>
-                            <td style="text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['praposemoney'], 2); ?></td>
-                            <td style="text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['total_expen'], 2); ?></td>
+                            <td class="text-right" style="vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo $i++; ?></td>
+                            <td class="text-left" style="vertical-align: middle; padding: 10px;"><?php echo htmlspecialchars($bill['bill_no']); ?></td>
+                            <td class="text-right" style="vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['transafer_amount'], 2); ?></td>
+                            <td class="text-right" style="vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['praposemoney'], 2); ?></td>
+                            <td class="text-right" style="vertical-align: middle; padding: 10px; font-weight: 500;"><?php echo number_format((float)$bill['total_expen'], 2); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>
@@ -916,9 +916,7 @@ function validateTenderAllocation() {
     top: 0;
     /* Reduced z-index to be well below the sidebar (1050) but above table content */
     z-index: 10;
-    /* Match the green color from the screenshot */
-    background-color: #1a6f60;
-    color: white;
+    background-color: #e0f7fa; /* Light blue to match text-dark */
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 </style>
@@ -933,7 +931,7 @@ function validateTenderAllocation() {
             <form method="get" action="" class="no-print">
                 <div class="row" style="align-items:flex-end;">
                     <div class="col-md-3">
-                        <label><small>Division</small></label>
+                        <label style="color: black; font-weight: bold; font-size: 15px;">Division</label>
                         <select name="filter_division" class="form-control" title="Filter by Division">
                             <option value="0">All</option>
                             <?php if ($divisionOptions) { 
@@ -948,7 +946,7 @@ function validateTenderAllocation() {
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label><small>District</small></label>
+                        <label style="color: black; font-weight: bold; font-size: 15px;">District</label>
                         <select name="filter_district" class="form-control" title="Filter by District">
                             <option value="0">All</option>
                             <?php if ($districtOptions) { 
@@ -963,7 +961,7 @@ function validateTenderAllocation() {
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label><small>Department</small></label>
+                        <label style="color: black; font-weight: bold; font-size: 15px;">Department</label>
                         <select name="filter_department" class="form-control" title="Filter by Department">
                             <option value="0">All</option>
                             <?php if ($departmentOptions) { 
@@ -978,7 +976,7 @@ function validateTenderAllocation() {
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label><small>ERP Code</small></label>
+                        <label style="color: black; font-weight: bold; font-size: 15px;">ERP Code</label>
                         <?php 
                         $erp_js_arr = "[]";
                         if ($erpOptions && $erpOptions->num_rows > 0) {
@@ -1047,23 +1045,23 @@ function validateTenderAllocation() {
             <table class="table table-bordered table-striped table-hover" style="margin-bottom: 0;">
             <thead>
                     <tr class="table-header-row">
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Sr. No</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Division</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">District</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Department</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">ERP Code</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Project Name</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Total Received</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Total Bill</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Total Net Payment</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Bill Count</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Created At</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Current With</th>
-                        <th style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Status</th>
-                        <th class="no-print" style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Action</th>
-                        <th class="no-print" style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap; color:black !important;">Note Sheet</th>
+                        <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Sr. No</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Division</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">District</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Department</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">ERP Code</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Project Name</th>
+                        <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Total Received</th>
+                        <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Total Bill</th>
+                        <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Total Net Payment</th>
+                        <th class="text-dark h5 text-right" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Bill Count</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Created At</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Current With</th>
+                        <th class="text-dark h5 text-left" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Status</th>
+                        <th class="text-dark h5 no-print text-center" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Action</th>
+                        <th class="text-dark h5 no-print text-center" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Note Sheet</th>
                     <?php if (($_SESSION['usertype'] ?? '') == "1") { ?>
-                            <th class="no-print" style="text-align: center; vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Delete</th>
+                            <th class="text-dark h5 no-print text-center" style="vertical-align: middle; padding: 12px; font-weight: 600; white-space: nowrap;">Delete</th>
                     <?php } ?>
                 </tr>
             </thead>
@@ -1118,14 +1116,14 @@ function validateTenderAllocation() {
                         $d = $offset + 1;
                         while ($row = $note_sheet_res->fetch_assoc()) {
                             echo "<tr class='table-data-row'>";
-                            echo "<td style='text-align: center; vertical-align: middle; padding: 10px; font-weight: 500;'>".($d++)."</td>";
+                            echo "<td style='text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;'>".($d++)."</td>";
                             $divText = $row['division_name'] !== null && $row['division_name'] !== '' ? $row['division_name'] : $row['division_id'];
                             $distText = $row['district_name'] !== null && $row['district_name'] !== '' ? $row['district_name'] : $row['district_id'];
                             $deptText = $row['department_name'] !== null && $row['department_name'] !== '' ? $row['department_name'] : $row['department_id'];
                             echo "<td style='text-align: left; vertical-align: middle; padding: 10px;'>".htmlspecialchars($divText)."</td>";
                             echo "<td style='text-align: left; vertical-align: middle; padding: 10px;'>".htmlspecialchars($distText)."</td>";
                             echo "<td style='text-align: left; vertical-align: middle; padding: 10px;'>".htmlspecialchars($deptText)."</td>";
-                            echo "<td style='text-align: center; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($row['erp_code'])."</td>";
+                            echo "<td style='text-align: left; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($row['erp_code'])."</td>";
                             echo "<td style='text-align: left; vertical-align: middle; padding: 10px;'>".htmlspecialchars($row['project_name_hindi'])."</td>";
                             echo "<td style='text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($row['total_rcv_amt'])."</td>";
                             
@@ -1137,7 +1135,7 @@ function validateTenderAllocation() {
                             
                             echo "<td style='text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($display_total_transfer)."</td>";
                             echo "<td style='text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($display_total_net_pay)."</td>";
-                            echo "<td style='text-align: center; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($display_bill_count)."</td>";
+                            echo "<td style='text-align: right; vertical-align: middle; padding: 10px; font-weight: 500;'>".htmlspecialchars($display_bill_count)."</td>";
                             echo "<td style='text-align: left; vertical-align: middle; padding: 10px; white-space: nowrap;'>".htmlspecialchars($row['created_at'])."</td>";
 
                             // Approval trail: prints "Current With", "Status"

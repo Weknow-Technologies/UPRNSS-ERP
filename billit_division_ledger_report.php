@@ -139,6 +139,7 @@ page_sidebar();
                                 <th class="text-center">Other Ledgers</th>
                                 <th class="text-center">Groups Created</th>
                                 <th class="text-center">Opening Feeded</th>
+                                <th class="text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -180,6 +181,7 @@ page_sidebar();
                                 $total_other_ledgers = 0;
                                 $total_groups_created = 0;
                                 $total_opening_feeded = 0;
+                                $total_not_started = 0;
                                 while ($row = mysqli_fetch_assoc($res)) {
                                     $count = (int) $row['ledger_count'];
                                     $groups_created = (int) $row['groups_created'];
@@ -201,6 +203,14 @@ page_sidebar();
                                     echo "<td class='text-center'><strong>{$other_ledgers}</strong></td>";
                                     echo "<td class='text-center'><strong>{$groups_created}</strong></td>";
                                     echo "<td class='text-center'><strong>{$opening_feeded}</strong></td>";
+                                    
+                                    if ($count == 0 && $groups_created == 0 && $opening_feeded == 0) {
+                                        $total_not_started++;
+                                        echo "<td class='text-center'><span class='text-secondary' style='font-size:12px; font-weight:bold;'><i class='fa fa-minus-circle mr-1'></i> Not Started</span></td>";
+                                    } else {
+                                        echo "<td class='text-center' id='status-{$row['s_no']}'><span class='text-muted' style='font-size:12px;'><i class='fa fa-spinner fa-spin mr-1'></i> Checking...</span></td>";
+                                    }
+                                    
                                     echo "</tr>";
                                     $i++;
                                 }
@@ -211,6 +221,7 @@ page_sidebar();
                                 echo "<td class='text-center h5'><strong>{$total_other_ledgers}</strong></td>";
                                 echo "<td class='text-center h5'><strong>{$total_groups_created}</strong></td>";
                                 echo "<td class='text-center h5'><strong>{$total_opening_feeded}</strong></td>";
+                                echo "<td class='text-center' id='grand-status-total'></td>";
                                 echo "</tr>";
                             } else {
                                 echo "<tr><td colspan='7' class='text-center text-muted py-4'>No divisions found.</td></tr>";
@@ -316,6 +327,90 @@ page_footer_start();
             });
         });
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var units = [
+            <?php
+            $unit_ids = [];
+            if ($res && mysqli_num_rows($res) > 0) {
+                mysqli_data_seek($res, 0);
+                while ($row = mysqli_fetch_assoc($res)) {
+                    $count_c = (int) $row['ledger_count'];
+                    $groups_c = (int) $row['groups_created'];
+                    $opening_c = (int) $row['opening_feeded'];
+                    if ($count_c != 0 || $groups_c != 0 || $opening_c != 0) {
+                        $unit_ids[] = $row['s_no'];
+                    }
+                }
+            }
+            echo implode(",", $unit_ids);
+            ?>
+        ];
+        
+        var completedCount = 0;
+        var notCompletedCount = 0;
+        var errorCount = 0;
+        var notStartedCount = <?php echo isset($total_not_started) ? $total_not_started : 0; ?>;
+
+        function updateGrandTotal() {
+            var gt = document.getElementById('grand-status-total');
+            if (gt) {
+                var html = '';
+                if (completedCount > 0) {
+                    html += '<div class="text-success" style="font-size:12px; font-weight:bold;">' + completedCount + ' Completed</div>';
+                }
+                if (notCompletedCount > 0) {
+                    html += '<div class="text-danger" style="font-size:12px; font-weight:bold;">' + notCompletedCount + ' Not Completed</div>';
+                }
+                if (notStartedCount > 0) {
+                    html += '<div class="text-secondary" style="font-size:12px; font-weight:bold;">' + notStartedCount + ' Not Started</div>';
+                }
+                if (errorCount > 0) {
+                    html += '<div class="text-warning" style="font-size:12px; font-weight:bold;">' + errorCount + ' Error</div>';
+                }
+                gt.innerHTML = html;
+            }
+        }
+        
+        function checkNextUnit(index) {
+            if (index >= units.length) {
+                updateGrandTotal();
+                return;
+            }
+            var unit_id = units[index];
+            var url = 'billit_ledger_detail_report.php?ajax_check_balance=1&division_id=' + unit_id;
+            fetch(url)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var td = document.getElementById('status-' + unit_id);
+                    if (td) {
+                        if (data.completed) {
+                            td.innerHTML = '<span class="text-success" style="font-size:12px; font-weight:bold;"><i class="fa fa-check mr-1"></i> Completed</span>';
+                            completedCount++;
+                        } else {
+                            td.innerHTML = '<span class="text-danger" style="font-size:12px; font-weight:bold;"><i class="fa fa-times mr-1"></i> Not Completed<br><small style="font-size:10px;">Diff: ' + parseFloat(data.diff).toFixed(2) + '</small></span>';
+                            notCompletedCount++;
+                        }
+                    }
+                    updateGrandTotal();
+                    checkNextUnit(index + 1);
+                })
+                .catch(function(error) {
+                    console.error('Error fetching balance for unit', unit_id, error);
+                    var td = document.getElementById('status-' + unit_id);
+                    if (td) {
+                        td.innerHTML = '<span class="text-warning" style="font-size:12px;"><i class="fa fa-exclamation-triangle"></i> Error</span>';
+                        errorCount++;
+                    }
+                    updateGrandTotal();
+                    checkNextUnit(index + 1);
+                });
+        }
+        
+        if (units.length > 0) {
+            checkNextUnit(0);
+        }
+    });
 </script>
 <?php
 page_footer_end();

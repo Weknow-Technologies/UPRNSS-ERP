@@ -8,7 +8,9 @@ if (isset($_POST['saveForm'])) {
 	foreach ($_POST as $k => $v) {
 		$_POST[$k] = strtoupper($v);
 	}
-	if ($_POST['edit_sno'] == '') {
+    if (empty(trim($_POST['cus_name'] ?? ''))) {
+        $msg .= 'Error: Ledger Name is required.';
+    } elseif ($_POST['edit_sno'] == '') {
 		add_customer(
 			$_POST['cus_name'],
 			$_POST['address'],
@@ -42,7 +44,7 @@ if (isset($_POST['saveForm'])) {
 		} else {
 			$msg .= 'Error LG-01 : ' . mysqli_error($db);
 		}
-	} else {
+	} elseif ($_POST['edit_sno'] != ''){
 		$allow_edit = false;
 		if (isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin') {
 			$allow_edit = true;
@@ -194,6 +196,40 @@ page_sidebar();
 		}
 	}
 </script>
+<style>
+	:root {
+		--primary: #c83232;
+		--primary-light: #f8e5e5;
+	}
+	/* Typography & Alignment Standardization */
+	.table th {
+		background-color: var(--primary) !important;
+		color: #ffffff !important;
+		font-size: 15px !important;
+		font-weight: 700 !important;
+		text-transform: uppercase;
+		border-bottom: 2px solid var(--primary) !important;
+		white-space: nowrap !important;
+		vertical-align: middle !important;
+	}
+	.table td {
+		font-size: 13px !important;
+		vertical-align: middle !important;
+	}
+	/* Alignment Helpers */
+	.text-right { text-align: right !important; }
+	.text-left { text-align: left !important; }
+	.text-center { text-align: center !important; }
+
+	/* Form Table Styling for Labels */
+	#add_product table tr td:nth-child(odd) {
+		font-size: 16px !important;
+		font-weight: 700 !important;
+		color: #333;
+		vertical-align: middle;
+		width: 15%;
+	}
+</style>
 <div class="row">
 	<div class="col-md-12">
 		<?php
@@ -205,10 +241,10 @@ page_sidebar();
 			enctype="multipart/form-data" method="post" novalidate action="<?php echo $_SERVER['PHP_SELF']; ?>">
 			<table class=" table table-striped table-hover table-bordered">
 				<tr id="super_parent_row">
-					<td>Super Parent</td>
-					<td colspan="3">
+					<td style="width: 15%;">Super Parent</td>
+					<td colspan="2" style="width: 35%;">
 						<select name="super_parent" id="super_parent" class="form-control"
-							tabindex="<?php echo $tab++; ?>">
+							tabindex="<?php echo $tab++; ?>" style="text-transform: uppercase;">
 							<option value="">-- Select Super Parent --</option>
 							<?php
 							$is_unit_user = isset($_SESSION['usertype']) && $_SESSION['usertype'] !== 'sadmin';
@@ -254,10 +290,10 @@ page_sidebar();
 							?>
 						</select>
 					</td>
-					<td>Group</td>
-					<td id="td_parent">
+					<td style="width: 15%;">Group</td>
+					<td id="td_parent" colspan="2" style="width: 35%;">
 						<select name="parent" id="parent" class="form-control" tabindex="<?php echo $tab++; ?>"
-							onChange="update_parent(this.value)">
+							onChange="update_parent(this.value)" style="text-transform: uppercase;">
 							<?php
 							$selected_id = isset($_POST['parent']) ? $_POST['parent'] : (isset($_GET['id']) ? $ledger['parent'] : '');
 							$only_public_heads = (isset($_SESSION['usertype']) && $_SESSION['usertype'] !== 'sadmin');
@@ -299,7 +335,7 @@ page_sidebar();
 					<td>Ledger Name</td>
 					<td><input id="cus_name" name="cus_name" tabindex="<?php echo $tab++; ?>" value="<?php if (isset($_GET['id'])) {
 						   echo $ledger['cus_name'];
-					   } ?>" type="text"></td>
+					   } ?>" type="text" required></td>
 					<td>PAN</td>
 					<td><input id="pan" name="pan" tabindex="<?php echo $tab++; ?>" value="<?php if (isset($_GET['id'])) {
 						   echo $ledger['pan'];
@@ -480,19 +516,19 @@ page_sidebar();
 				<table class="table table-striped table-hover table-bordered" id="ledgerTable">
 					<thead>
 						<tr>
-							<th>S.No.</th>
-							<th>Company Name</th>
-							<th>Other Info</th>
-							<th>Address</th>
-							<th>State</th>
-							<th>Mobile</th>
-							<th>Opening</th>
-							<th>GSTIN</th>
-							<th>Group</th>
-							<th>Id</th>
-							<th>Edit</th>
-							<th>Delete</th>
-							<th>Merge</th>
+							<th class="text-center">S.No.</th>
+							<th class="text-left">Company Name</th>
+							<th class="text-left">Other Info</th>
+							<th class="text-left">Address</th>
+							<th class="text-left">State</th>
+							<th class="text-left">Mobile</th>
+							<th class="text-right">Opening</th>
+							<th class="text-left">GSTIN</th>
+							<th class="text-left">Group</th>
+							<th class="text-center">Id</th>
+							<th class="text-center">Edit</th>
+							<th class="text-center">Delete</th>
+							<th class="text-center">Merge</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -500,9 +536,9 @@ page_sidebar();
 						$i = 1;
 						while ($row = mysqli_fetch_array($result_data)) {
 							echo '<tr>
-                      <td>' . $i++ . '</td>
-                      <td>' . $row['cus_name'] . '</td>
-                      <td>';
+                      <td class="text-center">' . $i++ . '</td>
+                      <td class="text-left"><b>' . $row['cus_name'] . '</b></td>
+                      <td class="text-left">';
 							if ($row['fname'] != '') {
 								echo 'Contact Person : ' . $row['fname'];
 							}
@@ -534,7 +570,7 @@ page_sidebar();
 								echo '<br>Account No : ' . $row['account_no'] . ' (' . $row['ifsc'] . ')';
 							}
 							echo '</td>
-                      <td>' . $row['address'];
+                      <td class="text-left">' . $row['address'];
 							if ($row['add_2'] != '') {
 								echo '<br>' . $row['add_2'];
 							}
@@ -548,8 +584,8 @@ page_sidebar();
 								echo '<br>' . $row['country'];
 							}
 							echo '</td>
-                <td>' . get_state($row['state']) . '</td>
-                <td>' . $row['mobile'];
+                <td class="text-left">' . get_state($row['state']) . '</td>
+                <td class="text-left">' . $row['mobile'];
 							if ($row['mob_2'] != '') {
 								echo '<br>' . $row['mob_2'];
 							}
@@ -560,13 +596,13 @@ page_sidebar();
 								echo '<br>' . $row['mob_4'];
 							}
 							echo '</td>
-                       <td>' . $row['opening_balance'] . '</td>
-                       <td>' . $row['tin'] . '</td>  
-                       <td>' . get_parent($row['parent']) . '</td>
-                       <td>' . $row['sno'] . '</td>
-                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?id=' . $row['sno'] . '"><span class="far fa-edit" title="Edit"></span></a>' : '-') . ' </td>
-                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?delid=' . $row['sno'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#f00"><span class="far fa-trash-alt" title="Delete"></span></a>' : '-') . '</td>
-                       <td> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="#" onclick="return alternate_value(' . $row['sno'] . ')"><span class="fa fa-compress-alt" title="Merge"></span></a>' : '-') . ' </td> 
+                       <td class="text-right"><b>' . $row['opening_balance'] . '</b></td>
+                       <td class="text-left">' . $row['tin'] . '</td>  
+                       <td class="text-left">' . get_parent($row['parent']) . '</td>
+                       <td class="text-center">' . $row['sno'] . '</td>
+                       <td class="text-center"> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?id=' . $row['sno'] . '"><span class="far fa-edit" title="Edit"></span></a>' : '-') . ' </td>
+                       <td class="text-center"> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="billit_ledgers.php?delid=' . $row['sno'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#f00"><span class="far fa-trash-alt" title="Delete"></span></a>' : '-') . '</td>
+                       <td class="text-center"> ' . ((isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'sadmin' || (isset($_SESSION['divisions']) && in_array($row['unit_id'], $_SESSION['divisions']))) ? '<a href="#" onclick="return alternate_value(' . $row['sno'] . ')"><span class="fa fa-compress-alt" title="Merge"></span></a>' : '-') . ' </td> 
                        </tr>';
 						}
 						?>
