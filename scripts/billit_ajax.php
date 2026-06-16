@@ -125,10 +125,10 @@ if ($id == 'cust_name') {
 		// Non-sadmin: restrict to their division(s)
 		if (isset($_GET['division_id']) && $_GET['division_id'] != '') {
 			$div_esc = mysqli_real_escape_string($db, $_GET['division_id']);
-			$sql .= ' and (unit_id="' . $div_esc . '" or visibility="public")';
+			$sql .= ' and (unit_id="' . $div_esc . '")';
 		} elseif (isset($_SESSION['divisions']) && is_array($_SESSION['divisions']) && count($_SESSION['divisions']) > 0) {
 			$divs = implode('","', $_SESSION['divisions']);
-			$sql .= ' and (unit_id IN ("' . $divs . '") or visibility="public")';
+			$sql .= ' and (unit_id IN ("' . $divs . '"))';
 		}
 	}
 	$sql .= ' limit 20';

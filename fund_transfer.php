@@ -409,8 +409,8 @@ if (isset($_GET['edit_sno'])) {
 	$_POST['fund_transfer_to'] = $data['fund_transfer_to'];
 	$_POST['order_no'] = $data['order_no'];
 	$_POST['voucher_no'] = $data['voucher_no'];
-	$_POST['order_date'] = $data['order_date'];
-	$_POST['transafer_date'] = $data['transafer_date'];
+    $_POST['order_date'] = date('Y-m-d', strtotime($data['order_date']));
+    $_POST['transafer_date'] = date('Y-m-d', strtotime($data['transafer_date']));
 	$_POST['bill_date'] = $data['bill_date'] ?? date('Y-m-d');
 $_POST['bill_no'] = $data['bill_no'] ?? '';
 	$_POST['transafer_amount'] = $data['transafer_amount'];
@@ -731,7 +731,7 @@ if ($msg != '') {
 							<div class="form-group">
 								<label>Bill No.</label>
 								<input type="text" name="bill_no" id="bill_no" class="form-control" placeholder=""
-									value="<?php echo $_POST['bill_no']; ?>" tabindex="<?php echo $tab++; ?>" readonly>
+									value="<?php echo isset($_POST['bill_no']) ? $_POST['bill_no'] : ''; ?>" tabindex="<?php echo $tab++; ?>" readonly>
 							</div>
 						</div>
 					</div>
@@ -773,10 +773,6 @@ if ($msg != '') {
 										?>
 									</select>
 									<div class="input-group-append">
-										<!-- <button type="button" class="btn btn-primary" onclick="addNewVendor()"
-											title="Add New Vendor">
-											<i class="fas fa-plus"></i>
-										</button> -->
 									<button type="button" class="btn btn-primary" onclick="addNewVendor()">Add New Vendor</button>
 									</div>
 								</div>
@@ -845,14 +841,6 @@ if ($msg != '') {
 									tabindex="<?php echo $tab++; ?>" readonly>
 							</div>
 						</div>
-						<!-- <div class="col-md-2">
-							<div class="form-group">
-								<label>Other Additions</label>
-								<input type="text" name="other_additions" id="other_additions" class="form-control"
-									placeholder="Other additions" value="<?php echo $_POST['other_additions'] ?? ''; ?>"
-									tabindex="<?php echo $tab++; ?>" oninput="findcalculation()">
-							</div>
-						</div> -->
 					</div>
 				</div>
 			</div>
@@ -1123,12 +1111,17 @@ if ($msg != '') {
 						<input type="hidden" name="unit_id" id="unit_id" class="form-control" placeholder=""
 							value="<?php echo $_POST['unit_id']; ?>" tabindex="<?php echo $tab++; ?>"
 							onblur="fill_bank_details(this.value, '<?php echo $_POST['to_bank_name']; ?>')">
-						<label style="font-size: 15px;">To Account</label>
-						<input type="text" class="form-control" name="to_bank_name" id="bank_name_unit"
-							placeholder="Enter account name"
-							value="<?php echo htmlspecialchars($_POST['to_bank_name'] ?? ''); ?>"
-							tabindex="<?php echo $tab++; ?>" style="font-size: 16px !important; height: 45px !important; font-weight: bold !important; color: #333 !important; text-align: left !important;">
-					</div>
+                        <label style="font-size: 15px;">To Account</label>
+                        <input type="hidden" name="to_bank_name" id="to_bank_name_hidden" value="<?php echo htmlspecialchars($_POST['to_bank_name'] ?? ''); ?>">
+                        <input type="hidden" name="vendor_ledger_sno" id="vendor_ledger_sno" value="">
+                        <select class="form-control" id="bank_name_unit" tabindex="<?php echo $tab++; ?>"
+                                style="font-size: 15px !important; height: 45px !important; font-weight: bold !important; color: #333 !important;">
+                            <option value="">--- Select Vendor First ---</option>
+                        </select>
+                        <small class="text-muted" id="vendor_ledger_hint" style="display:none; color:#856404;">
+                            <i class="fas fa-exclamation-triangle"></i> No ledger mapped — select one to map it automatically.
+                        </small>
+                    </div>
 				</div>
 			</div></br>
 			<div class="row">
@@ -1178,6 +1171,22 @@ if ($msg != '') {
 			alert('Net Payment calculation issue. Please check the amounts.');
 			return false;
 		}
+
+        // Vendor ledger mapping save karo agar manually select ki hai
+        var vendorId  = document.getElementById('vendor_id').value;
+        var ledgerSno = document.getElementById('vendor_ledger_sno').value;
+        var alreadyMapped = document.getElementById('vendor_ledger_mapped_info').style.display !== 'none';
+
+        if (vendorId && ledgerSno && !alreadyMapped) {
+            // Sync AJAX — form submit se pehle save karo
+            $.ajax({
+                url: 'scripts/ajax.php?id=save_vendor_ledger',
+                type: 'POST',
+                async: false, // form submit se pehle complete hona chahiye
+                data: { term: 'b', vendor_id: vendorId, ledger_sno: ledgerSno },
+                dataType: 'json'
+            });
+        }
 
 		return true;
 	}
@@ -1479,12 +1488,15 @@ page_footer_start();
 			type: "POST",
 			url: actionUrl,
 			data: data, // serializes the form's elements.
-			success: function (data) {
-				var txt = '<option value="">--Select--</option>';
-				data = JSON.parse(data);
-				$("#unit_id").val(data.division_id);
-				fill_bank_details(data.division_id);
-				fill_unit_ledgers(data.division_id);
+            success: function (data) {
+                try {
+                    data = JSON.parse(data);
+                    $("#unit_id").val(data.division_id);
+                    fill_bank_details(data.division_id);
+                    fill_unit_ledgers(data.division_id);
+                } catch(e) {
+                    console.error('fill_division parse error:', data);
+                }
 			}
 
 		});
@@ -1555,19 +1567,72 @@ page_footer_start();
 		}
 	});
 
-	// Update vendor ID when vendor is selected
-	function updateVendorId() {
-		var vendorSelect = document.getElementById('vendor_name');
-		var selectedVendor = vendorSelect.value;
-		document.getElementById('vendor_id').value = selectedVendor;
+    function updateVendorId() {
+        var vendorSelect = document.getElementById('vendor_name');
+        var selectedVendor = vendorSelect.value;
+        document.getElementById('vendor_id').value = selectedVendor;
+        document.getElementById('vendor_ledger_sno').value = '';
+        document.getElementById('vendor_ledger_hint').style.display = 'none';
 
-		if (selectedVendor !== '') {
-			var vendorText = vendorSelect.options[vendorSelect.selectedIndex].text;
-			document.getElementById('bank_name_unit').value = vendorText;
-		} else {
-			document.getElementById('bank_name_unit').value = '';
-		}
-	}
+        var $dropdown = $('#bank_name_unit');
+
+        if (!selectedVendor) {
+            $dropdown.html('<option value="">--- Select Vendor First ---</option>');
+            if ($dropdown.hasClass('select2-hidden-accessible')) $dropdown.select2('destroy');
+            $dropdown.select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select Vendor First ---' });
+            $('#to_bank_name_hidden').val('');
+            return;
+        }
+
+        var unit_id = document.getElementById('unit_id').value || 53;
+
+        $.ajax({
+            url: 'scripts/ajax.php?id=get_vendor_ledger',
+            type: 'POST',
+            data: { term: 'b', vendor_id: selectedVendor, unit_id: unit_id },
+            dataType: 'json',
+            success: function(res) {
+                // Dropdown populate karo
+                var opts = '<option value="">--- Select Ledger ---</option>';
+                (res.ledgers || []).forEach(function(l) {
+                    opts += '<option value="' + l.id + '">' + l.text + '</option>';
+                });
+                $dropdown.html(opts);
+
+                if ($dropdown.hasClass('select2-hidden-accessible')) $dropdown.select2('destroy');
+                $dropdown.select2({ theme: 'bootstrap4', width: '100%', placeholder: '--- Select Ledger ---', allowClear: true });
+
+                if (res.ledger_sno) {
+                    // Mapped — auto-select
+                    $dropdown.val(res.ledger_sno).trigger('change.select2');
+                    document.getElementById('vendor_ledger_sno').value = res.ledger_sno;
+
+                    // hidden field bhi update karo
+                    var ledgerName = '';
+                    (res.ledgers || []).forEach(function(l) {
+                        if (l.id == res.ledger_sno) ledgerName = l.text;
+                    });
+                    $('#to_bank_name_hidden').val(ledgerName);
+                    document.getElementById('vendor_ledger_hint').style.display = 'none';
+                } else {
+                    // Not mapped — hint dikhao
+                    document.getElementById('vendor_ledger_hint').style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // Dropdown change hone par hidden fields update karo
+    $(document).on('change', '#bank_name_unit', function() {
+        var selectedText = $(this).find('option:selected').text();
+        document.getElementById('vendor_ledger_sno').value = this.value;
+        $('#to_bank_name_hidden').val(selectedText);
+    });
+
+    // Dropdown se select karne par vendor_ledger_sno update karo
+    $(document).on('change', '#vendor_ledger_dropdown', function() {
+        document.getElementById('vendor_ledger_sno').value = this.value;
+    });
 
 	// Add new vendor function
 	function addNewVendor() {
@@ -1619,14 +1684,14 @@ page_footer_start();
 			updateVendorId();
 		}
 
-		<?php if (isset($_GET['edit_sno']) && $_POST['to_bank_name'] != ''): ?>
-			// Populate bank details on page load for edit
-			var unit_id = '<?php echo $_POST['unit_id']; ?>';
-			var selected_bank = '<?php echo $_POST['to_bank_name']; ?>';
-			if (unit_id != '') {
-				fill_bank_details(unit_id, selected_bank);
-			}
-		<?php endif; ?>
+        <?php if (isset($_GET['edit_sno']) && !empty($_POST['vendor_id'])): ?>
+        $(function() {
+            // Edit mode mein vendor already selected hai, mapping load karo
+            setTimeout(function() {
+                updateVendorId();
+            }, 300);
+        });
+        <?php endif; ?>
 	});
 
 
@@ -1634,9 +1699,9 @@ page_footer_start();
 	if (isset($_GET['edit_sno'])) {
 		?>
 		$(document).ready(function () {
-			fill_sub_department(<?php echo $_POST['department']; ?>, <?php echo $_POST['sub_department_id']; ?>);
-			fill_district(<?php echo $_POST['department']; ?>, <?php echo $_POST['district']; ?>);
-			fill_project(<?php echo $_POST['district']; ?>, <?php echo $_POST['project_name']; ?>);
+            fill_sub_department(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['sub_department_id']); ?>);
+            fill_district(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['district']); ?>);
+            fill_project(<?php echo intval($_POST['district']); ?>, <?php echo intval($_POST['project_name']); ?>);
 
 
 		});
@@ -1649,9 +1714,9 @@ page_footer_start();
 	if (isset($_GET['id'])) {
 		?>
 		$(document).ready(function () {
-			fill_sub_department(<?php echo $_POST['department']; ?>, <?php echo $_POST['sub_department_id']; ?>);
-			fill_district(<?php echo $_POST['department']; ?>, <?php echo $_POST['district']; ?>);
-			fill_project(<?php echo $_POST['district']; ?>, <?php echo $_POST['project_name']; ?>);
+            fill_sub_department(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['sub_department_id']); ?>);
+            fill_district(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['district']); ?>);
+            fill_project(<?php echo intval($_POST['district']); ?>, <?php echo intval($_POST['project_name']); ?>);
 			fill_division(<?php echo $_POST['project_name']; ?>, <?php echo $_POST['unit_id']; ?>);
 
 		});

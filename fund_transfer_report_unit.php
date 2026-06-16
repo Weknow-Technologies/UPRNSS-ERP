@@ -40,7 +40,7 @@ if (!isset($_POST['search'])) {
                         <div class="form-group">
                             <label>Status</label>
                             <select name="status" class="form-control">
-                                <option value="">All Statuses</option>
+                                <option value="">All Status</option>
                                 <option value="0" <?php echo ($_POST['status'] === '0' ? 'selected' : ''); ?>>Pending
                                 </option>
                                 <option value="1" <?php echo ($_POST['status'] === '1' ? 'selected' : ''); ?>>Accepted

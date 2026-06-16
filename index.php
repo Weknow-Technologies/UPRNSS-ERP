@@ -2606,8 +2606,7 @@ if (!isset($_SESSION['session_id'])) {
 													echo '<td class="text-right font-weight-bold">₹' . number_format($row['total_transfer_amount'], 2) . '</td>';
 													echo '<td class="text-center"><span class="badge badge-warning">Pending</span></td>';
 													echo '<td class="text-center" style="min-width: 200px;">';
-													echo '<button class="btn btn-sm btn-success mr-1" onclick="confirmFund(' . $row['sno'] . ', 1)"><i class="fa fa-check"></i> Accept</button>';
-													echo '<button class="btn btn-sm btn-danger" onclick="confirmFund(' . $row['sno'] . ', 2)"><i class="fa fa-times"></i> Reject</button>';
+													echo '<a href="fund_transfer_view.php?id=' . $row['sno'] . '" target="_blank" class="btn btn-sm btn-info"><i class="fa fa-eye"></i> View</a>';
 													echo '</td>';
 													echo '</tr>';
 												}

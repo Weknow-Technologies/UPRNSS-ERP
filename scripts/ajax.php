@@ -552,76 +552,137 @@ if ($id == 'ho_bank_for_project') {
 	echo json_encode($out);
 	exit;
 } elseif ($id == 'confirm_fund') {
-	$header_id = mysqli_real_escape_string($db, $_POST['header_id']);
-	$status = mysqli_real_escape_string($db, $_POST['status']);
-	$remark = mysqli_real_escape_string($db, $_POST['remark'] ?? '');
-	
-	// Basic security check: ensure the user belongs to the destination unit of this transfer
-	$sql_check = "SELECT h.*, bc.unit_id FROM invoice_fund_transfer h 
+    $header_id = mysqli_real_escape_string($db, $_POST['header_id']);
+    $status = mysqli_real_escape_string($db, $_POST['status']);
+    $remark = mysqli_real_escape_string($db, $_POST['remark'] ?? '');
+
+    // Basic security check: ensure the user belongs to the destination unit of this transfer
+    $sql_check = "SELECT h.*, bc.unit_id FROM invoice_fund_transfer h 
 				  LEFT JOIN billit_customer bc ON bc.sno = h.fund_transfer_to 
 				  WHERE h.sno = '$header_id'";
-	$res_check = execute_query($sql_check);
-	if($row_check = mysqli_fetch_assoc($res_check)) {
-		$target_unit = $row_check['unit_id'];
-		$isAdmin = (isset($_SESSION['username']) && in_array(strtolower((string) $_SESSION['username']), ['sadmin', 'headacc']));
-		
-		if ($isAdmin || (isset($_SESSION['divisions']) && in_array($target_unit, $_SESSION['divisions']))) {
-			$sql_update = "UPDATE invoice_fund_transfer SET 
+    $res_check = execute_query($sql_check);
+    if ($row_check = mysqli_fetch_assoc($res_check)) {
+        $target_unit = $row_check['unit_id'];
+        $isAdmin = (isset($_SESSION['username']) && in_array(strtolower((string)$_SESSION['username']), ['sadmin', 'headacc']));
+
+        if ($isAdmin || (isset($_SESSION['divisions']) && in_array($target_unit, $_SESSION['divisions']))) {
+            $sql_update = "UPDATE invoice_fund_transfer SET 
 						   unit_confirmation_status = '$status', 
 						   unit_confirmation_remark = '$remark' 
 						   WHERE sno = '$header_id'";
-			
-			if (execute_query($sql_update)) {
-				// If accepted, create mirrored voucher for the Unit
-				if ($status == 1 && $row_check['journal_id'] > 0) {
-					$ho_jid = $row_check['journal_id'];
-					
-					// 1. Fetch HO Voucher Header
-					$sql_h = "SELECT * FROM billit_invoice_erp_payment WHERE sno = '$ho_jid'";
-					$res_h = execute_query($sql_h);
-					if ($row_h = mysqli_fetch_assoc($res_h)) {
-						// 2. Create Unit Voucher Header
-						$sql_unit_h = "INSERT INTO billit_invoice_erp_payment 
+
+            if (execute_query($sql_update)) {
+                // If accepted, create mirrored voucher for the Unit
+                if ($status == 1 && $row_check['journal_id'] > 0) {
+                    $ho_jid = $row_check['journal_id'];
+
+                    // 1. Fetch HO Voucher Header
+                    $sql_h = "SELECT * FROM billit_invoice_erp_payment WHERE sno = '$ho_jid'";
+                    $res_h = execute_query($sql_h);
+                    if ($row_h = mysqli_fetch_assoc($res_h)) {
+                        // 2. Create Unit Voucher Header
+                        $sql_unit_h = "INSERT INTO billit_invoice_erp_payment 
 									   (timestamp, first_by, first_to, tot_debit, tot_credit, row_count, voucher_no, unit_id, created_by, creation_time, table_name, table_id, remarks)
 									   VALUES 
-									   ('".$row_h['timestamp']."', '".$row_h['first_to']."', '".$row_h['first_by']."', '".$row_h['tot_debit']."', '".$row_h['tot_credit']."', '".$row_h['row_count']."', '".$row_h['voucher_no']."', '".$target_unit."', '".$_SESSION['username']."', NOW(), 'invoice_fund_transfer', '$header_id', '$remark')";
-						
-						if (execute_query($sql_unit_h)) {
-							$unit_jid = mysqli_insert_id($db);
-							
-							// 3. Fetch HO Voucher Lines and Mirror them
-							$sql_lines = "SELECT * FROM billit_stock_erp_payment WHERE journal_id = '$ho_jid'";
-							$res_lines = execute_query($sql_lines);
-							while ($row_l = mysqli_fetch_assoc($res_lines)) {
-								// Flip 'by' to 'to' and vice versa for the reversal effect
-								$new_by = $row_l['to'];
-								$new_to = $row_l['by'];
-								
-								$sql_l_unit = "INSERT INTO billit_stock_erp_payment 
+									   ('" . $row_h['timestamp'] . "', '" . $row_h['first_to'] . "', '" . $row_h['first_by'] . "', '" . $row_h['tot_debit'] . "', '" . $row_h['tot_credit'] . "', '" . $row_h['row_count'] . "', '" . $row_h['voucher_no'] . "', '" . $target_unit . "', '" . $_SESSION['username'] . "', NOW(), 'invoice_fund_transfer', '$header_id', '$remark')";
+
+                        if (execute_query($sql_unit_h)) {
+                            $unit_jid = mysqli_insert_id($db);
+
+                            // 3. Fetch HO Voucher Lines and Mirror them
+                            $sql_lines = "SELECT * FROM billit_stock_erp_payment WHERE journal_id = '$ho_jid'";
+                            $res_lines = execute_query($sql_lines);
+                            while ($row_l = mysqli_fetch_assoc($res_lines)) {
+                                // Flip 'by' to 'to' and vice versa for the reversal effect
+                                $new_by = $row_l['to'];
+                                $new_to = $row_l['by'];
+
+                                $sql_l_unit = "INSERT INTO billit_stock_erp_payment 
 											   (journal_id, `by`, `to`, amount, timestamp, unit_id, status)
 											   VALUES 
-											   ('$unit_jid', '$new_by', '$new_to', '".$row_l['amount']."', '".$row_l['timestamp']."', '".$target_unit."', '')";
-								execute_query($sql_l_unit);
-							}
-							
-							// 4. Link Unit Journal ID back to transfer header
-							execute_query("UPDATE invoice_fund_transfer SET unit_journal_id = '$unit_jid' WHERE sno = '$header_id'");
-						}
-					}
-				}
-				
-				$data = array('success' => true, 'message' => 'Status updated successfully');
-			} else {
-				$data = array('success' => false, 'message' => 'Database error: ' . mysqli_error($db));
-			}
-		} else {
-			$data = array('success' => false, 'message' => 'Unauthorized access');
-		}
-	} else {
-		$data = array('success' => false, 'message' => 'Transfer record not found');
-	}
-	echo json_encode($data);
-	exit;
+											   ('$unit_jid', '$new_by', '$new_to', '" . $row_l['amount'] . "', '" . $row_l['timestamp'] . "', '" . $target_unit . "', '')";
+                                execute_query($sql_l_unit);
+                            }
+
+                            // 4. Link Unit Journal ID back to transfer header
+                            execute_query("UPDATE invoice_fund_transfer SET unit_journal_id = '$unit_jid' WHERE sno = '$header_id'");
+                        }
+                    }
+                }
+
+                $data = array('success' => true, 'message' => 'Status updated successfully');
+            } else {
+                $data = array('success' => false, 'message' => 'Database error: ' . mysqli_error($db));
+            }
+        } else {
+            $data = array('success' => false, 'message' => 'Unauthorized access');
+        }
+    } else {
+        $data = array('success' => false, 'message' => 'Transfer record not found');
+    }
+    echo json_encode($data);
+    exit;
+} elseif ($id == 'get_vendor_ledger') {
+$vendor_id = intval($_POST['vendor_id'] ?? 0);
+if (!$vendor_id) { echo json_encode([]); exit; }
+
+// Vendor ka contractor_code fetch karo
+$v = mysqli_fetch_assoc(execute_query(
+    "SELECT contractor_code FROM vendor WHERE sno='$vendor_id' LIMIT 1"
+));
+$contractor_code = $v['contractor_code'] ?? '';
+
+$ledger_sno = null;
+if ($contractor_code) {
+    $bc = mysqli_fetch_assoc(execute_query(
+        "SELECT sno FROM billit_customer WHERE contractor_code='" . mysqli_real_escape_string($db, $contractor_code) . "' LIMIT 1"
+    ));
+    $ledger_sno = $bc['sno'] ?? null;
+}
+
+// Saare ledgers bhi bhejo (dropdown ke liye)
+$unit_id = intval($_POST['unit_id'] ?? 53);
+$ledgers = [];
+$res = execute_query("SELECT sno, cus_name FROM billit_customer WHERE unit_id='$unit_id' ORDER BY cus_name");
+while ($r = mysqli_fetch_assoc($res)) {
+    $ledgers[] = ['id' => $r['sno'], 'text' => $r['cus_name']];
+}
+
+echo json_encode([
+    'ledger_sno'      => $ledger_sno,
+    'contractor_code' => $contractor_code,
+    'ledgers'         => $ledgers
+]);
+exit;
+
+} elseif ($id == 'save_vendor_ledger') {
+$vendor_id  = intval($_POST['vendor_id'] ?? 0);
+$ledger_sno = intval($_POST['ledger_sno'] ?? 0);
+if (!$vendor_id || !$ledger_sno) {
+    echo json_encode(['success' => false, 'message' => 'Invalid data']); exit;
+}
+
+// Vendor ka contractor_code fetch karo
+$v = mysqli_fetch_assoc(execute_query(
+    "SELECT contractor_code FROM vendor WHERE sno='$vendor_id' LIMIT 1"
+));
+$contractor_code = mysqli_real_escape_string($db, $v['contractor_code'] ?? '');
+
+if (!$contractor_code) {
+    echo json_encode(['success' => false, 'message' => 'Contractor code not found']); exit;
+}
+
+// billit_customer mein contractor_code update karo
+execute_query(
+    "UPDATE billit_customer SET contractor_code='$contractor_code' WHERE sno='$ledger_sno' LIMIT 1"
+);
+
+if (mysqli_error($db)) {
+    echo json_encode(['success' => false, 'message' => mysqli_error($db)]);
+} else {
+    echo json_encode(['success' => true]);
+}
+exit;
 }
 
 if (empty($data) != true) {

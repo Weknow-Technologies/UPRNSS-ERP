@@ -1,8 +1,13 @@
 <?php
 include("scripts/settings.php");
 include("scripts/alerts.php");
+include("scripts/billit_settings.php");
 $msg = '';
 $tab = 1;
+
+$auto_voucher_no = (!isset($_GET['edit_sno']))
+    ? generateVoucherNumber('invoice_fund_receive', 'voucher_no', 'FR')
+    : '';
 
 page_header_start();
 ?>
@@ -454,6 +459,7 @@ if (isset($_POST['submit'])) {
                         }
 
                         unset($_POST);
+                        $auto_voucher_no = generateVoucherNumber('invoice_fund_receive', 'voucher_no', 'FR');
                         goto postblank;
                     }
 
@@ -1626,8 +1632,8 @@ if (isset($_GET['delid'])) {
                         <div class="col-md-2 mb-3">
                             <label>Voucher Number <small class="text-muted"></small></label>
                             <input type="text" name="voucher_no" id="voucher_no" class="form-control"
-                                value="<?php echo @$_POST['voucher_no'] ?? ''; ?>" tabindex="<?php echo $tab++; ?>"
-                                placeholder="UPRNSS/2025-26/FUND/0001" oninput="setTodayDate()" required>
+                                   value="<?php echo @$_POST['voucher_no'] ?: $auto_voucher_no; ?>" tabindex="<?php echo $tab++; ?>"
+                                   placeholder="FR-2627-0001" oninput="setTodayDate()" readonly required>
                         </div>
                         <div class="col-md-3 mb-3" style="margin-bottom: 1rem;">
                             <label>Order Date</label>
