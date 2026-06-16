@@ -33,6 +33,8 @@ if (isset($_POST['submit'])) {
         'BILL_SECURITY',
         'BILL_LABOUR_CESS',
         'BILL_OTHER_DED',
+        'BILL_ROYALTY',
+        'BILL_HOLD',
         'BILL_GST',
         'BILL_CGST',
         'BILL_SGST',
@@ -204,7 +206,7 @@ page_sidebar();
 //                            $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_GST_TDS', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_GST', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_GST', 'BILL_DED_CGST', 'BILL_DED_SGST'];
                             $receive_keys = ['ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
                             $transfer_keys = ['ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW'];
-                            $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST'];
+                            $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'];
                             $friendly_names = [
 //                                'ITTDS' => 'TDS',
 //                                'GST' => 'GST',
@@ -232,6 +234,8 @@ page_sidebar();
                                 'BILL_SECURITY' => 'Security Deposit',
                                 'BILL_LABOUR_CESS' => 'Labour Cess',
                                 'BILL_OTHER_DED' => 'Other Deductions',
+                                'BILL_ROYALTY' => 'Royalty Amount',
+                                'BILL_HOLD' => 'Hold Amount',
 //                                'BILL_GST' => 'GST',
                                 'BILL_CGST' => 'CGST',
                                 'BILL_SGST' => 'SGST',
@@ -405,7 +409,7 @@ page_sidebar();
                                 'ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES',
                                 'ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW',
                                 'BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED',
-                                'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST'
+                                'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'
                             ];
                             jsKeys.forEach(function (k) {
                                 var selectElem = $('#' + k.toLowerCase());
@@ -455,8 +459,8 @@ page_sidebar();
                                 isMapped('BILL_IT') && isMapped('BILL_LABOUR_CESS') && isMapped('BILL_SECURITY') &&
                                 isMapped('BILL_OTHER_ADD') && isMapped('BILL_OTHER_DED') &&
                                 ((isMapped('BILL_CGST') && isMapped('BILL_SGST'))) &&
-                                ((isMapped('BILL_DED_CGST') && isMapped('BILL_DED_SGST')));
-
+                                ((isMapped('BILL_DED_CGST') && isMapped('BILL_DED_SGST'))) &&
+                                isMapped('BILL_ROYALTY') && isMapped('BILL_HOLD');
                             if (unit_id == '53') {
                                 bill_complete = true; // HO doesn't need bill ledgers mapped
                             } else {

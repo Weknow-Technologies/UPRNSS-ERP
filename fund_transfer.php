@@ -2,8 +2,6 @@
 include("scripts/settings.php");
 include("scripts/alerts.php"); 
 include("scripts/billit_settings.php");
-// error_reporting(E_ALL);
-// ini_set('display_errors', 1);
 $msg = '';
 $msg1 = '';
 $tab = 1;
@@ -13,7 +11,6 @@ page_header_end();
 page_sidebar();
 
 if (isset($_POST['submit'])) {
-	// Set default values to prevent undefined array key warnings
 	$_POST['fund_transfer_by'] = $_POST['fund_transfer_by'] ?? '';
 	$_POST['fund_transfer_to'] = $_POST['fund_transfer_to'] ?? '';
 	$_POST['order_date'] = $_POST['order_date'] ?? '';
@@ -65,13 +62,6 @@ if (isset($_POST['submit'])) {
 	$_POST['sub_department_id'] = isset($_POST['sub_department_id'])?$_POST['sub_department_id']:'';
 
 	if ($_POST['edit_sno'] != '') {
-
-		/*$sql = "INSERT INTO `invoice_account_fund_transafer`(
-				`department`, `sub_department_id`, `district`,unit_id, `project_name`, `fund_transfer_to`, `order_no`, `voucher_no`, `order_date`, `transafer_date`, `transafer_amount`, `gstdeduction`, `cgst_amount`, `sgst_amount`, `sentagepercentage`, `sentage`, `gsttdspercentage`, `gsttds`, `leborses`, `incometax`, `praposemoney`, `remark`, `from_account_no`, `to_bank_name`, `to_bank_ifsc`, `to_account_no`, `vendor_id`, `status`, `created_by`, `creation_time`, `ded_gst_per`, `ded_gstdeduction`, `ded_cgst_amount`, `ded_sgst_amount`
-				)
-			values (
-			'{$_POST['department']}','{$_POST['sub_department_id']}','{$_POST['district']}','{$_POST['unit_id']}','{$_POST['project_name']}','{$_POST['fund_transfer_to']}','{$_POST['order_no']}', '{$_POST['voucher_no']}', '{$_POST['order_date']}', '{$_POST['transafer_date']}', '{$_POST['transafer_amount']}', '{$_POST['gstdeduction']}', '{$_POST['cgst_amount']}', '{$_POST['sgst_amount']}', '{$_POST['sentagepercentage']}', '{$_POST['sentage']}', '{$_POST['gsttdspercentage']}', '{$_POST['gsttds']}', '{$_POST['leborses']}', '{$_POST['incometax']}', '{$_POST['praposemoney']}', '{$_POST['remark']}', '{$_POST['from_account_no']}','{$_POST['to_bank_name']}','{$_POST['to_bank_ifsc']}','{$_POST['to_account_no']}','{$_POST['vendor_id']}','0','" . $_SESSION['username'] . "','" . date("Y-m-d H:i:s") . "', '{$_POST['ded_gst_per']}', '{$_POST['ded_gstdeduction']}', '{$_POST['ded_cgst_amount']}', '{$_POST['ded_sgst_amount']}')";*/
-
 		$sql = 'UPDATE invoice_account_fund_transafer SET
 			unit_id="' . $_POST['unit_id'] . '",
 			fund_transfer_to="' . $_POST['fund_transfer_to'] . '",
@@ -123,30 +113,18 @@ if (isset($_POST['submit'])) {
 		if (mysqli_error($db)) {
 			$msg .= '<p class="alert alert-danger">Error # 1 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 		}
-				if ($msg == '') {
+        if ($msg == '') {
             $inv_id = $_POST['edit_sno'];
-			/*$sql = 'SELECT * FROM `uprnss_department_name` where sno="' . $_POST['department_id_1'] . '"';
-			$first_to = mysqli_fetch_assoc(execute_query($sql));*/
 
-            // --- NAYI LINES YAHAN ADD KI GAYI HAIN ---
-            // Purani voucher lines (stock payment) ko delete karein
             execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id IN (SELECT sno FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$inv_id.'")');
-
-            // Purane voucher header (invoice payment) ko delete karein
             execute_query('DELETE FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$inv_id.'"');
-            // ----------------------------------------
-
 			$sql = 'insert into billit_invoice_erp_payment (timestamp, first_by, first_to, tot_debit, tot_credit, row_count, voucher_no, unit_id, created_by, creation_time, table_name, table_id) values ("' . $_POST['transafer_date'] . '", "' . $_POST['to_bank_name'] . '", "' . $_POST['from_account_no'] . '", "' . $_POST['transafer_amount'] . '", "' . $_POST['transafer_amount'] . '", "", "' . $_POST['voucher_no'] . '", "' . $_POST['unit_id'] . '", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '","invoice_account_fund_transafer", "' . $inv_id . '" )';
 			execute_query($sql);
-
 			if (mysqli_error($db)) {
 				$msg .= '<p class="alert alert-danger">Error # 1.02 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 			}
-
 			$id_stock = mysqli_insert_id($db);
-			$unit_id_for_settings = $_POST['unit_id'] ?: 53; // fallback to HO if no unit
-
-
+			$unit_id_for_settings = $_POST['unit_id'] ?: 53;
 			$gstw = get_bill_setting_w2($db, "BILL_GST", $unit_id_for_settings);
 			$cgst = get_bill_setting_w2($db, "BILL_CGST", $unit_id_for_settings);
 			$sgst = get_bill_setting_w2($db, "BILL_SGST", $unit_id_for_settings);
@@ -159,70 +137,48 @@ if (isset($_POST['submit'])) {
 			$sgsttds = get_bill_setting_w2($db, "BILL_SGST_TDS", $unit_id_for_settings);
 			$labourcessw = get_bill_setting_w2($db, "BILL_LABOUR_CESS", $unit_id_for_settings);
 			$ittds = get_bill_setting_w2($db, "BILL_IT", $unit_id_for_settings);
-
-			// amount in unit bank - NET AMOUNT (should be in BY field for Debit)
-$sql = 'INSERT INTO `billit_stock_erp_payment` 
-        (`journal_id`, `by`, `to`, `amount`, `timestamp`, `remarks`, `challan_no`, `unit_id`, `wing`, `status`, `created_by`, `creation_time`, `edited_by`, `edition_time`, `admin_remarks`, `branch`, `division_id`) 
-        VALUES (
-            "' . $id_stock . '",
-            "' . $_POST['project_ledger_id'] . '",
-            "' . $_POST['vendor_id'] . '",
-            "' . $_POST['praposemoney'] . '",
-            "' . $_POST['transafer_date'] . '",
-            "' . $_POST['remarks'] . '",
-            "' . $_POST['challan_no'] . '",
-            "' . $_POST['unit_id'] . '",
-            "' . $_POST['wing'] . '",
-            "",
-            "' . $_SESSION['username'] . '",
-            "' . date("Y-m-d H:i:s") . '",
-            "",
-            "",
-            "",
-            "' . $_POST['branch'] . '",
-            ' . (!empty($_POST['division_id']) ? (int)$_POST['division_id'] : 'NULL') . '
-        )';
-			execute_query($sql);
-			if (mysqli_error($db)) {
-				$msg .= '<p class="alert alert-danger">Error # 1.03 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-			}
-
-			// GST AMOUNT - DEDUCTION (should be in BY field for Debit)
-			// $sql = 'insert into billit_stock_erp_payment (`journal_id`,by_type, by_id, to_type, to_id, `by`,  amount, timestamp, unit_id, status) values ("' . $id_stock . '","' . $_POST['by_type'] . '","' . $_POST['by_id'] . '","' . $_POST['to_type'] . '","' . $_POST['to_id'] . '", "' . ($gstw['rate'] ?? '') . '",  "' . $_POST['gstdeduction'] . '", "' . $_POST['transafer_date'] . '", "", "")';
-			// execute_query($sql);
-
-			// CGST AMOUNT - DEDUCTION
-          // Error 1.04 - CGST
-// if (isset($_POST['cgst_amount']) && $_POST['cgst_amount'] > 0) {
-//     $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($cgst['rate']) ? $cgst['rate'] : ($gstw['rate'] ?? '')) . '", "' . $_POST['cgst_amount'] . '", "' . $_POST['transafer_date'] . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-//     execute_query($sql);
-//     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.04 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-// }
-
-// Error 1.05 - SGST
-// if (isset($_POST['sgst_amount']) && $_POST['sgst_amount'] > 0) {
-//     $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($sgst['rate']) ? $sgst['rate'] : ($gstw['rate'] ?? '')) . '", "' . $_POST['sgst_amount'] . '", "' . $_POST['transafer_date'] . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-//     execute_query($sql);
-//     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.05 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-// }
-
-// Error 1.06 - ADV Centage
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . ($advcen['rate'] ?? '') . '", "' . $_POST['sentage'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+			$other = get_bill_setting_w2($db, "BILL_OTHER_DED", $unit_id_for_settings);
+			$royalty = get_bill_setting_w2($db, "BILL_ROYALTY", $unit_id_for_settings);
+// project ledger
+$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "", "' . $_POST['transafer_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
 execute_query($sql);
 if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
-// Error 1.07 - DED CGST
-if (isset($_POST['ded_cgst_amount']) && $_POST['ded_cgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($ded_cgst['rate']) ? $ded_cgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "' . $_POST['ded_cgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+
+if (isset($_POST['cgst_amount']) && $_POST['cgst_amount'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($cgst['rate']) ? $cgst['rate'] : ($cgst['rate'] ?? '')) . '", "", "' . $_POST['cgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 }
 
-// Error 1.08 - DED SGST
-if (isset($_POST['ded_sgst_amount']) && $_POST['ded_sgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($ded_sgst['rate']) ? $ded_sgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "' . $_POST['ded_sgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+if (isset($_POST['sgst_amount']) && $_POST['sgst_amount'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($sgst['rate']) ? $sgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "", "' . $_POST['sgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.08 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+}
+
+/////////////////by end //////////////////////
+
+
+//////////////////// TO start ///////////////////////
+
+///////////// Contractor ledger/////////
+
+$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . $_POST['vendor_ledger_sno'] . '", "' . $_POST['praposemoney'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+execute_query($sql);
+if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+
+
+if (isset($_POST['ded_cgst_amount']) && $_POST['ded_cgst_amount'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_cgst['rate']) ? $ded_cgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "' . $_POST['ded_cgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    execute_query($sql);
+    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+}
+
+if (isset($_POST['ded_sgst_amount']) && $_POST['ded_sgst_amount'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_sgst['rate']) ? $ded_sgst['rate'] : ($ded_sgst['rate'] ?? '')) . '", "' . $_POST['ded_sgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    execute_query($sql);
+    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 }
 
 // Error 1.09 & 1.10 - GST TDS (CGST + SGST split)
@@ -230,128 +186,64 @@ if (isset($_POST['gsttds']) && $_POST['gsttds'] > 0) {
     $cgsttds_amt = number_format($_POST['gsttds'] / 2, 2, '.', '');
     $sgsttds_amt = number_format($_POST['gsttds'] - $cgsttds_amt, 2, '.', '');
 
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($cgsttds['rate']) ? $cgsttds['rate'] : ($gsttds['rate'] ?? '')) . '", "' . $cgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($cgsttds['rate']) ? $cgsttds['rate'] : ($cgsttds['rate'] ?? '')) . '", "' . $cgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.09 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . (!empty($sgsttds['rate']) ? $sgsttds['rate'] : ($gsttds['rate'] ?? '')) . '", "' . $sgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($sgsttds['rate']) ? $sgsttds['rate'] : ($sgsttds['rate'] ?? '')) . '", "' . $sgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.10 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 }
 
+
 // Error 1.11 - Labour Cess
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . ($labourcessw['rate'] ?? '') . '", "' . $_POST['leborses'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+if (isset($_POST['leborses']) && $_POST['leborses'] > 0) {
+$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($labourcessw['rate'] ?? '') . '", "' . $_POST['leborses'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
 execute_query($sql);
 if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.11 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
+}
+
 // Error 1.12 - IT TDS
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . ($ittds['rate'] ?? '') . '", "' . $_POST['incometax'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+if (isset($_POST['incometax']) && $_POST['incometax'] > 0) {
+$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($ittds['rate'] ?? '') . '", "' . $_POST['incometax'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
 execute_query($sql);
 if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.12 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+}
 
-// Error 1.13 - Security
-if (isset($_POST['security']) && $_POST['security'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . ($advcen['rate'] ?? '') . '", "' . $_POST['security'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+if (isset($_POST['royalty']) && $_POST['royalty'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($royalty['rate'] ?? '') . '", "' . $_POST['royalty'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 }
 
-// Error 1.14 - Other Deductions
+if (isset($_POST['security']) && $_POST['security'] > 0) {
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($advcen['rate'] ?? '') . '", "' . $_POST['security'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    execute_query($sql);
+    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+}
+
 if (isset($_POST['other_amount']) && $_POST['other_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "' . ($other_ded['rate'] ?? '') . '", "' . $_POST['other_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($other['rate'] ?? '') . '", "' . $_POST['other_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
     execute_query($sql);
     if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.14 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 }
 
-// Error 1.369 - Credit to HO Bank
-// $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['from_account_no'] . '", "' . $_POST['to_id'] . '", "' . $_POST['transafer_amount'] . '", "' . $_POST['transafer_date'] . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-// execute_query($sql);
 if (mysqli_error($db)) {
     $msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
 } else {
-    // $msg .= '<p class="text text-success">Successfully Add</p>';
-}
-
-			if (mysqli_error($db)) {
-
+    	if (mysqli_error($db)) {
 				$msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
-
 			} else {
-
                   $msg .= 'Successfully added';
-				// Generate voucher number if not provided
 				$voucher_no = $_POST['voucher_no'] ?: 'FT' . date('Y') . sprintf('%04d', $inv_id);
-				// Update voucher number in database if it was empty
 				if (empty($_POST['voucher_no'])) {
 					$update_sql = 'UPDATE invoice_account_fund_transafer SET voucher_no = "' . $voucher_no . '" WHERE sno = "' . $inv_id . '"';
 					execute_query($update_sql);
 				}
-				//$msg .= '<script>window.location.href="fund_transfer_voucher.php?voucher=' . $inv_id . '";</script>';
 			}
-
-
 		}
-	} 
-	
-	/*else {
-		$sql = 'UPDATE invoice_account_fund_transafer SET
-			unit_id="' . $_POST['unit_id'] . '",
-			fund_transfer_to="' . $_POST['fund_transfer_to'] . '",
-			order_no="' . $_POST['order_no'] . '",
-			voucher_no="' . $_POST['voucher_no'] . '",
-			order_date="' . $_POST['order_date'] . '",
-			transafer_date="' . $_POST['transafer_date'] . '",
-			gst_per="' . $_POST['gst_per'] . '",
-			gstdeduction="' . $_POST['gstdeduction'] . '",
-			cgst_amount="' . $_POST['cgst_amount'] . '",
-			sgst_amount="' . $_POST['sgst_amount'] . '",
-			royalty="' . $_POST['royalty'] . '",
-			it_per="' . $_POST['it_per'] . '",
-			incometax="' . $_POST['incometax'] . '",
-			security_per="' . $_POST['security_per'] . '",
-			security="' . $_POST['security'] . '",
-			gsttdspercentage="' . $_POST['gsttdspercentage'] . '",
-			gsttds="' . $_POST['gsttds'] . '",
-			
-			other_title="' . $_POST['other_title'] . '",
-			other_per="' . $_POST['other_per'] . '",
-			other_add_ded="' . $_POST['other_add_ded'] . '",
-			other_amount="' . $_POST['other_amount'] . '",
-			
-			praposemoney="' . $_POST['praposemoney'] . '",
-			sentagepercentage="' . $_POST['sentagepercentage'] . '",
-			sentage="' . $_POST['sentage'] . '",
-			leborses_per="' . $_POST['leborses_per'] . '",
-			leborses="' . $_POST['leborses'] . '",
-			
-			total_expen="' . $_POST['total_expen'] . '",
-			remark="' . $_POST['remark'] . '",
-			from_account_no="' . $_POST['from_account_no'] . '",
-			to_account_no="' . $_POST['to_bank_name'] . '",
-			vendor_id="' . $_POST['vendor_id'] . '",
-			status="1",
-			request_status="7",
-			to_account_no="' . $_POST['to_bank_name'] . '",
-			
-			created_by="' . $_SESSION['username'] . '",
-			creation_time="' . date("Y-m-d H:i:s") . '",
-			ded_gst_per="' . $_POST['ded_gst_per'] . '",
-			ded_gstdeduction="' . $_POST['ded_gstdeduction'] . '",
-			ded_cgst_amount="' . $_POST['ded_cgst_amount'] . '",
-			ded_sgst_amount="' . $_POST['ded_sgst_amount'] . '"
-			WHERE sno="' . $_POST['edit_sno'] . '"';
-
-		execute_query($sql);
-		if (mysqli_error($db)) {
-			$msg .= '<p class="alert alert-danger">Error # 1 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-		}
-		if ($msg == '') {
-			$msg .= '<p class="alert alert-success">Data Update</p>';
-			//echo '<script>window.location.href="fund_transfer_report.php";</script>';
-			//exit;
-
-		}
-	}*/
+	}
 } else {
 
 	postblank:
