@@ -21,8 +21,9 @@ if (isset($_GET['id'])) {
 	<title>Journal Entry Print</title>
 	<style>
 		body {
-			font-family: Arial, sans-serif;
-			margin: 20px;
+            font-family: Arial, sans-serif;
+            width: 1024px;
+            margin: 20px auto;
 		}
 
 		.header {
@@ -101,15 +102,13 @@ if (isset($_GET['id'])) {
 </head>
 
 <body>
-	<div style="margin-left: 30px; margin-right: 15px;">
-		<div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
+    <div style="margin: 0 auto; max-width: 980px;">
+        <div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
 		<div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
 		<p>State Name: Uttar Pradesh, Code:09</p>
 		<p>E-Mail: paccfedho@gmail.com</p>
-
-		<h4>Payment At: <?php echo get_division($old_data['unit_id']); ?></h4>
+		<h4><?php echo get_division($old_data['unit_id']); ?></h4>
 		<h4>Journal Voucher</h4>
-
 		<div class="header-container">
 			<div class="left">Voucher No.: <?php echo $old_data['voucher_no']; ?></div>
 			<div class="right">Date: <?php echo date("d-m-Y", strtotime($old_data['timestamp'])); ?></div>
@@ -119,8 +118,6 @@ if (isset($_GET['id'])) {
 				<tr>
 					<th>S.No.</th>
 					<th>Particulars</th>
-					<!-- <th>Vendor</th> -->
-					<th>Description</th>
 					<th class="debit">Debit (₹)</th>
 					<th class="credit">Credit (₹)</th>
 				</tr>
@@ -151,31 +148,27 @@ if (isset($_GET['id'])) {
 					echo '<tr>
 							<td>' . $i++ . '</td>
 							<td>' . $particulars . '</td>
-							<!-- <td>' . $row['vendor'] . '</td> -->
-							<td>' . $row['remarks'] . '</td>
 							<td class="debit">' . $debit . '</td>
 							<td class="credit">' . $credit . '</td>
 						  </tr>';
 				}
 
-				echo '<tr class="total-row">
-						<td colspan="3" align="right">Total</td><!-- Vendor column commented out, changed from 4 to 3 -->
-						<td class="debit">' . number_format($tot_debit, 2) . '</td>
-						<td class="credit">' . number_format($tot_credit, 2) . '</td>
-					  </tr>';
+                echo '<tr class="total-row">
+                    <td colspan="2" align="right">Total</td>
+                    <td class="debit">' . number_format($tot_debit, 2) . '</td>
+                    <td class="credit">' . number_format($tot_credit, 2) . '</td>
+                    </tr>';
                       
                 echo '<tr>
-						<td colspan="5"><b>Narration:</b> ' . htmlspecialchars($old_data['remarks'] ?? '') . '</td>
+						<td colspan="4"><b>Narration:</b> ' . htmlspecialchars($old_data['remarks'] ?? '') . '</td>
 					  </tr>';
 				?>
 			</tbody>
 		</table>
-
 		<div class="header-container">
 			<div class="left"></div>
 			<div class="right" style="margin-top:60px; margin-right:70px;">Authorised Signatory</div>
 		</div>
 	</div>
 </body>
-
 </html>
