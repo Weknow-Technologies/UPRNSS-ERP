@@ -68,7 +68,8 @@ if (isset($_GET['voucher'])) {
 	<style>
 		body {
 			font-family: Arial, sans-serif;
-			margin: 20px;
+            margin: 20px auto;
+            width: 1024px;
 		}
 
 		.header {
@@ -165,6 +166,8 @@ if (isset($_GET['voucher'])) {
 
 					if (!empty($row['by'])) {
 						$particulars = get_ledger($row['by']);
+						
+						
 						$debit_amt = $row['amount'];
 						$tot_debit += $debit_amt;
 						

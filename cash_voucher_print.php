@@ -107,7 +107,7 @@ if (isset($_GET['id'])) {
 		<p>State Name: Uttar Pradesh, Code:09</p>
 		<p>E-Mail: paccfedho@gmail.com</p>
 
-		<h4>Payment At: <?php echo get_division($old_data['unit_id']); ?></h4>
+		<h4><?php echo get_division($old_data['unit_id']); ?></h4>
 		<h4>Cash Voucher</h4>
 
 		<div class="header-container">

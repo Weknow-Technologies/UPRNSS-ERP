@@ -1,7 +1,7 @@
 <?php
 include("scripts/settings.php");
 include("scripts/alerts.php");
-include("scripts/billit_settings.php");
+include("scripts/billit_settings.php"); // customRound() aur money() yahan se aate hain
 $msg = '';
 $tab = 1;
 
@@ -156,7 +156,7 @@ if (isset($_POST['submit'])) {
         $rs1 = execute_query($q1);
         $row1 = $rs1 ? mysqli_fetch_assoc($rs1) : null;
         $sanction_lakh = $row1 ? nval($row1['sanction_cost']) : 0.0;
-        $sanction_rupees = $sanction_lakh * 100000; // 1 Lakh = 100,000
+        $sanction_rupees = $sanction_lakh * 100000;
 
         $q2 = 'SELECT COALESCE(SUM(p_receive_amount),0) as rcvd FROM transaction_fund_receive WHERE project_id="' . mysqli_real_escape_string($db, $projectId) . '" AND invoice_id!="' . $_POST['edit_sno'] . '"';
         $rs2 = execute_query($q2);
@@ -808,6 +808,7 @@ if (isset($_GET['delid'])) {
 }
 
 ?>
+<script src="js/custom_round.js"></script>
 <script>
     function makeSearchable(selectId) {
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
@@ -927,7 +928,7 @@ if (isset($_GET['delid'])) {
         // TDS
         if (source === 'tds_per') {
             let pct = parseFloat(tds_per_el.value) || 0;
-            tdsdeducted.value = toFixed2((totamount * pct) / 100);
+            tdsdeducted.value = customRound((totamount * pct) / 100);
         } else if (source === 'tds_deducted') {
             let amt = parseFloat(tdsdeducted.value) || 0;
             if (totamount > 0) {
@@ -940,7 +941,7 @@ if (isset($_GET['delid'])) {
         // GST TDS
         if (source === 'gst_tds_per') {
             let pct = parseFloat(gsttds_per_el.value) || 0;
-            gsttdsdeducted.value = toFixed2((totamount * pct) / 100);
+            gsttdsdeducted.value = customRound((totamount * pct) / 100);
         } else if (source === 'gsttds_deducted') {
             let amt = parseFloat(gsttdsdeducted.value) || 0;
             if (totamount > 0) {
@@ -957,8 +958,8 @@ if (isset($_GET['delid'])) {
             if (activeId !== 'tds_deducted' && activeId !== 'gsttds_deducted') {
                 let tdsper = parseFloat(tds_per_el.value) || 0;
                 let gsttdsper = parseFloat(gsttds_per_el.value) || 0;
-                tdsdeducted.value = toFixed2((totamount * tdsper) / 100);
-                gsttdsdeducted.value = toFixed2((totamount * gsttdsper) / 100);
+                tdsdeducted.value = customRound((totamount * tdsper) / 100);
+                gsttdsdeducted.value = customRound((totamount * gsttdsper) / 100);
             }
         }
 
@@ -974,7 +975,7 @@ if (isset($_GET['delid'])) {
         let cgst_box = document.getElementById('cgst_split_box');
         let sgst_box = document.getElementById('sgst_split_box');
         if (cgst_box && sgst_box) {
-            let half_gst = (gst_ded / 2).toFixed(2);
+            let half_gst = customRound((gst_ded / 2).toFixed(2));
             cgst_box.value = half_gst;
             sgst_box.value = half_gst;
         }
@@ -1021,45 +1022,35 @@ if (isset($_GET['delid'])) {
         let base, cgst, sgst, gross;
 
         if (inclusive) {
-            // val is Gross (incl. GST)
-            gross = +(val).toFixed(2);
-            base = +(val / (1 + gstRate)).toFixed(2);
-            cgst = +(base * halfRate).toFixed(2);
-            // adjust sgst to keep totals perfectly consistent after rounding
-            sgst = +(gross - base - cgst).toFixed(2);
+            // val is Gross (incl. GST) — sab customRound se round karo
+            gross  = parseFloat(customRound(val));
+            base   = parseFloat(customRound(val / (1 + gstRate)));
+            cgst   = parseFloat(customRound(base * halfRate));
+            // sgst = gross - base - cgst (to avoid rounding drift)
+            sgst   = parseFloat(customRound(gross - base - cgst));
         } else {
             // val is Base (excl. GST)
-            base = +(val).toFixed(2);
-            cgst = +(base * halfRate).toFixed(2);
-            sgst = +(base * halfRate).toFixed(2);
-            gross = +(base + cgst + sgst).toFixed(2);
+            base   = parseFloat(customRound(val));
+            cgst   = parseFloat(customRound(base * halfRate));
+            sgst   = parseFloat(customRound(base * halfRate));
+            gross  = parseFloat(customRound(base + cgst + sgst));
         }
 
-        // UI text
+        // UI text (display)
         const pct = (halfRate * 100).toFixed(0);
         holder.innerHTML =
-            'CGST (' + pct + '%): <b>₹' + customRound(cgst.toFixed(2)) + '</b> | ' +
-            'SGST (' + pct + '%): <b>₹' + customRound(sgst.toFixed(2)) + '</b> | ' +
-            'Base: <b>₹' + customRound(base.toFixed(2)) + '</b>';
+            'CGST (' + pct + '%): <b>₹' + customRound(cgst) + '</b> | ' +
+            'SGST (' + pct + '%): <b>₹' + customRound(sgst) + '</b> | ' +
+            'Base: <b>₹' + customRound(base) + '</b>';
 
-        // push values into hidden inputs
+        // push ROUNDED values into hidden inputs (yahi DB me save hoga)
         const hc = document.getElementById('cgst_amount_' + rowId);
         const hs = document.getElementById('sgst_amount_' + rowId);
         const hn = document.getElementById('p_diff_amount_' + rowId); // storing base (net-of-tax)
-        if (hc) hc.value = cgst.toFixed(2);
-        if (hs) hs.value = sgst.toFixed(2);
-        if (hn) hn.value = base.toFixed(2);
+        if (hc) hc.value = customRound(cgst);
+        if (hs) hs.value = customRound(sgst);
+        if (hn) hn.value = customRound(base);
     }
-
-    function customRound(number) {
-        number = Number(number);
-        if (number === 0) return number;
-        var int = Math.floor(number);
-        var decimal = number - int;
-        if (decimal === 0) return int.toFixed(2);
-        return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
-    }
-
 
     function addCalc(line_serial) {
         var id = parseFloat($("#add_rows_id").val());
@@ -1070,7 +1061,7 @@ if (isset($_GET['delid'])) {
             if (!amt) { amt = 0; }
             tot += amt;
         }
-        $("#tot_receive_amount").val(tot.toFixed(2));
+        $("#tot_receive_amount").val(customRound(tot));
         percent_amt_calc();
         renderTaxBreakdown(line_serial); // NEW
         enforcePerProjectLimit(line_serial);
@@ -1159,7 +1150,7 @@ if (isset($_GET['delid'])) {
             '<div class="col" style="min-width: 160px;">' +
             '<div class="form-group mb-1">' +
             '<label>परियोजना पर प्राप्त राशि</label>' +
-            '<input type="text" name="p_receive_amount_' + id + '" id="p_receive_amount_' + id + '" class="form-control" value="" onInput="addCalc(' + id + ')">' +
+            '<input type="text" name="p_receive_amount_' + id + '" id="p_receive_amount_' + id + '" class="form-control" value="" onInput="addCalc(' + id + ')" onblur="roundInputOnBlur(this); addCalc(' + id + ');">' +
             '<div class="mt-1 small text-muted" id="tax_br_' + id + '"></div>' +
             '<input type="hidden" name="cgst_amount_' + id + '" id="cgst_amount_' + id + '">' +
             '<input type="hidden" name="sgst_amount_' + id + '" id="sgst_amount_' + id + '">' +
@@ -1382,12 +1373,12 @@ if (isset($_GET['delid'])) {
                     if (remain < 0) remain = 0;
 
                     var parts = [];
-                    parts.push('Sanction: <b>' + sanc_lakh.toFixed(2) + ' Lakh</b> (<b>₹' + sanc_rupees.toFixed(2) + '</b>)');
+                    parts.push('Sanction: <b>' + customRound(sanc_lakh.toFixed(2)) + ' Lakh</b> (<b>₹' + customRound(sanc_rupees.toFixed(2)) + '</b>)');
                     if (exclude === 0) { // show Received only in create mode
-                        parts.push('Received: <b>₹' + rcvd.toFixed(2) + '</b>');
+                        parts.push('Received: <b>₹' + customRound(rcvd.toFixed(2)) + '</b>');
                     }
-                    parts.push('Installments: <b>' + inst_cnt + '</b>');
-                    parts.push('Remaining: <b id="remain_' + rowId + '">₹' + remain.toFixed(2) + '</b>');
+                    parts.push('Installments: <b>' + customRound(inst_cnt) + '</b>');
+                    parts.push('Remaining: <b id="remain_' + rowId + '">₹' + customRound(remain.toFixed(2)) + '</b>');
 
                     $("#proj_info_" + rowId).html(parts.join(' | '));
                     view_ledger_row(rowId);
@@ -1427,6 +1418,8 @@ if (isset($_GET['delid'])) {
                     }
 
                 } catch (e) {
+                    console.log("test.................................");
+                    console.log(e.toString());
                     $("#proj_info_" + rowId).html('<span class="text-danger">Unable to load project info</span>');
                 }
             }
@@ -1755,8 +1748,9 @@ if (isset($_GET['delid'])) {
                                                 <label>Project Received Amount</label>
                                                 <input type="text" name="p_receive_amount_<?php echo $i; ?>"
                                                     id="p_receive_amount_<?php echo $i; ?>" class="form-control"
-                                                    value="<?php echo $_POST['p_receive_amount_' . $i] ?? ''; ?>"
-                                                    tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)">
+                                                    value="<?php echo customRound($_POST['p_receive_amount_' . $i] ?? 0); ?>"
+                                                    tabindex="<?php echo $tab++; ?>" onInput="addCalc(<?php echo $i; ?>)"
+                                                    onblur="roundInputOnBlur(this); addCalc(<?php echo $i; ?>);">
                                                 <div class="mt-1 small text-muted" id="tax_br_<?php echo $i; ?>"></div>
 
                                                 <!-- NEW: send displayed values via POST -->
@@ -1805,8 +1799,8 @@ if (isset($_GET['delid'])) {
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">TDS Amount</label>
                                     <input type="text" name="tds_deducted" id="tds_deducted" class="form-control px-1"
-                                        value="<?php echo @$_POST['tds_deducted']; ?>" tabindex="<?php echo $tab++; ?>"
-                                        onInput="percent_amt_calc('tds_deducted')">
+                                        value="<?php echo customRound(@$_POST['tds_deducted']); ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc('tds_deducted')" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">GST TDS (%)</label>
@@ -1817,8 +1811,8 @@ if (isset($_GET['delid'])) {
                                 <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">GST TDS Amount</label>
                                     <input type="text" name="gsttds_deducted" id="gsttds_deducted"
-                                        class="form-control px-1" value="<?php echo @$_POST['gsttds_deducted']; ?>"
-                                        tabindex="<?php echo $tab++; ?>" onInput="percent_amt_calc('gsttds_deducted')">
+                                        class="form-control px-1" value="<?php echo customRound(@$_POST['gsttds_deducted']); ?>"
+                                        tabindex="<?php echo $tab++; ?>" onInput="percent_amt_calc('gsttds_deducted')" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">CGST TDS</label>
@@ -1835,14 +1829,14 @@ if (isset($_GET['delid'])) {
                                 <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">Labour Cess</label>
                                     <input type="text" name="labour_sess" id="labour_sess" class="form-control px-1"
-                                        value="<?php echo @$_POST['labour_sess']; ?>" tabindex="<?php echo $tab++; ?>"
-                                        onInput="percent_amt_calc()">
+                                        value="<?php echo customRound(@$_POST['labour_sess']); ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc()" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-2 mb-3" style="padding-left: 5px;">
                                     <label style="font-size: 13px !important; color: #000;">Other Charges</label>
                                     <input type="text" name="other_charges" id="other_charges" class="form-control px-1"
-                                        value="<?php echo @$_POST['other_charges']; ?>" tabindex="<?php echo $tab++; ?>"
-                                        onInput="percent_amt_calc()">
+                                        value="<?php echo customRound(@$_POST['other_charges']); ?>" tabindex="<?php echo $tab++; ?>"
+                                        onInput="percent_amt_calc()" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                             </div>
                         </div>
@@ -1859,14 +1853,15 @@ if (isset($_GET['delid'])) {
                                     <label>Total Received Amount</label>
                                     <input onInput="percent_amt_calc()" type="text" name="tot_receive_amount"
                                         id="tot_receive_amount" class="form-control"
-                                        value="<?php echo @$_POST['tot_receive_amount']; ?>"
-                                        tabindex="<?php echo $tab++; ?>" style="background-color: #fdfaf9;">
+                                        value="<?php echo customRound(@$_POST['tot_receive_amount']); ?>"
+                                        tabindex="<?php echo $tab++; ?>" style="background-color: #fdfaf9;"
+                                        onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-2 mb-3">
                                     <label>Total Credit Amount In Bank</label>
                                     <input type="text" name="tot_credit_amount" id="tot_credit_amount"
-                                        class="form-control" value="<?php echo @$_POST['tot_credit_amount']; ?>"
-                                        tabindex="<?php echo $tab++; ?>" style="background-color: #f6fdf6;">
+                                        class="form-control" value="<?php echo customRound(@$_POST['tot_credit_amount']); ?>"
+                                        tabindex="<?php echo $tab++; ?>" style="background-color: #f6fdf6;" readonly>
                                 </div>
 
                                 <div class="col-md-4 mb-3" id="bank_ho">

@@ -1,7 +1,7 @@
 <?php
 include("scripts/settings.php");
 include("scripts/alerts.php");
-include("scripts/billit_settings.php");
+include("scripts/billit_settings.php"); // customRound() aur money() yahan se aate hain
 $msg = '';
 $msg1 = '';
 $tab = 1;
@@ -29,23 +29,20 @@ function nfloat($v)
 {
   return (isset($v) && is_numeric($v)) ? (float) $v : 0.0;
 }
-function money($v)
-{
-  return number_format((float) $v, 2, '.', '');
-}
 
 function compute_row_math($amount, $gst_per, $cent_per, $gsttds_per, $it_per, $labour_abs)
 {
-  $amt = (float) $amount;
-  $gstded = ($gst_per > 0) ? (($amt * $gst_per) / (100.0 + $gst_per)) : 0.0;
-  $remain = $amt - $gstded;
-  $advcen = ($cent_per > 0) ? (($remain * $cent_per) / (100.0 + $cent_per)) : 0.0;
-  $gsttds = ($gsttds_per > 0) ? (($amt * $gsttds_per) / 100.0) : 0.0;
-  $itax = ($it_per > 0) ? (($amt * $it_per) / 100.0) : 0.0;
-  $labour = (float) $labour_abs;
-  $proposed = $remain - ($advcen + $gsttds + $labour + $itax);
-  return [$gstded, $remain, $advcen, $gsttds, $labour, $itax, $proposed];
+  $amt    = (float) $amount;
+  $gstded = ($gst_per  > 0) ? money(($amt * $gst_per)  / (100.0 + $gst_per))  : 0.0;
+  $remain = money($amt - $gstded);
+  $advcen = ($cent_per > 0) ? money(($remain * $cent_per) / (100.0 + $cent_per)) : 0.0;
+  $gsttds = ($gsttds_per > 0) ? money(($amt * $gsttds_per) / 100.0) : 0.0;
+  $itax   = ($it_per   > 0) ? money(($amt * $it_per)   / 100.0) : 0.0;
+  $labour = money((float) $labour_abs);
+  $proposed = money($remain - ((float)$advcen + (float)$gsttds + (float)$labour + (float)$itax));
+  return [(float)$gstded, (float)$remain, (float)$advcen, (float)$gsttds, (float)$labour, (float)$itax, (float)$proposed];
 }
+
 
 $auto_voucher_no = (!isset($_GET['edit_header_id']))
   ? generateVoucherNumber(
@@ -1488,26 +1485,15 @@ if (isset($_POST['btn_submit'])) {
   </style>
   <script src="js/light-bootstrap-dashboard.js?v=1.4.0"></script>
   <script src="js/chartist.min.js"></script>
+  <script src="js/custom_round.js"></script>
   <?php page_footer_end(); ?>
 
   <script>
     // ================== Minimal JS (enhanced) ==================
     const actionUrl = 'scripts/ajax.php';
     let rowIdx = 0;
-    const money = v => (isFinite(v) ? Number(v).toFixed(2) : '0.00');
     function rate(id) { const el = document.getElementById(id); const v = parseFloat(el && el.value); return isFinite(v) ? v : 0; }
     function val(id) { const el = document.getElementById(id); const v = parseFloat(el && el.value); return isFinite(v) ? v : 0; }
-
-    /* ---------- 50 paise rounding rule ---------- */
-    function customRound(number) {
-      number = Number(number);
-      if (!isFinite(number) || number === 0) return '0.00';
-      var int = Math.floor(number);
-      var decimal = number - int;
-      if (decimal === 0) return int.toFixed(2);
-      return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
-    }
-
 
     /* ---- Select2 Helpers ---- */
     function makeSearchable(selectId) {
@@ -1881,25 +1867,25 @@ if (isset($_POST['btn_submit'])) {
     }
 
     function recalcRow(tr) {
-      const amt = parseFloat(tr.querySelector('.r-amt')?.value) || 0;
-      const gst_per = rate('gst_per');
-      const cent_per = rate('sentagepercentage');
-      const gsttds_per = rate('gsttdspercentage');
-      const it_per = rate('it_per');
-      const labour_abs = val('leborses');
-      const gstded = (gst_per > 0) ? ((amt * gst_per) / (100 + gst_per)) : 0;
-      const remain = amt - gstded;
-      const adv = (remain * cent_per) / (100 + cent_per) || 0;
-      const gsttds = (amt * gsttds_per) / 100 || 0;
-      const itx = (amt * it_per) / 100 || 0;
-      const lab = labour_abs || 0;
-      const prop = remain - (adv + gsttds + lab + itx);
-      $(tr).find('.r-gst').text(money(gstded));
-      $(tr).find('.r-rem2').text(money(remain));
-      $(tr).find('.r-adv').text(money(adv));
-      $(tr).find('.r-gsttds').text(money(gsttds));
-      $(tr).find('.r-lab').text(money(lab));
-      $(tr).find('.r-it').text(money(itx));
+      const amt       = parseFloat(tr.querySelector('.r-amt')?.value) || 0;
+      const gst_per   = rate('gst_per');
+      const cent_per  = rate('sentagepercentage');
+      const gsttds_per= rate('gsttdspercentage');
+      const it_per    = rate('it_per');
+      const labour_abs= val('leborses');
+      const gstded    = parseFloat(customRound((gst_per > 0) ? ((amt * gst_per) / (100 + gst_per)) : 0));
+      const remain    = parseFloat(customRound(amt - gstded));
+      const adv       = parseFloat(customRound((remain * cent_per) / (100 + cent_per) || 0));
+      const gsttds    = parseFloat(customRound((amt * gsttds_per) / 100 || 0));
+      const itx       = parseFloat(customRound((amt * it_per) / 100 || 0));
+      const lab       = parseFloat(customRound(labour_abs || 0));
+      const prop      = parseFloat(customRound(remain - (adv + gsttds + lab + itx)));
+      $(tr).find('.r-gst').text(customRound(gstded));
+      $(tr).find('.r-rem2').text(customRound(remain));
+      $(tr).find('.r-adv').text(customRound(adv));
+      $(tr).find('.r-gsttds').text(customRound(gsttds));
+      $(tr).find('.r-lab').text(customRound(lab));
+      $(tr).find('.r-it').text(customRound(itx));
       $(tr).find('.r-prop').text(customRound(prop));
       recalcTotals();
     }
@@ -1936,45 +1922,42 @@ if (isset($_POST['btn_submit'])) {
 
       let T_gst = 0, T_rem = 0, T_adv = 0, T_gsttds = 0, T_lab = 0, T_it = 0, T_prop = 0;
 
-      // Step 3: Calculate each row proportionally
+      // Step 3: Calculate each row proportionally — sab customRound se
       document.querySelectorAll('#rows_table tbody tr').forEach(tr => {
-        const amt = parseFloat(tr.querySelector('.r-amt')?.value) || 0;
-        const cent_per = rate('sentagepercentage');
+        const amt        = parseFloat(tr.querySelector('.r-amt')?.value) || 0;
+        const cent_per   = rate('sentagepercentage');
         const gsttds_per = rate('gsttdspercentage');
-        const it_per = rate('it_per');
+        const it_per     = rate('it_per');
         const labour_abs = val('leborses');
 
-        // Distribute header GST proportionally based on row amount
-        const gstded = T_amt > 0 ? (amt / T_amt) * total_gst_h : 0;
+        const gstded = parseFloat(customRound(T_amt > 0 ? (amt / T_amt) * total_gst_h : 0));
+        const remain = parseFloat(customRound(amt - gstded));
+        const adv    = parseFloat(customRound((remain * cent_per) / (100 + cent_per) || 0));
+        const gsttds = parseFloat(customRound((amt * gsttds_per) / 100 || 0));
+        const itx    = parseFloat(customRound((amt * it_per) / 100 || 0));
+        const lab    = parseFloat(customRound(labour_abs || 0));
+        const prop   = parseFloat(customRound(remain - (adv + gsttds + lab + itx)));
 
-        const remain = amt - gstded;
-        const adv = (remain * cent_per) / (100 + cent_per) || 0;
-        const gsttds = (amt * gsttds_per) / 100 || 0;
-        const itx = (amt * it_per) / 100 || 0;
-        const lab = labour_abs || 0;
-        const prop = remain - (adv + gsttds + lab + itx);
-
-        // Update Row UI
-        $(tr).find('.r-gst').text(money(gstded));
-        $(tr).find('.r-rem2').text(money(remain));
-        $(tr).find('.r-adv').text(money(adv));
-        $(tr).find('.r-gsttds').text(money(gsttds));
-        $(tr).find('.r-lab').text(money(lab));
-        $(tr).find('.r-it').text(money(itx));
-        $(tr).find('.r-prop').text(money(prop));
+        $(tr).find('.r-gst').text(customRound(gstded));
+        $(tr).find('.r-rem2').text(customRound(remain));
+        $(tr).find('.r-adv').text(customRound(adv));
+        $(tr).find('.r-gsttds').text(customRound(gsttds));
+        $(tr).find('.r-lab').text(customRound(lab));
+        $(tr).find('.r-it').text(customRound(itx));
+        $(tr).find('.r-prop').text(customRound(prop));
 
         T_gst += gstded; T_rem += remain; T_adv += adv; T_gsttds += gsttds; T_lab += lab; T_it += itx; T_prop += prop;
       });
 
-      // Step 4: Update Footer Totals and Header Mirrors
-      document.getElementById('T_amt').textContent = money(T_amt);
-      document.getElementById('T_gst').textContent = money(T_gst);
-      document.getElementById('T_rem').textContent = money(T_rem);
-      document.getElementById('T_adv').textContent = money(T_adv);
-      document.getElementById('T_gsttds').textContent = money(T_gsttds);
-      document.getElementById('T_lab').textContent = money(T_lab);
-      document.getElementById('T_it').textContent = money(T_it);
-      document.getElementById('T_prop').textContent = customRound(T_prop);
+      // Step 4: Update Footer Totals and Header Mirrors — sab customRound se
+      document.getElementById('T_amt').textContent    = customRound(T_amt);
+      document.getElementById('T_gst').textContent    = customRound(T_gst);
+      document.getElementById('T_rem').textContent    = customRound(T_rem);
+      document.getElementById('T_adv').textContent    = customRound(T_adv);
+      document.getElementById('T_gsttds').textContent = customRound(T_gsttds);
+      document.getElementById('T_lab').textContent    = customRound(T_lab);
+      document.getElementById('T_it').textContent     = customRound(T_it);
+      document.getElementById('T_prop').textContent   = customRound(T_prop);
 
       document.getElementById('transafer_amount').value = money(T_amt);
       document.getElementById('gstdeduction').value = money(T_gst);

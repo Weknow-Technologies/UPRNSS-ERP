@@ -1956,15 +1956,18 @@ function get_division($id)
 
 function customRound($number)
 {
-	if ((float) $number == 0) {
-		return $number;
-	}
-	$int = floor($number);
-	$decimal = (float) $number - $int;
-	if ($decimal == 0) {
-		return number_format($int, 2, '.', '');
-	}
-	return ($decimal < 0.50) ? number_format($int + 0.50, 2, '.', '') : number_format($int + 1, 2, '.', '');
+    if ((float) $number == 0) {
+        return number_format(0, 2, '.', '');
+    }
+    $int = floor($number);
+    $decimal = (float) $number - $int;
+    if ($decimal == 0) {
+        return number_format($int, 2, '.', '');
+    }
+    if ($decimal == 0.50) {
+        return number_format($int + 0.50, 2, '.', '');
+    }
+    return ($decimal < 0.50) ? number_format($int, 2, '.', '') : number_format($int + 1, 2, '.', '');
 }
 
 function get_department($id)

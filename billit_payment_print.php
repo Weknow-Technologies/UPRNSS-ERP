@@ -123,27 +123,55 @@ if (isset($_GET['id'])) {
     <title>Journal Voucher</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
             width: 1024px;
+            margin: 20px auto; /* ← center karega */
         }
 
-        td,
-        th {
-            padding: 5px;
+        .header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
+        h4 { margin: 5px 0; text-align: center; }
+        p  { margin: 2px 0; text-align: center; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th { background-color: #f2f2f2; }
+
+        .debit, .credit { text-align: right; }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #ddd;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
         @media print {
             .total-row {
                 font-weight: bold;
                 background-color: transparent !important;
             }
-
-            th {
-                background-color: transparent !important;
-            }
-        }
-
-        @media print {
+            th { background-color: transparent !important; }
             body::after {
                 content: "Powered By AIPPCA";
                 position: fixed;
@@ -167,7 +195,8 @@ if (isset($_GET['id'])) {
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            width: 1024px;
+            margin: 20px auto; /* ← center karega */
         }
 
         .header {
@@ -177,15 +206,8 @@ if (isset($_GET['id'])) {
             margin-bottom: 10px;
         }
 
-        h4 {
-            margin: 5px 0;
-            text-align: center;
-        }
-
-        p {
-            margin: 2px 0;
-            text-align: center;
-        }
+        h4 { margin: 5px 0; text-align: center; }
+        p  { margin: 2px 0; text-align: center; }
 
         table {
             width: 100%;
@@ -193,21 +215,15 @@ if (isset($_GET['id'])) {
             font-size: 14px;
         }
 
-        th,
-        td {
+        th, td {
             border: 1px solid black;
             padding: 8px;
             text-align: left;
         }
 
-        th {
-            background-color: #f2f2f2;
-        }
+        th { background-color: #f2f2f2; }
 
-        .debit,
-        .credit {
-            text-align: right;
-        }
+        .debit, .credit { text-align: right; }
 
         .total-row {
             font-weight: bold;
@@ -220,18 +236,36 @@ if (isset($_GET['id'])) {
             align-items: center;
             margin-bottom: 10px;
         }
+
+        @media print {
+            .total-row {
+                font-weight: bold;
+                background-color: transparent !important;
+            }
+            th { background-color: transparent !important; }
+            body::after {
+                content: "Powered By AIPPCA";
+                position: fixed;
+                font-size: 50px;
+                color: rgba(0, 0, 0, 0.1);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                z-index: -2;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div style="margin-left: 30px; margin-right: 15px;">
+<div style="margin: 0 auto; max-width: 980px;">
         <div class="header">उत्तर प्रदेश राज्य निर्माण सहकारी संघ लि. (यू. पी. आर. एन. एस. एस.)</div>
         <div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
         <p>State Name: Uttar Pradesh, Code:09
         <p>
         <p>E-Mail: paccfedho@gmail.com
         <p>
-        <h4>Payment At: <?php echo get_division($old_data['unit_id']); ?></h4>
+        <h4><?php echo get_division($old_data['unit_id']); ?></h4>
 
         <h4>Journal Voucher</h4>
 

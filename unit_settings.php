@@ -201,34 +201,27 @@ page_sidebar();
                     <div id="settings_fields">
                         <div class="row">
                             <?php
-//                            $receive_keys = ['ITTDS', 'GST', 'CGST', 'SGST', 'GSTTDS', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
-//                            $transfer_keys = ['ADVCEN', 'GSTW', 'CGSTW', 'SGSTW', 'GSTTDSW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW'];
-//                            $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_GST_TDS', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_GST', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_GST', 'BILL_DED_CGST', 'BILL_DED_SGST'];
                             $receive_keys = ['ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
                             $transfer_keys = ['ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW'];
                             $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'];
                             $friendly_names = [
-//                                'ITTDS' => 'TDS',
-//                                'GST' => 'GST',
+                                'ITTDS' => 'Income Tax',
                                 'CGST' => 'CGST',
                                 'SGST' => 'SGST',
-//                                'GSTTDS' => 'GST TDS',
                                 'CGSTTDS' => 'CGST TDS',
                                 'SGSTTDS' => 'SGST TDS',
                                 'LABORCESS' => 'Labour Cess',
                                 'OTHER_CHARGES' => 'Other Charges',
                                 'ADVCEN' => 'Advance Centage',
-//                                'GSTW' => 'GST',
                                 'CGSTW' => 'CGST',
                                 'SGSTW' => 'SGST',
                                 'GSTTDSW' => 'GST TDS',
                                 'CGSTTDSW' => 'CGST TDS',
                                 'SGSTTDSW' => 'SGST TDS',
-                                'ITTDSW' => 'IT TDS',
+                                'ITTDSW' => 'Income Tax',
                                 'LABOURCESSW' => 'Labour Cess',
                                 'BILL_OTHER_ADD' => 'Other Additions',
                                 'BILL_IT' => 'Income Tax',
-//                                'BILL_GST_TDS' => 'GST TDS',
                                 'BILL_CGST_TDS' => 'CGST TDS',
                                 'BILL_SGST_TDS' => 'SGST TDS',
                                 'BILL_SECURITY' => 'Security Deposit',
@@ -236,10 +229,8 @@ page_sidebar();
                                 'BILL_OTHER_DED' => 'Other Deductions',
                                 'BILL_ROYALTY' => 'Royalty Amount',
                                 'BILL_HOLD' => 'Hold Amount',
-//                                'BILL_GST' => 'GST',
                                 'BILL_CGST' => 'CGST',
                                 'BILL_SGST' => 'SGST',
-//                                'BILL_DED_GST' => 'GST Deduction',
                                 'BILL_DED_CGST' => 'CGST Deduction',
                                 'BILL_DED_SGST' => 'SGST Deduction'
                             ];
@@ -399,12 +390,6 @@ page_sidebar();
                     dataType: 'json',
                     success: function (data) {
                         if (data) {
-                            // var jsKeys = [
-                            //     'ITTDS', 'GST', 'CGST', 'SGST', 'GSTTDS', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES',
-                            //     'ADVCEN', 'GSTW', 'CGSTW', 'SGSTW', 'GSTTDSW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW',
-                            //     'BILL_OTHER_ADD', 'BILL_IT', 'BILL_GST_TDS', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED',
-                            //     'BILL_GST', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_GST', 'BILL_DED_CGST', 'BILL_DED_SGST'
-                            // ];
                             var jsKeys = [
                                 'ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES',
                                 'ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW',

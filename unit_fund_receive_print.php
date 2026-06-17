@@ -38,7 +38,7 @@ if (isset($_GET['id'])) {
         <div class="header">G-4/5 SECTOR-4 GOMTINAGAR VISTAR LUCKNOW 226010</div>
         <p style="text-align:center;">State Name: Uttar Pradesh, Code:09</p>
         
-        <h4>Payment At: <?php echo !empty($old_data['unit_id']) ? get_division($old_data['unit_id']) : ''; ?></h4>
+        <h4><?php echo !empty($old_data['unit_id']) ? get_division($old_data['unit_id']) : ''; ?></h4>
         <h4 style="text-decoration: underline;">Fund Receipt Voucher</h4>
 
         <div class="header-container">

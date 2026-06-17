@@ -2,6 +2,7 @@
 include("scripts/settings.php");
 include("scripts/alerts.php"); 
 include("scripts/billit_settings.php");
+
 $msg = '';
 $msg1 = '';
 $tab = 1;
@@ -11,58 +12,58 @@ page_header_end();
 page_sidebar();
 
 if (isset($_POST['submit'])) {
-	$_POST['fund_transfer_by'] = $_POST['fund_transfer_by'] ?? '';
-	$_POST['fund_transfer_to'] = $_POST['fund_transfer_to'] ?? '';
-	$_POST['order_date'] = $_POST['order_date'] ?? '';
-	$_POST['other_add_ded'] = $_POST['other_add_ded'] ?? '';
-	$_POST['sentagepercentage'] = $_POST['sentagepercentage'] ?? '';
-	$_POST['sentage'] = $_POST['sentage'] ?? '';
-	$_POST['remarks'] = $_POST['remarks'] ?? '';
-	$_POST['challan_no'] = $_POST['challan_no'] ?? '';
-	$_POST['wing'] = $_POST['wing'] ?? '';
-	$_POST['branch'] = $_POST['branch'] ?? '';
+    $_POST['fund_transfer_by'] = $_POST['fund_transfer_by'] ?? '';
+    $_POST['fund_transfer_to'] = $_POST['fund_transfer_to'] ?? '';
+    $_POST['order_date'] = $_POST['order_date'] ?? '';
+    $_POST['other_add_ded'] = $_POST['other_add_ded'] ?? '';
+    $_POST['sentagepercentage'] = $_POST['sentagepercentage'] ?? '';
+    $_POST['sentage'] = $_POST['sentage'] ?? '';
+    $_POST['remarks'] = $_POST['remarks'] ?? '';
+    $_POST['challan_no'] = $_POST['challan_no'] ?? '';
+    $_POST['wing'] = $_POST['wing'] ?? '';
+    $_POST['branch'] = $_POST['branch'] ?? '';
 
-	//print_r($_POST);
-	//die();
-	if ($_POST['fund_transfer_by'] == 1) {
-		$_POST['by_id'] = 1;
-	} elseif ($_POST['fund_transfer_by'] == 2) {
-		$_POST['by_id'] = $_POST['unit_id'];
-	} elseif ($_POST['fund_transfer_by'] == 3) {
-		$_POST['by_id'] = '';
-	}
+    //print_r($_POST);
+    //die();
+    if ($_POST['fund_transfer_by'] == 1) {
+        $_POST['by_id'] = 1;
+    } elseif ($_POST['fund_transfer_by'] == 2) {
+        $_POST['by_id'] = $_POST['unit_id'];
+    } elseif ($_POST['fund_transfer_by'] == 3) {
+        $_POST['by_id'] = '';
+    }
 
 
-	if ($_POST['fund_transfer_to'] == 1) {
-		$_POST['to_id'] = 1;
-	} elseif ($_POST['fund_transfer_to'] == 2) {
-		$_POST['to_id'] = $_POST['unit_id'];
-	} elseif ($_POST['fund_transfer_to'] == 3) {
-		$_POST['to_id'] = "";
-	}
+    if ($_POST['fund_transfer_to'] == 1) {
+        $_POST['to_id'] = 1;
+    } elseif ($_POST['fund_transfer_to'] == 2) {
+        $_POST['to_id'] = $_POST['unit_id'];
+    } elseif ($_POST['fund_transfer_to'] == 3) {
+        $_POST['to_id'] = "";
+    }
 
-	$_POST['by_type'] = "";
-	$_POST['to_type'] = "";
-	if ($_POST['fund_transfer_by'] == 1) {
-		$_POST['by_type'] = "HO";
-	} elseif ($_POST['fund_transfer_by'] == 2) {
-		$_POST['by_type'] = "Unit";
-	} elseif ($_POST['fund_transfer_by'] == 3) {
-		$_POST['by_type'] = "Vendor";
-	}
+    $_POST['by_type'] = "";
+    $_POST['to_type'] = "";
+    if ($_POST['fund_transfer_by'] == 1) {
+        $_POST['by_type'] = "HO";
+    } elseif ($_POST['fund_transfer_by'] == 2) {
+        $_POST['by_type'] = "Unit";
+    } elseif ($_POST['fund_transfer_by'] == 3) {
+        $_POST['by_type'] = "Vendor";
+    }
 
-	if ($_POST['fund_transfer_to'] == 1) {
-		$_POST['to_type'] = "HO";
-	} elseif ($_POST['fund_transfer_to'] == 2) {
-		$_POST['to_type'] = "Unit";
-	} elseif ($_POST['fund_transfer_to'] == 3) {
-		$_POST['to_type'] = "Vendor";
-	}
+    if ($_POST['fund_transfer_to'] == 1) {
+        $_POST['to_type'] = "HO";
+    } elseif ($_POST['fund_transfer_to'] == 2) {
+        $_POST['to_type'] = "Unit";
+    } elseif ($_POST['fund_transfer_to'] == 3) {
+        $_POST['to_type'] = "Vendor";
+    }
 
-	$_POST['sub_department_id'] = isset($_POST['sub_department_id'])?$_POST['sub_department_id']:'';
+    $_POST['sub_department_id'] = isset($_POST['sub_department_id']) ? $_POST['sub_department_id'] : '';
 
-	if ($_POST['edit_sno'] != '') {
-		$sql = 'UPDATE invoice_account_fund_transafer SET
+    if ($_POST['edit_sno'] != '') {
+        $sql = 'UPDATE invoice_account_fund_transafer SET
 			unit_id="' . $_POST['unit_id'] . '",
 			fund_transfer_to="' . $_POST['fund_transfer_to'] . '",
 			order_no="' . $_POST['order_no'] . '",
@@ -95,11 +96,11 @@ if (isset($_POST['submit'])) {
 			total_expen="' . $_POST['total_expen'] . '",
 			remark="' . $_POST['remark'] . '",
 			from_account_no="' . $_POST['from_account_no'] . '",
-			to_account_no="' . $_POST['to_bank_name'] . '",
+			to_bank_name="' . $_POST['to_bank_name'] . '",
+			to_account_no="' . $_POST['vendor_ledger_sno'] . '",
 			vendor_id="' . $_POST['vendor_id'] . '",
 			status="1",
 			request_status="7",
-			to_account_no="' . $_POST['to_bank_name'] . '",
 			
 			created_by="' . $_SESSION['username'] . '",
 			creation_time="' . date("Y-m-d H:i:s") . '",
@@ -109,53 +110,53 @@ if (isset($_POST['submit'])) {
 			ded_sgst_amount="' . $_POST['ded_sgst_amount'] . '"
 			WHERE sno="' . $_POST['edit_sno'] . '"';
 
-		execute_query($sql);
-		if (mysqli_error($db)) {
-			$msg .= '<p class="alert alert-danger">Error # 1 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-		}
+        execute_query($sql);
+        if (mysqli_error($db)) {
+            $msg .= '<p class="alert alert-danger">Error # 1 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+        }
         if ($msg == '') {
             $inv_id = $_POST['edit_sno'];
 
-            execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id IN (SELECT sno FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$inv_id.'")');
-            execute_query('DELETE FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$inv_id.'"');
-			$sql = 'insert into billit_invoice_erp_payment (timestamp, first_by, first_to, tot_debit, tot_credit, row_count, voucher_no, unit_id, created_by, creation_time, table_name, table_id) values ("' . $_POST['transafer_date'] . '", "' . $_POST['to_bank_name'] . '", "' . $_POST['from_account_no'] . '", "' . $_POST['transafer_amount'] . '", "' . $_POST['transafer_amount'] . '", "", "' . $_POST['voucher_no'] . '", "' . $_POST['unit_id'] . '", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '","invoice_account_fund_transafer", "' . $inv_id . '" )';
-			execute_query($sql);
-			if (mysqli_error($db)) {
-				$msg .= '<p class="alert alert-danger">Error # 1.02 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-			}
-			$id_stock = mysqli_insert_id($db);
-			$unit_id_for_settings = $_POST['unit_id'] ?: 53;
-			$gstw = get_bill_setting_w2($db, "BILL_GST", $unit_id_for_settings);
-			$cgst = get_bill_setting_w2($db, "BILL_CGST", $unit_id_for_settings);
-			$sgst = get_bill_setting_w2($db, "BILL_SGST", $unit_id_for_settings);
-			$ded_gstw = get_bill_setting_w2($db, "BILL_DED_GST", $unit_id_for_settings);
-			$ded_cgst = get_bill_setting_w2($db, "BILL_DED_CGST", $unit_id_for_settings);
-			$ded_sgst = get_bill_setting_w2($db, "BILL_DED_SGST", $unit_id_for_settings);
-			$advcen = get_bill_setting_w2($db, "BILL_SECURITY", $unit_id_for_settings);
-			$gsttds = get_bill_setting_w2($db, "BILL_GST_TDS", $unit_id_for_settings);
-			$cgsttds = get_bill_setting_w2($db, "BILL_CGST_TDS", $unit_id_for_settings);
-			$sgsttds = get_bill_setting_w2($db, "BILL_SGST_TDS", $unit_id_for_settings);
-			$labourcessw = get_bill_setting_w2($db, "BILL_LABOUR_CESS", $unit_id_for_settings);
-			$ittds = get_bill_setting_w2($db, "BILL_IT", $unit_id_for_settings);
-			$other = get_bill_setting_w2($db, "BILL_OTHER_DED", $unit_id_for_settings);
-			$royalty = get_bill_setting_w2($db, "BILL_ROYALTY", $unit_id_for_settings);
+            execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id IN (SELECT sno FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="' . $inv_id . '")');
+            execute_query('DELETE FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="' . $inv_id . '"');
+            $sql = 'insert into billit_invoice_erp_payment (timestamp, first_by, first_to, tot_debit, tot_credit, row_count, voucher_no, unit_id, created_by, creation_time, table_name, table_id) values ("' . $_POST['transafer_date'] . '", "' . $_POST['to_bank_name'] . '", "' . $_POST['from_account_no'] . '", "' . $_POST['transafer_amount'] . '", "' . $_POST['transafer_amount'] . '", "", "' . $_POST['voucher_no'] . '", "' . $_POST['unit_id'] . '", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '","invoice_account_fund_transafer", "' . $inv_id . '" )';
+            execute_query($sql);
+            if (mysqli_error($db)) {
+                $msg .= '<p class="alert alert-danger">Error # 1.02 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
+            $id_stock = mysqli_insert_id($db);
+            $unit_id_for_settings = $_POST['unit_id'] ?: 53;
+            $gstw = get_bill_setting_w2($db, "BILL_GST", $unit_id_for_settings);
+            $cgst = get_bill_setting_w2($db, "BILL_CGST", $unit_id_for_settings);
+            $sgst = get_bill_setting_w2($db, "BILL_SGST", $unit_id_for_settings);
+            $ded_gstw = get_bill_setting_w2($db, "BILL_DED_GST", $unit_id_for_settings);
+            $ded_cgst = get_bill_setting_w2($db, "BILL_DED_CGST", $unit_id_for_settings);
+            $ded_sgst = get_bill_setting_w2($db, "BILL_DED_SGST", $unit_id_for_settings);
+            $advcen = get_bill_setting_w2($db, "BILL_SECURITY", $unit_id_for_settings);
+            $gsttds = get_bill_setting_w2($db, "BILL_GST_TDS", $unit_id_for_settings);
+            $cgsttds = get_bill_setting_w2($db, "BILL_CGST_TDS", $unit_id_for_settings);
+            $sgsttds = get_bill_setting_w2($db, "BILL_SGST_TDS", $unit_id_for_settings);
+            $labourcessw = get_bill_setting_w2($db, "BILL_LABOUR_CESS", $unit_id_for_settings);
+            $ittds = get_bill_setting_w2($db, "BILL_IT", $unit_id_for_settings);
+            $other = get_bill_setting_w2($db, "BILL_OTHER_DED", $unit_id_for_settings);
+            $royalty = get_bill_setting_w2($db, "BILL_ROYALTY", $unit_id_for_settings);
 // project ledger
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "", "' . $_POST['transafer_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-execute_query($sql);
-if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . $_POST['project_ledger_id'] . '", "", "' . $_POST['transafer_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+            execute_query($sql);
+            if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
 
-if (isset($_POST['cgst_amount']) && $_POST['cgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($cgst['rate']) ? $cgst['rate'] : ($cgst['rate'] ?? '')) . '", "", "' . $_POST['cgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['cgst_amount']) && $_POST['cgst_amount'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($cgst['rate']) ? $cgst['rate'] : ($cgst['rate'] ?? '')) . '", "", "' . $_POST['cgst_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (isset($_POST['sgst_amount']) && $_POST['sgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($sgst['rate']) ? $sgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "", "' . $_POST['sgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['sgst_amount']) && $_POST['sgst_amount'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "' . (!empty($sgst['rate']) ? $sgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "", "' . $_POST['sgst_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
 /////////////////by end //////////////////////
 
@@ -164,187 +165,186 @@ if (isset($_POST['sgst_amount']) && $_POST['sgst_amount'] > 0) {
 
 ///////////// Contractor ledger/////////
 
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . $_POST['vendor_ledger_sno'] . '", "' . $_POST['praposemoney'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-execute_query($sql);
-if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . $_POST['vendor_ledger_sno'] . '", "' . $_POST['praposemoney'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+            execute_query($sql);
+            if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.06 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
 
-if (isset($_POST['ded_cgst_amount']) && $_POST['ded_cgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_cgst['rate']) ? $ded_cgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "' . $_POST['ded_cgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['ded_cgst_amount']) && $_POST['ded_cgst_amount'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_cgst['rate']) ? $ded_cgst['rate'] : ($ded_gstw['rate'] ?? '')) . '", "' . $_POST['ded_cgst_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (isset($_POST['ded_sgst_amount']) && $_POST['ded_sgst_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_sgst['rate']) ? $ded_sgst['rate'] : ($ded_sgst['rate'] ?? '')) . '", "' . $_POST['ded_sgst_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['ded_sgst_amount']) && $_POST['ded_sgst_amount'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($ded_sgst['rate']) ? $ded_sgst['rate'] : ($ded_sgst['rate'] ?? '')) . '", "' . $_POST['ded_sgst_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.07 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
 // Error 1.09 & 1.10 - GST TDS (CGST + SGST split)
-if (isset($_POST['gsttds']) && $_POST['gsttds'] > 0) {
-    $cgsttds_amt = number_format($_POST['gsttds'] / 2, 2, '.', '');
-    $sgsttds_amt = number_format($_POST['gsttds'] - $cgsttds_amt, 2, '.', '');
+            if (isset($_POST['gsttds']) && $_POST['gsttds'] > 0) {
+                $cgsttds_amt = number_format($_POST['gsttds'] / 2, 2, '.', '');
+                $sgsttds_amt = number_format($_POST['gsttds'] - $cgsttds_amt, 2, '.', '');
 
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($cgsttds['rate']) ? $cgsttds['rate'] : ($cgsttds['rate'] ?? '')) . '", "' . $cgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.09 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($cgsttds['rate']) ? $cgsttds['rate'] : ($cgsttds['rate'] ?? '')) . '", "' . $cgsttds_amt . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.09 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($sgsttds['rate']) ? $sgsttds['rate'] : ($sgsttds['rate'] ?? '')) . '", "' . $sgsttds_amt . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.10 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . (!empty($sgsttds['rate']) ? $sgsttds['rate'] : ($sgsttds['rate'] ?? '')) . '", "' . $sgsttds_amt . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.10 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
 
 // Error 1.11 - Labour Cess
-if (isset($_POST['leborses']) && $_POST['leborses'] > 0) {
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($labourcessw['rate'] ?? '') . '", "' . $_POST['leborses'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-execute_query($sql);
-if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.11 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            if (isset($_POST['leborses']) && $_POST['leborses'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($labourcessw['rate'] ?? '') . '", "' . $_POST['leborses'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.11 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
 
-}
+            }
 
 // Error 1.12 - IT TDS
-if (isset($_POST['incometax']) && $_POST['incometax'] > 0) {
-$sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($ittds['rate'] ?? '') . '", "' . $_POST['incometax'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-execute_query($sql);
-if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.12 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['incometax']) && $_POST['incometax'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($ittds['rate'] ?? '') . '", "' . $_POST['incometax'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.12 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (isset($_POST['royalty']) && $_POST['royalty'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($royalty['rate'] ?? '') . '", "' . $_POST['royalty'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['royalty']) && $_POST['royalty'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($royalty['rate'] ?? '') . '", "' . $_POST['royalty'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (isset($_POST['security']) && $_POST['security'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($advcen['rate'] ?? '') . '", "' . $_POST['security'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['security']) && $_POST['security'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($advcen['rate'] ?? '') . '", "' . $_POST['security'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.13 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (isset($_POST['other_amount']) && $_POST['other_amount'] > 0) {
-    $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($other['rate'] ?? '') . '", "' . $_POST['other_amount'] . '", "' . date("d-m-Y"). '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
-    execute_query($sql);
-    if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.14 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
-}
+            if (isset($_POST['other_amount']) && $_POST['other_amount'] > 0) {
+                $sql = 'INSERT INTO `billit_stock_erp_payment` (`journal_id`, `by`, `to`, `amount`, `timestamp`, `unit_id`, `status`, `created_by`, `creation_time`) VALUES ("' . $id_stock . '", "", "' . ($other['rate'] ?? '') . '", "' . $_POST['other_amount'] . '", "' . date("d-m-Y") . '", "' . $_POST['unit_id'] . '", "", "' . $_SESSION['username'] . '", "' . date("Y-m-d H:i:s") . '")';
+                execute_query($sql);
+                if (mysqli_error($db)) $msg .= '<p class="alert alert-danger">Error # 1.14 : ' . mysqli_error($db) . '>> ' . $sql . '</p>';
+            }
 
-if (mysqli_error($db)) {
-    $msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
-} else {
-    	if (mysqli_error($db)) {
-				$msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
-			} else {
-                  $msg .= 'Successfully added';
-				$voucher_no = $_POST['voucher_no'] ?: 'FT' . date('Y') . sprintf('%04d', $inv_id);
-				if (empty($_POST['voucher_no'])) {
-					$update_sql = 'UPDATE invoice_account_fund_transafer SET voucher_no = "' . $voucher_no . '" WHERE sno = "' . $inv_id . '"';
-					execute_query($update_sql);
-				}
-			}
-		}
-	}
-} else {
+            if (mysqli_error($db)) {
+                $msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
+            } else {
+                if (mysqli_error($db)) {
+                    $msg .= '<div class="alert alert-danger">Error # 1.369 >> ' . $sql . '</div>';
+                } else {
+                    $msg .= 'Successfully added';
+                    $voucher_no = $_POST['voucher_no'] ?: 'FT' . date('Y') . sprintf('%04d', $inv_id);
+                    if (empty($_POST['voucher_no'])) {
+                        $update_sql = 'UPDATE invoice_account_fund_transafer SET voucher_no = "' . $voucher_no . '" WHERE sno = "' . $inv_id . '"';
+                        execute_query($update_sql);
+                    }
+                }
+            }
+        }}
+    } else {
 
-	postblank:
-	$_POST['unit_id'] = "";
-	$_POST['department'] = "";
-	$_POST['sub_department_id'] = "";
-	$_POST['district'] = "";
-	$_POST['project_name'] = "";
-	$_POST['fund_transfer_to'] = "";
-	$_POST['order_no'] = "";
-    $_POST['voucher_no'] = (!isset($_GET['edit_sno'])) ? generateVoucherNumber('invoice_account_fund_transafer', 'voucher_no', 'FT') : '';
-	$_POST['order_date'] = date("d-m-Y");
-	$_POST['transafer_date'] = date("d-m-Y");
-	$_POST['transafer_amount'] = "";
-	$_POST['gstdeduction'] = "";
-	$_POST['royalty'] = "";
-	$_POST['security'] = "";
-	$_POST['totelmgst'] = "";
-	$_POST['sentagepercentage'] = "";
-	$_POST['sentage'] = "";
-	$_POST['gst_per'] = "";
-	$_POST['gsttdspercentage'] = "";
-	$_POST['gsttds'] = "";
-	$_POST['cgst_amount'] = "";
-	$_POST['sgst_amount'] = "";
-	$_POST['leborses'] = "";
-	$_POST['incometax'] = "";
-	$_POST['it_per'] = "";
-	$_POST['praposemoney'] = "";
-	$_POST['remark'] = "";
-	$_POST['from_account_no'] = "";
-	$_POST['to_bank_name'] = "";
-	$_POST['to_bank_ifsc'] = "";
-	$_POST['to_account_no'] = "";
-	$_POST['vendor_id'] = "";
-	$_POST['vendor_name'] = "";
-	$_POST['other_amount'] = "";
-	$_POST['total_expen'] = "";
-	$_POST['ded_gst_per'] = "";
-	$_POST['ded_gstdeduction'] = "";
-	$_POST['ded_cgst_amount'] = "";
-	$_POST['ded_sgst_amount'] = "";
-	$_POST['ded_total_withgst'] = "";
-	$_POST['edit_sno'] = '';
-}
+        postblank:
+        $_POST['unit_id'] = "";
+        $_POST['department'] = "";
+        $_POST['sub_department_id'] = "";
+        $_POST['district'] = "";
+        $_POST['project_name'] = "";
+        $_POST['fund_transfer_to'] = "";
+        $_POST['order_no'] = "";
+        $_POST['voucher_no'] = (!isset($_GET['edit_sno'])) ? generateVoucherNumber('invoice_account_fund_transafer', 'voucher_no', 'FT') : '';
+        $_POST['order_date'] = date("d-m-Y");
+        $_POST['transafer_date'] = date("d-m-Y");
+        $_POST['transafer_amount'] = "";
+        $_POST['gstdeduction'] = "";
+        $_POST['royalty'] = "";
+        $_POST['security'] = "";
+        $_POST['totelmgst'] = "";
+        $_POST['sentagepercentage'] = "";
+        $_POST['sentage'] = "";
+        $_POST['gst_per'] = "";
+        $_POST['gsttdspercentage'] = "";
+        $_POST['gsttds'] = "";
+        $_POST['cgst_amount'] = "";
+        $_POST['sgst_amount'] = "";
+        $_POST['leborses'] = "";
+        $_POST['incometax'] = "";
+        $_POST['it_per'] = "";
+        $_POST['praposemoney'] = "";
+        $_POST['remark'] = "";
+        $_POST['from_account_no'] = "";
+        $_POST['to_bank_name'] = "";
+        $_POST['to_bank_ifsc'] = "";
+        $_POST['to_account_no'] = "";
+        $_POST['vendor_id'] = "";
+        $_POST['vendor_name'] = "";
+        $_POST['other_amount'] = "";
+        $_POST['total_expen'] = "";
+        $_POST['ded_gst_per'] = "";
+        $_POST['ded_gstdeduction'] = "";
+        $_POST['ded_cgst_amount'] = "";
+        $_POST['ded_sgst_amount'] = "";
+        $_POST['ded_total_withgst'] = "";
+        $_POST['edit_sno'] = '';
+    }
 
+    if (isset($_GET['edit_sno'])) {
+        $sql = 'select * from invoice_account_fund_transafer where sno="' . $_GET['edit_sno'] . '"';
+        $data = mysqli_fetch_assoc(execute_query($sql));
+        $_POST['department'] = $data['department'];
+        $_POST['sub_department_id'] = $data['sub_department_id'];
+        $_POST['district'] = $data['district'];
+        $_POST['project_name'] = $data['project_name'];
+        $_POST['fund_transfer_to'] = $data['fund_transfer_to'];
+        $_POST['order_no'] = $data['order_no'];
+        $_POST['voucher_no'] = $data['voucher_no'];
+        $_POST['order_date'] = date('Y-m-d', strtotime($data['order_date']));
+        $_POST['transafer_date'] = date('Y-m-d', strtotime($data['transafer_date']));
+        $_POST['bill_date'] = $data['bill_date'] ?? date('Y-m-d');
+    $_POST['bill_no'] = $data['bill_no'] ?? '';
+        $_POST['transafer_amount'] = $data['transafer_amount'];
+        $_POST['gstdeduction'] = $data['gstdeduction'];
+        $_POST['cgst_amount'] = $data['cgst_amount'];
+        $_POST['sgst_amount'] = $data['sgst_amount'];
+        $_POST['sentagepercentage'] = $data['sentagepercentage'];
+        $_POST['sentage'] = $data['sentage'];
+        $_POST['gsttdspercentage'] = $data['gsttdspercentage'];
+        $_POST['gsttds'] = $data['gsttds'];
+        $_POST['leborses'] = $data['leborses'];
+        $_POST['incometax'] = $data['incometax'];
+        $_POST['praposemoney'] = $data['praposemoney'];
+        $_POST['remark'] = $data['remark'];
+        $_POST['from_account_no'] = $data['from_account_no'];
+        $_POST['to_bank_name'] = $data['to_bank_name'];
+        $_POST['to_bank_ifsc'] = $data['to_bank_ifsc'];
+        $_POST['to_account_no'] = $data['to_account_no'];
+        $_POST['vendor_id'] = $data['vendor_id'];
+        $_POST['ded_gst_per'] = $data['ded_gst_per'];
+        $_POST['ded_gstdeduction'] = $data['ded_gstdeduction'];
+        $_POST['ded_cgst_amount'] = $data['ded_cgst_amount'];
+        $_POST['ded_sgst_amount'] = $data['ded_sgst_amount'];
 
-if (isset($_GET['edit_sno'])) {
-	$sql = 'select * from invoice_account_fund_transafer where sno="' . $_GET['edit_sno'] . '"';
-	$data = mysqli_fetch_assoc(execute_query($sql));
-	$_POST['department'] = $data['department'];
-	$_POST['sub_department_id'] = $data['sub_department_id'];
-	$_POST['district'] = $data['district'];
-	$_POST['project_name'] = $data['project_name'];
-	$_POST['fund_transfer_to'] = $data['fund_transfer_to'];
-	$_POST['order_no'] = $data['order_no'];
-	$_POST['voucher_no'] = $data['voucher_no'];
-    $_POST['order_date'] = date('Y-m-d', strtotime($data['order_date']));
-    $_POST['transafer_date'] = date('Y-m-d', strtotime($data['transafer_date']));
-	$_POST['bill_date'] = $data['bill_date'] ?? date('Y-m-d');
-$_POST['bill_no'] = $data['bill_no'] ?? '';
-	$_POST['transafer_amount'] = $data['transafer_amount'];
-	$_POST['gstdeduction'] = $data['gstdeduction'];
-	$_POST['cgst_amount'] = $data['cgst_amount'];
-	$_POST['sgst_amount'] = $data['sgst_amount'];
-	$_POST['sentagepercentage'] = $data['sentagepercentage'];
-	$_POST['sentage'] = $data['sentage'];
-	$_POST['gsttdspercentage'] = $data['gsttdspercentage'];
-	$_POST['gsttds'] = $data['gsttds'];
-	$_POST['leborses'] = $data['leborses'];
-	$_POST['incometax'] = $data['incometax'];
-	$_POST['praposemoney'] = $data['praposemoney'];
-	$_POST['remark'] = $data['remark'];
-	$_POST['from_account_no'] = $data['from_account_no'];
-	$_POST['to_bank_name'] = $data['to_bank_name'];
-	$_POST['to_bank_ifsc'] = $data['to_bank_ifsc'];
-	$_POST['to_account_no'] = $data['to_account_no'];
-	$_POST['vendor_id'] = $data['vendor_id'];
-	$_POST['ded_gst_per'] = $data['ded_gst_per'];
-	$_POST['ded_gstdeduction'] = $data['ded_gstdeduction'];
-	$_POST['ded_cgst_amount'] = $data['ded_cgst_amount'];
-	$_POST['ded_sgst_amount'] = $data['ded_sgst_amount'];
+        $_POST['edit_sno'] = $data['sno'];
+    }
 
-	$_POST['edit_sno'] = $data['sno'];
-}
+    if (isset($_GET['del'])) {
 
-if (isset($_GET['del'])) {
+        $sql = 'UPDATE  invoice_account_fund_transafer SET status="5" where sno="' . $_GET['del'] . '"';
+        execute_query($sql);
 
-	$sql = 'UPDATE  invoice_account_fund_transafer SET status="5" where sno="' . $_GET['del'] . '"';
-	execute_query($sql);
+        // --- NAYI LINES YAHAN ADD KI GAYI HAIN ---
+        // Ledger se bhi delete karein taki account books theek rahein
+        execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id IN (SELECT sno FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$_GET['del'].'")');
+        execute_query('DELETE FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$_GET['del'].'"');
+        // ----------------------------------------
 
-    // --- NAYI LINES YAHAN ADD KI GAYI HAIN ---
-    // Ledger se bhi delete karein taki account books theek rahein
-    execute_query('DELETE FROM billit_stock_erp_payment WHERE journal_id IN (SELECT sno FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$_GET['del'].'")');
-    execute_query('DELETE FROM billit_invoice_erp_payment WHERE table_name="invoice_account_fund_transafer" AND table_id="'.$_GET['del'].'"');
-    // ----------------------------------------
+        $msg1 .= '<p class="alert alert-danger">Data Deleted.</p>';
+    }
 
-	$msg1 .= '<p class="alert alert-danger">Data Deleted.</p>';
-}
-
-if (isset($_GET['id'])) {
+    if (isset($_GET['id'])) {
 	$sql = 'select * from invoice_account_fund_transafer where sno="' . $_GET['id'] . '"';
 	$data = mysqli_fetch_assoc(execute_query($sql));
 	$_POST['department'] = $data['department'];
@@ -1086,11 +1086,13 @@ if ($msg != '') {
 	/* ---------- 50 paise rounding rule (same as fund_recive.php) ---------- */
 	function customRound(number) {
 		number = Number(number);
-		if (number === 0) return number;
+		if (!isFinite(number) || number === 0) return '0.00';
 		var int = Math.floor(number);
 		var decimal = number - int;
-		if (decimal === 0) return int.toFixed(2);
-		return (decimal < 0.50) ? (int + 0.50).toFixed(2) : (int + 1).toFixed(2);
+		if (decimal === 0)    return int.toFixed(2);
+		if (decimal <  0.50)  return int.toFixed(2);
+		if (decimal === 0.50) return (int + 0.50).toFixed(2);
+		return (int + 1).toFixed(2);
 	}
 
 	//calculation of fund transfer
@@ -1187,41 +1189,41 @@ if ($msg != '') {
 		}
 
 		// gst calculation
-		var gstdeductionres = ((transafer_amount * gst_per) / 100).toFixed();
+		var gstdeductionres = customRound((transafer_amount * gst_per) / 100);
 		document.getElementById('gstdeduction').value = gstdeductionres;
 
 		// Split GST into CGST and SGST (50% each)
-		var cgst_amount = (gstdeductionres / 2).toFixed(2);
-		var sgst_amount = (gstdeductionres / 2).toFixed(2);
+		var cgst_amount = customRound(gstdeductionres / 2);
+		var sgst_amount = customRound(gstdeductionres / 2);
 		document.getElementById('cgst_amount').value = cgst_amount;
 		document.getElementById('sgst_amount').value = sgst_amount;
 
 		// ded gst calculation
-		var ded_gstdeductionres = ((transafer_amount * ded_gst_per) / 100).toFixed();
+		var ded_gstdeductionres = customRound((transafer_amount * ded_gst_per) / 100);
 		document.getElementById('ded_gstdeduction').value = ded_gstdeductionres;
 
 		// Split ded GST into CGST and SGST (50% each)
-		var ded_cgst_amount = (ded_gstdeductionres / 2).toFixed(2);
-		var ded_sgst_amount = (ded_gstdeductionres / 2).toFixed(2);
+		var ded_cgst_amount = customRound(ded_gstdeductionres / 2);
+		var ded_sgst_amount = customRound(ded_gstdeductionres / 2);
 		document.getElementById('ded_cgst_amount').value = ded_cgst_amount;
 		document.getElementById('ded_sgst_amount').value = ded_sgst_amount;
 
 		var ded_total_withgst_amt = parseFloat(transafer_amount) - parseFloat(ded_gstdeductionres);
-		document.getElementById('ded_total_withgst').value = ded_total_withgst_amt.toFixed();
+		document.getElementById('ded_total_withgst').value = customRound(ded_total_withgst_amt);
 
 		// security calculation
-		var securityres = ((transafer_amount * security_per) / 100).toFixed();
+		var securityres = customRound((transafer_amount * security_per) / 100);
 		document.getElementById('security').value = securityres;
 
 		//gst tds % 
-		var gsttdsres = ((transafer_amount * gsttdspercentage) / 100).toFixed();
+		var gsttdsres = customRound((transafer_amount * gsttdspercentage) / 100);
 		document.getElementById('gsttds').value = gsttdsres;
 
-		var leborsesres = ((transafer_amount * leborses_per) / 100).toFixed();
+		var leborsesres = customRound((transafer_amount * leborses_per) / 100);
 		document.getElementById('leborses').value = leborsesres;
 
 		//income
-		var incometaxres = ((transafer_amount * it_per) / 100).toFixed();
+		var incometaxres = customRound((transafer_amount * it_per) / 100);
 		document.getElementById('incometax').value = incometaxres;
 
 		var otherPer = document.getElementById('other_per').value;
@@ -1233,7 +1235,7 @@ if ($msg != '') {
 			// Auto-calculate percentage of transferAmount
 			var percent = parseFloat(otherPer);
 			var calculatedAmount = (transafer_amount * percent) / 100;
-			otherAmountInput.value = calculatedAmount.toFixed();
+			otherAmountInput.value = customRound(calculatedAmount);
 			otherAmountInput.readOnly = true;
 		} else {
 			// No percentage selected - allow manual entry
@@ -1244,10 +1246,10 @@ if ($msg != '') {
 		var otherAmount = parseFloat(otherAmountInput.value) || 0;
 
 		var abcd = parseFloat(royalty) + parseFloat(incometaxres) + parseFloat(securityres) + parseFloat(gsttdsres) + parseFloat(leborsesres) + parseFloat(ded_gstdeductionres);
-		abcd = abcd.toFixed(2);
+		abcd = customRound(abcd);
 
 		var total_withgst_amt = parseFloat(transafer_amount) + parseFloat(gstdeductionres);
-		total_withgst_amt = total_withgst_amt.toFixed();
+		total_withgst_amt = customRound(total_withgst_amt);
 		document.getElementById('total_withgst').value = total_withgst_amt;
 
 		// Total expenditure calculation (without centage and contingency)
@@ -1256,7 +1258,7 @@ if ($msg != '') {
 			(parseFloat(gstdeductionres) || 0) +
 			(parseFloat(other_additions) || 0)
 		);
-		document.getElementById('total_expen').value = parseFloat(total_expenses).toFixed();
+		document.getElementById('total_expen').value = customRound(total_expenses);
 
 		// NET Payment calculation — customRound applies 50 paise rule
 		var prakhand_ko_preshit_amount = customRound(total_expenses - abcd - otherAmount);
@@ -1394,14 +1396,12 @@ page_footer_start();
 		});
 	}
 
+
+
 	function fill_bank_details(val, selected) {
 		var data = { "term": "b", "id": "unit_bank", "val": val };
 		var vendorSelect = document.getElementById('vendor_name');
 		var isVendorSelected = vendorSelect && vendorSelect.value !== '';
-
-		if (!isVendorSelected) {
-			$("#bank_name_unit").html('<option value="">--Select--</option>');
-		}
 
 		$.ajax({
 			type: "POST",
@@ -1409,20 +1409,7 @@ page_footer_start();
 			data: data, // serializes the form's elements.
 			success: function (ajaxdata) {
 				//console.log(ajaxdata);
-				var txt = '<option value="">--Select--</option>';
 				ajaxdata = JSON.parse(ajaxdata);
-				$.each(ajaxdata, function (key, value) {
-					txt += '<option value="' + value.id + '" ';
-					if (value.id == selected) {
-						txt += ' selected="selected" ';
-					}
-					txt += '>' + value.cus_name + '</option>';
-
-				});
-
-				if (!isVendorSelected) {
-					$("#bank_name_unit").html(txt);
-				}
 
 				// Add those fetched unit-bank options into From Account dropdown if they don't exist
 				$.each(ajaxdata, function (key, value) {
@@ -1432,15 +1419,13 @@ page_footer_start();
 					}
 				});
 
-				// Auto-sync: To Account ki selected value ko From Account mein set karo
-				var toVal = selected ? selected : (ajaxdata.length > 0 ? ajaxdata[0].id : '');
+				// Auto-sync: From Account ki selected value set karo
+				var fromVal = selected ? selected : (ajaxdata.length > 0 ? ajaxdata[0].id : '');
 
-				if (toVal) {
+				if (fromVal) {
 					// Use .trigger('change') for Select2 support
-					$("#from_account_no").val(toVal).trigger('change');
-				} else if (!selected && ajaxdata.length > 0 && !isVendorSelected) {
-					// Agar selected nahi tha to pehla option auto-select karo
-					$("#bank_name_unit").val(ajaxdata[0].id);
+					$("#from_account_no").val(fromVal).trigger('change');
+				} else if (!selected && ajaxdata.length > 0) {
 					$("#from_account_no").val(ajaxdata[0].id).trigger('change');
 				}
 
@@ -1451,14 +1436,6 @@ page_footer_start();
 		});
 	}
 
-	// To Account (bank_name_unit) change hone par From Account bhi auto-update hoga
-	$(document).on('change', '#bank_name_unit', function () {
-		var toVal = $(this).val();
-		if (toVal && $("#from_account_no option[value='" + toVal + "']").length) {
-			$("#from_account_no").val(toVal).trigger('change');
-		}
-	});
-
     function updateVendorId() {
         var vendorSelect = document.getElementById('vendor_name');
         var selectedVendor = vendorSelect.value;
@@ -1467,7 +1444,6 @@ page_footer_start();
         document.getElementById('vendor_ledger_hint').style.display = 'none';
 
         var $dropdown = $('#bank_name_unit');
-
         if (!selectedVendor) {
             $dropdown.html('<option value="">--- Select Vendor First ---</option>');
             if ($dropdown.hasClass('select2-hidden-accessible')) $dropdown.select2('destroy');

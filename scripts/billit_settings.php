@@ -1,5 +1,25 @@
 <?php
 
+/* ============================================================
+ * SHARED ROUNDING HELPERS — dono pages yahan se use karte hain
+ * Rule: decimal < 0.50 → floor | = 0.50 → keep | > 0.50 → ceil
+ * ============================================================ */
+if (!function_exists('customRound')) {
+    function customRound($v)
+    {
+        $val = (float) $v;
+        $int = floor($val);
+        $dec = $val - $int;
+        if ($dec == 0)    return number_format($int,        2, '.', '');
+        if ($dec <  0.50) return number_format($int,        2, '.', '');
+        if ($dec == 0.50) return number_format($int + 0.50, 2, '.', '');
+        return                 number_format($int + 1,      2, '.', '');
+    }
+}
+if (!function_exists('money')) {
+    function money($v) { return customRound($v); }
+}
+
 function get_state($id)
 {
     global $state;
@@ -360,11 +380,33 @@ function get_branch($id)
 
 function get_ledger($sno)
 {
-    $sql = 'select * from billit_customer where sno="' . $sno . '"';
+   // $sql = 'SELECT *
+        // FROM billit_customer
+        // LEFT JOIN billit_pl_heads
+            // ON billit_customer.parent = billit_pl_heads.sno
+        // WHERE billit_customer.sno = "' . $sno . '"';
+
+	$sql = 'SELECT billit_cus.sno as sno,
+	billit_cus.cus_name as cus_name, 
+	billit_cus.erp_code as erp_code, 
+	
+	pl.description as description
+        FROM billit_customer as billit_cus
+        LEFT JOIN billit_pl_heads as pl
+            ON billit_cus.parent = pl.sno
+        WHERE billit_cus.sno = "' . $sno . '"';	
+		
     $row = mysqli_fetch_array(execute_query($sql));
     if (isset($row['cus_name'])) {
-        return $row['cus_name'];
-    }
+		if (isset($row['erp_code'])) {
+			return  $row['cus_name'].' (' . $row['description'] . ')';
+			
+		}else{
+			return $row['cus_name'];
+		}
+        
+    } 
+	
     return '';
 }
 function get_group_hierarchy_options($selected_id = '', $default_id = 32, $exclude_root = true, $only_public = false)
