@@ -326,8 +326,16 @@ if (isset($_POST['submit'])) {
         $_POST['ded_gstdeduction'] = $data['ded_gstdeduction'];
         $_POST['ded_cgst_amount'] = $data['ded_cgst_amount'];
         $_POST['ded_sgst_amount'] = $data['ded_sgst_amount'];
-
         $_POST['edit_sno'] = $data['sno'];
+        $mapping_res = execute_query('SELECT erp_code FROM uprnss_project_temp WHERE sno="' . $data['project_name'] . '" LIMIT 1');
+        $mapping_row = mysqli_fetch_assoc($mapping_res);
+        $erp_code = $mapping_row['erp_code'] ?? '';
+        $_POST['project_ledger_id_saved'] = '';
+        if ($erp_code) {
+            $ledger_res = execute_query('SELECT sno FROM billit_customer WHERE erp_code="' . mysqli_real_escape_string($db, $erp_code) . '" LIMIT 1');
+            $ledger_row = mysqli_fetch_assoc($ledger_res);
+            $_POST['project_ledger_id_saved'] = $ledger_row['sno'] ?? '';
+        }
     }
 
     if (isset($_GET['del'])) {
@@ -516,13 +524,29 @@ if (isset($_POST['submit'])) {
 </style>
 
 <form id="sale_form" name="sale_form" class="" autocomplete="off" enctype="multipart/form-data" method="post"
-	action="<?php echo $_SERVER['PHP_SELF']; ?>" onSubmit="return validateForm();">
+      action="<?php echo strtok($_SERVER['PHP_SELF'], '?'); ?>"
+      onSubmit="return validateForm();">
 	<div class="card mb-4 shadow-sm" style="border-radius: 12px; border: 1px solid #f8e5e5; overflow: hidden;">
-		<div class="card-header bg-transparent pt-4 pb-3" style="border-bottom: 1px solid #f8e5e5; background-color: transparent !important; text-align: left !important;">
-			<h3 class="mb-0 text-left" style="color: #ae1f20; font-weight: 800; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">
-				<i class="fas fa-file-invoice-dollar mr-2"></i> Add Applicable Taxes on Bill
-			</h3>
-		</div>
+        <div class="card-header bg-transparent pt-4 pb-3"
+             style="border-bottom: 1px solid #f8e5e5;
+            background-color: transparent !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;">
+            <h3 class="mb-0"
+                style="color: #ae1f20;
+               font-weight: 800;
+               font-size: 1.5rem;
+               text-transform: uppercase;
+               letter-spacing: 1px;">
+                <i class="fas fa-file-invoice-dollar mr-2"></i>
+                Add Applicable Taxes on Bill
+            </h3>
+            <a href="fund_transfer_report.php" class="btn btn-primary">
+                View Voucher's
+            </a>
+
+        </div>
 <?php 
 if ($msg != '') {
     echo '<h5>' . alert($msg) . '</h5>';
@@ -530,7 +554,6 @@ if ($msg != '') {
 ?>
 
 		<div class="card-body">
-			<!-- Basic Information Section -->
 			<div class="section-card">
 				<div class="section-header">
 					📋 Basic Information
@@ -1020,7 +1043,10 @@ if ($msg != '') {
 				<div class="col-md-12" align="center">
 					<div class="form-group">
 						<button type="submit" name="submit" class="btn btn-success btn-fill pull-right">Submit</button>
-						<input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo $_POST['edit_sno']; ?>">
+                        <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo $_POST['edit_sno']; ?>">
+                        <input type="hidden" id="project_ledger_id_saved" value="<?php echo $_POST['project_ledger_id_saved'] ?? ''; ?>">
+                        <input type="hidden" id="edit_sno" name="edit_sno" value="<?php echo $_POST['edit_sno']; ?>">
+                        <input type="hidden" id="project_ledger_id_saved" value="<?php echo $_POST['project_ledger_id_saved'] ?? ''; ?>">
 					</div>
 				</div>
 			</div>
@@ -1029,18 +1055,12 @@ if ($msg != '') {
 </form>
 
 <script>
-	// Validate form before submission
 	function validateForm() {
-		// Run calculation one more time to ensure all values are up to date
 		findcalculation();
-
-		// Get required fields
 		const transferAmount = parseFloat(document.getElementById('transafer_amount').value) || 0;
 		const netPayment = document.getElementById('praposemoney').value;
 		const fromAccount = document.getElementById('from_account_no').value;
 		const toAccount = document.getElementById('bank_name_unit').value;
-
-		// Validations
 		if (transferAmount <= 0) {
 			alert('Please enter a valid Transfer Amount');
 			document.getElementById('transafer_amount').focus();
@@ -1067,7 +1087,8 @@ if ($msg != '') {
         // Vendor ledger mapping save karo agar manually select ki hai
         var vendorId  = document.getElementById('vendor_id').value;
         var ledgerSno = document.getElementById('vendor_ledger_sno').value;
-        var alreadyMapped = document.getElementById('vendor_ledger_mapped_info').style.display !== 'none';
+        var mappedInfo = document.getElementById('vendor_ledger_mapped_info');
+        var alreadyMapped = mappedInfo ? mappedInfo.style.display !== 'none' : false;
 
         if (vendorId && ledgerSno && !alreadyMapped) {
             // Sync AJAX — form submit se pehle save karo
@@ -1376,25 +1397,26 @@ page_footer_start();
 	}
 
 
-	function fill_division(val) {
-		var data = { "term": "b", "id": "proj_div", "val": val, "dept": $("#department").val() };
-		$.ajax({
-			type: "POST",
-			url: actionUrl,
-			data: data, // serializes the form's elements.
+    function fill_division(val) {
+        var data = { "term": "b", "id": "proj_div", "val": val, "dept": $("#department").val() };
+        $.ajax({
+            type: "POST",
+            url: actionUrl,
+            data: data,
             success: function (data) {
                 try {
                     data = JSON.parse(data);
                     $("#unit_id").val(data.division_id);
                     fill_bank_details(data.division_id);
-                    fill_unit_ledgers(data.division_id);
+                    fill_unit_ledgers(data.division_id, function() {
+                        loadProjectMappingInfo();
+                    });
                 } catch(e) {
                     console.error('fill_division parse error:', data);
                 }
-			}
-
-		});
-	}
+            }
+        });
+    }
 
 
 
@@ -1551,31 +1573,23 @@ page_footer_start();
 		if ($('#vendor_name').val() !== '') {
 			updateVendorId();
 		}
-
-        <?php if (isset($_GET['edit_sno']) && !empty($_POST['vendor_id'])): ?>
-        $(function() {
-            // Edit mode mein vendor already selected hai, mapping load karo
-            setTimeout(function() {
-                updateVendorId();
-            }, 300);
-        });
-        <?php endif; ?>
 	});
 
 
-	<?php
-	if (isset($_GET['edit_sno'])) {
-		?>
-		$(document).ready(function () {
+    <?php
+        if (isset($_GET['edit_sno'])) {
+    ?>
+        $(document).ready(function () {
             fill_sub_department(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['sub_department_id']); ?>);
             fill_district(<?php echo intval($_POST['department']); ?>, <?php echo intval($_POST['district']); ?>);
             fill_project(<?php echo intval($_POST['district']); ?>, <?php echo intval($_POST['project_name']); ?>);
-
-
-		});
-		<?php
-	}
-	?>
+            setTimeout(function() {
+                fill_division_edit(<?php echo intval($_POST['project_name']); ?>);
+            }, 700);
+        });
+    <?php
+        }
+    ?>
 
 
 	<?php
@@ -1592,7 +1606,56 @@ page_footer_start();
 	}
 	?>
 
-	/* ---------- Select2 Searchable Dropdowns ---------- */
+    function fill_division_edit(project_id) {
+        if (!project_id) return;
+        var data = { "term": "b", "id": "proj_div", "val": project_id };
+        $.ajax({
+            type: "POST",
+            url: actionUrl,
+            data: data,
+            success: function(res) {
+                try {
+                    res = (typeof res === 'string') ? JSON.parse(res) : res;
+                    var unit_id = res.division_id || '';
+                    $("#unit_id").val(unit_id);
+                    if (unit_id) {
+                        fill_unit_ledgers_edit(unit_id);
+                    }
+                    <?php if (!empty($_POST['vendor_id'])): ?>
+                    setTimeout(function() { updateVendorId(); }, 600);
+                    <?php endif; ?>
+
+                } catch(e) {
+                    console.error('fill_division_edit error:', e);
+                }
+            }
+        });
+    }
+
+    function fill_unit_ledgers_edit(unit_id) {
+        $.ajax({
+            url: 'scripts/ajax.php?id=get_unit_ledgers&unit_id=' + unit_id + '&term=all',
+            dataType: 'json',
+            success: function(ledgers) {
+                var savedLedger = $('#project_ledger_id_saved').val();
+                var options = '<option value="">--- Select Ledger ---</option>';
+                if (ledgers && ledgers.length > 0) {
+                    ledgers.forEach(function(l) {
+                        options += '<option value="' + l.id + '">' + l.text + '</option>';
+                    });
+                }
+                var $select = $('#project_ledger_id');
+                if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+                $select.html(options);
+                $select.select2({ theme: 'bootstrap4', width: '100%' });
+                if (savedLedger) {
+                    $select.val(savedLedger).trigger('change.select2');
+                }
+            }
+        });
+    }
+
+    /* ---------- Select2 Searchable Dropdowns ---------- */
 	function makeSearchable(selectId) {
 		if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
 			console.error('Select2 or jQuery not loaded');
@@ -1628,7 +1691,7 @@ page_footer_start();
 		['sub_department_id', 'district', 'project_name'].forEach(makeSearchable);
 	});
 
-    function fill_unit_ledgers(unit_id) {
+    function fill_unit_ledgers(unit_id, callback) {
         if(!unit_id) return;
         $.ajax({
             url: 'scripts/ajax.php?id=get_unit_ledgers&unit_id=' + unit_id + '&term=all',
@@ -1648,6 +1711,7 @@ page_footer_start();
                 select.html(options);
                 if(currentVal) select.val(currentVal);
                 select.select2({ theme: 'bootstrap4', width: '100%' });
+                if (typeof callback === 'function') callback();
             }
         });
     }
@@ -1679,18 +1743,61 @@ page_footer_start();
 
     function loadProjectMappingInfo() {
         var project_id = $('#project_name').val();
-        if (!project_id) return;
-        
+        if (!project_id) {
+            var $sel = $('#project_ledger_id');
+            if ($sel.hasClass('select2-hidden-accessible')) $sel.select2('destroy');
+            $sel.html('<option value="">--- Select Ledger ---</option>').select2({ theme: 'bootstrap4', width: '100%' });
+            $('#project_ledger_readonly').remove();
+            return;
+        }
+        var unit_id = $('#unit_id').val() || 53;
         $.ajax({
-            url: 'scripts/ajax.php?id=get_project_ledger_mapping&term=all&project_id=' + project_id,
-            success: function(ledger_id) {
-                if (ledger_id && ledger_id.trim() !== '') {
-                    $('#project_ledger_id').val(ledger_id.trim()).trigger('change.select2');
+            url: 'scripts/ajax.php?id=get_unit_ledgers_with_mapping&unit_id=' + unit_id + '&term=all&project_id=' + project_id,
+            dataType: 'json',
+            success: function(res) {
+                var mapped_ledger_id   = res.mapped_ledger_id   || '';
+                var mapped_ledger_name = res.mapped_ledger_name || '';
+                var ledgers            = res.ledgers            || [];
+                var $sel = $('#project_ledger_id');
+                $('#project_ledger_readonly').remove();
+
+                if (mapped_ledger_id) {
+                    if ($sel.hasClass('select2-hidden-accessible')) $sel.select2('destroy');
+                    $sel.hide();
+                    $('<div id="project_ledger_readonly">' +
+                        '<input type="hidden" name="project_ledger_id" value="' + mapped_ledger_id + '">' +
+                        '<div class="d-flex align-items-center" style="gap:8px;">' +
+                        '<div class="form-control d-flex align-items-center justify-content-between" ' +
+                        'style="background:#f0fdf4;border:1px solid #16a34a;color:#15803d;font-weight:600;cursor:default;height:38px;overflow:hidden;flex:1;">' +
+                        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;" title="' + mapped_ledger_name + '">' +
+                        '<i class="fas fa-check-circle" style="margin-right:6px;"></i>' + mapped_ledger_name +
+                        '</span>' +
+                        '<span class="badge ml-2 flex-shrink-0" style="background:#16a34a;color:#fff;font-size:11px;padding:3px 8px;border-radius:10px;white-space:nowrap;">✓</span>' +
+                        '</div>' +
+                        '<button type="button" onclick="alert(\'' + mapped_ledger_name.replace(/'/g, "\\'") + '\')" ' +
+                        'style="border:none;background:none;color:#16a34a;font-size:18px;cursor:pointer;padding:0 4px;" title="View full name">' +
+                        '<i class="fas fa-info-circle"></i>' +
+                        '</button>' +
+                        '</div>' +
+                        '</div>').insertAfter($sel);
+                } else {
+                    $sel.show();
+                    var options = '<option value="">--- Select Ledger ---</option>';
+                    ledgers.forEach(function(l) {
+                        if (l.mapped_project_id && l.mapped_project_id != project_id) {
+                            options += '<option value="' + l.id + '" disabled style="color:#999;">' +
+                                l.text + ' [Mapped with: ' + l.mapped_project_name + ']' +
+                                '</option>';
+                        } else {
+                            options += '<option value="' + l.id + '">' + l.text + '</option>';
+                        }
+                    });
+                    if ($sel.hasClass('select2-hidden-accessible')) $sel.select2('destroy');
+                    $sel.html(options).select2({ theme: 'bootstrap4', width: '100%' });
                 }
             }
         });
     }
-
 </script>
 
 <?php

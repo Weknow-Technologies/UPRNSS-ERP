@@ -206,8 +206,13 @@ if ($ho_jid > 0) {
             try {
                 var res = JSON.parse(xhr.responseText);
                 if (res.success) {
-                    alert(status == 1 ? "Accepted successfully! Voucher created." : "Rejected successfully.");
-                    window.location.reload();
+                    if (status == 1) {
+                        alert("Accepted successfully! Voucher created.");
+                        window.location.href = 'fund_transfer_report_unit.php?id=' + headerId;
+                    } else {
+                        alert("Rejected successfully.");
+                        window.location.reload();
+                    }
                 } else {
                     alert("Error: " + res.message);
                 }

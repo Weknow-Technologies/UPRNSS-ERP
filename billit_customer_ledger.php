@@ -953,8 +953,8 @@ switch ($response) {
 										$stat = '';
 									}
 									if ($trans['cust_by'] == $billit_customer['sno']) {
-										$balance += $trans['amount'];
-										$tot_debit += $trans['amount'];
+										$balance -= $trans['amount'];
+										$tot_debit -= $trans['amount'];
 										echo '<a href="journal.php?id=' . $trans['ct_sno'] . '" target="_blank">Journal : To ';
 										echo get_ledger($trans['cust_to']) . '</a>&nbsp;' . $stat . '<small><a href="billit_customer_ledger.php?ledid=' . $_GET['ledid'] . '&del_j=' . $trans['ct_sno'];
 										if ($_SESSION['report_ledger_date_from'] != '' && $_SESSION['report_ledger_date_to'] != '') {
@@ -968,7 +968,7 @@ switch ($response) {
 											<td class="right green">' . amount_format($trans['amount']) . '</td>
 											<td>&nbsp;</td>';
 									} elseif ($trans['cust_to'] == $billit_customer['sno']) {
-										$balance -= $trans['amount'];
+										$balance += $trans['amount'];
 										$tot_credit += $trans['amount'];
 										echo '<a href="journal.php?id=' . $trans['number'] . '">Journal : By ';
 										echo get_ledger($trans['cust_by']) . '</a>&nbsp;' . $stat . '<small><a href="journal.php?del=' . $trans['number'] . '" onclick="return confirm(\'Are you sure?\');" style="color:#F00;">(Delete)</a></small>
@@ -1034,8 +1034,9 @@ switch ($response) {
 								b:
 							}
 							echo '<tr><td colspan="6">&nbsp;</td></tr>
-		<tr><th colspan="3" style="text-align:right;">TOTAL :</th><th class="right">' . amount_format($tot_debit) . '</th><th class="right">' . amount_format($tot_credit) . '</th><th  class="right">' . amount_format($balance) . '</th></tr>
-		<tr><th colspan="6">Total Sale Invoices : ' . $tot_sale_inv . ' (' . amount_format($tot_sale_amt) . ') | Total Purchase Invoices : ' . $tot_purchase_inv . ' (' . amount_format($tot_purchase_amt) . ') | Total Receipts : ' . $tot_receipt . ' (' . amount_format($tot_receipt_amt) . ') | Total Payment : ' . $tot_payment . ' (' . amount_format($tot_payment_amt) . ')</th></tr>';
+								<tr><th colspan="3" style="text-align:right;">TOTAL :</th><th class="right">' . amount_format($tot_debit) . '</th><th class="right">' . amount_format($tot_credit) . '</th><th  class="right">' . amount_format($balance) . '</th></tr>
+								
+								<tr><th colspan="6">Total Sale Invoices : ' . $tot_sale_inv . ' (' . amount_format($tot_sale_amt) . ') | Total Purchase Invoices : ' . $tot_purchase_inv . ' (' . amount_format($tot_purchase_amt) . ') | Total Receipts : ' . $tot_receipt . ' (' . amount_format($tot_receipt_amt) . ') | Total Payment : ' . $tot_payment . ' (' . amount_format($tot_payment_amt) . ')</th></tr>';
 							$a = 30 - $i;
 							?>
 						</table>

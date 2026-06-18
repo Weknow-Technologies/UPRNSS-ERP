@@ -662,7 +662,7 @@ if (isset($_POST['btn_submit'])) {
                 </div>
               </div>
               <div class="col-md-3 mb-3">
-                <label>GST-TDS Breakdown</label>
+                <label>GST-TDS(CGST TDS/SGST TDS)</label>
                 <input type="hidden" name="gsttds" id="gsttds_hidden" value="<?php echo @$_POST['gsttds']; ?>">
                 <div class="input-group">
                   <input type="text" name="gsttds_cgst" id="gsttds_cgst" class="form-control" placeholder="CGST"

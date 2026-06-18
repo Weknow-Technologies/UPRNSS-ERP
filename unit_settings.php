@@ -40,7 +40,14 @@ if (isset($_POST['submit'])) {
         'BILL_SGST',
         'BILL_DED_GST',
         'BILL_DED_CGST',
-        'BILL_DED_SGST'
+        'BILL_DED_SGST',
+        'ADVCENRV',
+        'CGSTRV',
+        'SGSTRV',
+        'CGSTTDSRV',
+        'SGSTTDSRV',
+        'ITTDSRV',
+        'LABOURCESSRV',
     ];
     $settings = [];
     foreach ($keys as $k) {
@@ -203,6 +210,7 @@ page_sidebar();
                             <?php
                             $receive_keys = ['ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
                             $transfer_keys = ['ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW'];
+                            $receipt_keys = ['ADVCENRV', 'CGSTRV', 'SGSTRV', 'CGSTTDSRV', 'SGSTTDSRV', 'ITTDSRV', 'LABOURCESSRV'];
                             $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'];
                             $friendly_names = [
                                 'ITTDS' => 'Income Tax',
@@ -232,7 +240,14 @@ page_sidebar();
                                 'BILL_CGST' => 'CGST',
                                 'BILL_SGST' => 'SGST',
                                 'BILL_DED_CGST' => 'CGST Deduction',
-                                'BILL_DED_SGST' => 'SGST Deduction'
+                                'BILL_DED_SGST' => 'SGST Deduction',
+                                'ADVCENRV' => 'Advance Centage',
+                                'CGSTRV' => 'CGST',
+                                'SGSTRV' => 'SGST',
+                                'CGSTTDSRV' => 'CGST TDS',
+                                'SGSTTDSRV' => 'SGST TDS',
+                                'ITTDSRV' => 'Income Tax',
+                                'LABOURCESSRV' => 'Labour Cess',
                             ];
                             ?>
 
@@ -267,6 +282,26 @@ page_sidebar();
                                         Ledger</label>
                                     <select name="<?php echo strtolower($key); ?>" id="<?php echo strtolower($key); ?>"
                                         class="form-control select2 ledger-select">
+                                        <option value="">--- Select Ledger ---</option>
+                                    </select>
+                                </div>
+                            <?php } ?>
+
+                            <div class="col-12 mt-4 mb-2 receipt-group">
+                                <h5 style="color: var(--primary); border-bottom: 2px solid var(--primary-light); padding-bottom: 5px;">
+                                    <i class="fas fa-receipt mr-2"></i>Receipt Voucher Ledgers From HO
+                                </h5>
+                            </div>
+
+                            <?php foreach ($receipt_keys as $key) { ?>
+                                <div class="col-md-4 mb-3 receipt-group">
+                                    <label class="font-weight-bold">
+                                        <?php echo $friendly_names[$key]; ?> Ledger
+                                    </label>
+                                    <select
+                                            name="<?php echo strtolower($key); ?>"
+                                            id="<?php echo strtolower($key); ?>"
+                                            class="form-control select2 ledger-select">
                                         <option value="">--- Select Ledger ---</option>
                                     </select>
                                 </div>
@@ -319,11 +354,13 @@ page_sidebar();
             if (selected_unit == '53') {
                 $('.bill-group').hide();
                 $('.transfer-group').show();
+                $('.receipt-group').hide();
                 $('#receive_header_text').html('<i class="fas fa-arrow-down mr-2"></i>Fund Receive at HO Ledgers');
                 $('#transfer_header_text').html('<i class="fas fa-arrow-up mr-2"></i>Fund Transfer HO to Unit Ledgers');
             } else {
                 $('.bill-group').show();
                 $('.transfer-group').hide();
+                $('.receipt-group').show();
                 $('#receive_header_text').html('<i class="fas fa-arrow-down mr-2"></i>Fund Receive Ledgers');
                 $('#transfer_header_text').html('<i class="fas fa-arrow-up mr-2"></i>Fund Transfer Ledgers');
             }
@@ -336,12 +373,14 @@ page_sidebar();
             if (preSelected == '53') {
                 $('.bill-group').hide();
                 $('.transfer-group').show();
+                $('.receipt-group').hide();
                 $('#receive_header_text').html('<i class="fas fa-arrow-down mr-2"></i>Fund Receive at HO Ledgers');
                 $('#transfer_header_text').html('<i class="fas fa-arrow-up mr-2"></i>Fund Transfer HO to Unit Ledgers');
             } else {
                 $('.bill-group').show();
                 $('.transfer-group').hide();
-                $('#receive_header_text').html('<i class="fas fa-arrow-down mr-2"></i>Fund Receive Ledgers');
+                $('.receipt-group').show();
+                $('#receive_header_text').html('<i class="fas fa-arrow-down mr-2"></i>Fund Receive Ledgers From Department');
                 $('#transfer_header_text').html('<i class="fas fa-arrow-up mr-2"></i>Fund Transfer Ledgers');
             }
             load_settings(preSelected);
@@ -392,6 +431,7 @@ page_sidebar();
                         if (data) {
                             var jsKeys = [
                                 'ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES',
+                                'ADVCENRV', 'CGSTRV', 'SGSTRV', 'CGSTTDSRV', 'SGSTTDSRV', 'ITTDSRV', 'LABOURCESSRV',
                                 'ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW',
                                 'BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED',
                                 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'
@@ -446,14 +486,21 @@ page_sidebar();
                                 ((isMapped('BILL_CGST') && isMapped('BILL_SGST'))) &&
                                 ((isMapped('BILL_DED_CGST') && isMapped('BILL_DED_SGST'))) &&
                                 isMapped('BILL_ROYALTY') && isMapped('BILL_HOLD');
+
+                            var receipt_complete =
+                                (isMapped('CGSTTDSRV') && isMapped('SGSTTDSRV')) &&
+                                isMapped('ITTDSRV') &&
+                                isMapped('LABOURCESSRV') &&
+                                isMapped('ADVCENRV');
+
                             if (unit_id == '53') {
-                                bill_complete = true; // HO doesn't need bill ledgers mapped
+                                bill_complete = true;
+                                receipt_complete = true;
                             } else {
-                                transfer_complete = true; // Division doesn't need transfer ledgers mapped
+                                transfer_complete = true;
                             }
 
-                            // Show popup if all required ledgers across all 3 sections are mapped
-                            if (receive_complete && transfer_complete && bill_complete) {
+                            if (receive_complete && transfer_complete && bill_complete && receipt_complete) {
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Mapping Completed!',

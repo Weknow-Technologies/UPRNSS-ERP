@@ -265,8 +265,11 @@ if (isset($_GET['id'])) {
         <p>
         <p>E-Mail: paccfedho@gmail.com
         <p>
-        <h4><?php echo get_division($old_data['unit_id']); ?></h4>
-
+    <?php if ($_SESSION['usertype'] != '9'): ?>
+        <h4>Ho to Unit</h4>
+    <?php else: ?>
+        <h4><?php echo $_SESSION['unit_name']; ?></h4>
+    <?php endif; ?>
         <h4>Journal Voucher</h4>
 
         <div class="header-container">

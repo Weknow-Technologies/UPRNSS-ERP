@@ -261,7 +261,7 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
             $opening_tot_cr = $opening_cr_trans['trans'] + $opening_journal_cr['journal'] + $opening_journal_cr_erp['journal']  + $opening_journal_cr_erp_payment['journal'] + $opening_journal_cr_cash['cash'] + $opening_contra_cr['contra'] + $opening_credit_note['trans'];
 
-            $cust_opening = (float) $customer['opening_balance'] + ((float) $opening_tot_dr - (float) $opening_tot_cr);
+            $cust_opening = (float) $customer['opening_balance'] + ((float) $opening_tot_cr - (float) $opening_tot_dr);
         } else {
             if ($from == '1970-01-01') {
                 return $cust_balanace;
@@ -316,7 +316,7 @@ function get_cust_balace($from, $to, $id, $in_out = '', $unit_id = '')
 
         $tot_cr = $cr_trans['trans'] + $journal_cr['journal'] + $journal_cr_erp_receipt['journal'] + $journal_cr_erp_payment['journal'] + $journal_cr_cash['cash'] + $contra_cr['contra'] + $credit_note['trans'];
 
-        $closing = $tot_dr - $tot_cr;
+        $closing = $tot_cr - $tot_dr;
 
         if ($in_out == '') {
             $cust_balanace = $cust_opening + $closing;

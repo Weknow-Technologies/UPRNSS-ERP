@@ -881,11 +881,11 @@ if (isset($_GET['delid'])) {
         document.getElementById("fund_receive_type").onchange = onchangetype;
         fund_receive_to();
         document.getElementById("fund_receive_to").onchange = fund_receive_to;
-
-        // Auto-fetch unit ledgers if a unit is already selected (for edit)
         var preUnit = document.getElementById("unit_id")?.value;
-        if (preUnit) {
-            fill_unit_ledgers(preUnit);
+        var frt = document.getElementById("fund_receive_to")?.value;
+        var effectiveUnit = (frt === 'Unit') ? (preUnit || '') : '53';
+        if (effectiveUnit) {
+            fill_unit_ledgers(effectiveUnit);
         }
     };
 
@@ -1253,7 +1253,7 @@ if (isset($_GET['delid'])) {
         $.ajax({
             url: 'scripts/ajax.php',
             type: 'POST',
-            data: { term: 'all', id: 'get_project_mapping_info', project_id: prj },
+            data: { term: 'all', id: 'get_project_mapping_info', project_id: prj, unit_id: $('#unit_id').val() || 53 },
             dataType: 'json',
             success: function (res) {
                 if (res.erp_code) {
@@ -1791,49 +1791,49 @@ if (isset($_GET['delid'])) {
                             </div>
                             <div class="row align-items-end">
                                 <div class="col-md-1 mb-3" style="padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">TDS(%)</label>
+                                    <label >TDS(%)</label>
                                     <input type="text" name="tds_per" id="tds_per" class="form-control px-1"
                                         value="<?php echo @$_POST['tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
                                         onInput="percent_amt_calc('tds_per')">
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">TDS Amount</label>
+                                    <label >TDS Amount</label>
                                     <input type="text" name="tds_deducted" id="tds_deducted" class="form-control px-1"
                                         value="<?php echo customRound(@$_POST['tds_deducted']); ?>" tabindex="<?php echo $tab++; ?>"
                                         onInput="percent_amt_calc('tds_deducted')" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">GST TDS (%)</label>
+                                    <label >GST TDS (%)</label>
                                     <input type="text" name="gst_tds_per" id="gst_tds_per" class="form-control px-1"
                                         value="<?php echo @$_POST['gst_tds_per']; ?>" tabindex="<?php echo $tab++; ?>"
                                         onInput="percent_amt_calc('gst_tds_per')">
                                 </div>
                                 <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">GST TDS Amount</label>
+                                    <label >GST TDS Amount</label>
                                     <input type="text" name="gsttds_deducted" id="gsttds_deducted"
                                         class="form-control px-1" value="<?php echo customRound(@$_POST['gsttds_deducted']); ?>"
                                         tabindex="<?php echo $tab++; ?>" onInput="percent_amt_calc('gsttds_deducted')" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">CGST TDS</label>
+                                    <label >CGST TDS</label>
                                     <input type="text" id="cgst_split_box" class="form-control px-1"
                                         style="background-color: #f0fdf4; color: #000; font-weight: bold; border-color: #bbf7d0;"
                                         readonly>
                                 </div>
                                 <div class="col-md-1 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">SGST TDS</label>
+                                    <label >SGST TDS</label>
                                     <input type="text" id="sgst_split_box" class="form-control px-1"
                                         style="background-color: #f0fdf4; color: #000; font-weight: bold; border-color: #bbf7d0;"
                                         readonly>
                                 </div>
                                 <div class="col-md-2 mb-3" style="padding-left: 5px; padding-right: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">Labour Cess</label>
+                                    <label >Labour Cess</label>
                                     <input type="text" name="labour_sess" id="labour_sess" class="form-control px-1"
                                         value="<?php echo customRound(@$_POST['labour_sess']); ?>" tabindex="<?php echo $tab++; ?>"
                                         onInput="percent_amt_calc()" onblur="roundInputOnBlur(this); percent_amt_calc();">
                                 </div>
                                 <div class="col-md-2 mb-3" style="padding-left: 5px;">
-                                    <label style="font-size: 13px !important; color: #000;">Other Charges</label>
+                                    <label >Other Charges</label>
                                     <input type="text" name="other_charges" id="other_charges" class="form-control px-1"
                                         value="<?php echo customRound(@$_POST['other_charges']); ?>" tabindex="<?php echo $tab++; ?>"
                                         onInput="percent_amt_calc()" onblur="roundInputOnBlur(this); percent_amt_calc();">

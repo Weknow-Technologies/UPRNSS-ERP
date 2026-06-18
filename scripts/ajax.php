@@ -530,12 +530,59 @@ if ($id == 'ho_bank_for_project') {
 } elseif ($id === 'get_unit_ledgers') {
 	$unit_id = $_GET['unit_id'] ?? 0;
 	$out = [];
-	$sql = "SELECT sno, cus_name FROM billit_customer WHERE unit_id='" . mysqli_real_escape_string($db, $unit_id) . "' OR unit_id='0' OR unit_id IS NULL";	$res = execute_query($sql);
+//	$sql = "SELECT sno, cus_name FROM billit_customer WHERE unit_id='" . mysqli_real_escape_string($db, $unit_id) . "' OR unit_id='0' OR unit_id IS NULL";
+    $sql = "SELECT sno, cus_name FROM billit_customer WHERE unit_id='" . mysqli_real_escape_string($db, $unit_id) . "' ORDER BY cus_name";
+    $res = execute_query($sql);
 	while ($row = mysqli_fetch_assoc($res)) {
 		$out[] = array("id" => $row['sno'], "text" => $row['cus_name']);
 	}
 	echo json_encode($out);
 	exit;
+} elseif ($id === 'get_unit_ledgers_with_mapping'){
+$unit_id = intval($_GET['unit_id'] ?? 53);
+$project_id = intval($_GET['project_id'] ?? 0);
+$out = ['mapped_ledger_id' => '', 'mapped_ledger_name' => '', 'ledgers' => []];
+
+// Is project ka erp_code nikalo
+$erp_row = mysqli_fetch_assoc(execute_query(
+    "SELECT erp_code FROM uprnss_project_temp WHERE sno='$project_id' LIMIT 1"
+));
+$erp_code = trim($erp_row['erp_code'] ?? '');
+
+// Agar erp_code hai to mapped ledger dhundho
+if ($erp_code) {
+    $mapped = mysqli_fetch_assoc(execute_query(
+        "SELECT sno, cus_name FROM billit_customer 
+             WHERE erp_code='" . mysqli_real_escape_string($db, $erp_code) . "' 
+             AND unit_id='$unit_id' LIMIT 1"
+    ));
+    if ($mapped) {
+        $out['mapped_ledger_id'] = $mapped['sno'];
+        $out['mapped_ledger_name'] = $mapped['cus_name'];
+    }
+}
+
+// Saare unit ledgers fetch karo with mapping info
+$res = execute_query(
+    "SELECT bc.sno, bc.cus_name, bc.erp_code,
+                pt.sno as mapped_project_id, pt.project_name_hindi as mapped_project_name
+         FROM billit_customer bc
+         LEFT JOIN uprnss_project_temp pt 
+             ON pt.erp_code = bc.erp_code AND pt.erp_code != '' AND bc.erp_code IS NOT NULL AND bc.erp_code != ''
+         WHERE bc.unit_id='$unit_id'
+         ORDER BY bc.cus_name"
+);
+while ($r = mysqli_fetch_assoc($res)) {
+    $out['ledgers'][] = [
+        'id' => $r['sno'],
+        'text' => $r['cus_name'],
+        'mapped_project_id' => $r['mapped_project_id'] ?? '',
+        'mapped_project_name' => $r['mapped_project_name'] ?? ''
+    ];
+}
+
+echo json_encode($out);
+exit;
 } elseif ($id === 'get_project_mapping_info') {
 	$project_id = $_POST['project_id'] ?? 0;
 	$out = ['erp_code' => '', 'ledger_sno' => ''];
@@ -589,22 +636,57 @@ if ($id == 'ho_bank_for_project') {
                         if (execute_query($sql_unit_h)) {
                             $unit_jid = mysqli_insert_id($db);
 
-                            // 3. Fetch HO Voucher Lines and Mirror them
+                            // 3. HO keys → ledger_id mapping (W suffix = Fund Transfer keys)
+                            $ho_w_keys = ['CGSTW','SGSTW','CGSTTDSW','SGSTTDSW','GSTTDSW','ADVCEN','LABOURCESSW','ITTDSW'];
+                            $ho_key_to_ledger = []; // key => ledger_sno
+                            foreach ($ho_w_keys as $wk) {
+                                $r = mysqli_fetch_assoc(execute_query(
+                                    "SELECT rate FROM general_settings WHERE `desc`='$wk' AND unit_id='53' LIMIT 1"
+                                ));
+                                if ($r && $r['rate']) $ho_key_to_ledger[$wk] = $r['rate'];
+                            }
+// Reverse: ledger_sno => key
+                            $ho_ledger_to_key = array_flip($ho_key_to_ledger);
+
+// Unit RV keys → ledger_id mapping
+                            $rv_map = [
+                                'CGSTW'      => 'CGSTRV',
+                                'SGSTW'      => 'SGSTRV',
+                                'CGSTTDSW'   => 'CGSTTDSRV',
+                                'SGSTTDSW'   => 'SGSTTDSRV',
+                                'GSTTDSW'    => 'CGSTTDSRV', // fallback
+                                'ADVCEN'     => 'ADVCENRV',
+                                'LABOURCESSW'=> 'LABOURCESSRV',
+                                'ITTDSW'     => 'ITTDSRV',
+                            ];
+                            $unit_rv_ledger = []; // rv_key => ledger_sno
+                            foreach ($rv_map as $wk => $rvk) {
+                                $r = mysqli_fetch_assoc(execute_query(
+                                    "SELECT rate FROM general_settings WHERE `desc`='$rvk' AND unit_id='$target_unit' LIMIT 1"
+                                ));
+                                if ($r && $r['rate']) $unit_rv_ledger[$rvk] = $r['rate'];
+                            }
+
                             $sql_lines = "SELECT * FROM billit_stock_erp_payment WHERE journal_id = '$ho_jid'";
                             $res_lines = execute_query($sql_lines);
                             while ($row_l = mysqli_fetch_assoc($res_lines)) {
-                                // Flip 'by' to 'to' and vice versa for the reversal effect
                                 $new_by = $row_l['to'];
                                 $new_to = $row_l['by'];
-
+                                if (!empty($new_by)) {
+                                    $ho_key = $ho_ledger_to_key[$new_by] ?? null;
+                                    if ($ho_key && isset($rv_map[$ho_key])) {
+                                        $rv_key = $rv_map[$ho_key];
+                                        if (!empty($unit_rv_ledger[$rv_key])) {
+                                            $new_by = $unit_rv_ledger[$rv_key];
+                                        }
+                                    }
+                                }
                                 $sql_l_unit = "INSERT INTO billit_stock_erp_payment 
-											   (journal_id, `by`, `to`, amount, timestamp, unit_id, status)
-											   VALUES 
-											   ('$unit_jid', '$new_by', '$new_to', '" . $row_l['amount'] . "', '" . $row_l['timestamp'] . "', '" . $target_unit . "', '')";
+                                   (journal_id, `by`, `to`, amount, timestamp, unit_id, status)
+                                   VALUES 
+                                   ('$unit_jid', '$new_by', '$new_to', '" . $row_l['amount'] . "', '" . $row_l['timestamp'] . "', '" . $target_unit . "', '')";
                                 execute_query($sql_l_unit);
                             }
-
-                            // 4. Link Unit Journal ID back to transfer header
                             execute_query("UPDATE invoice_fund_transfer SET unit_journal_id = '$unit_jid' WHERE sno = '$header_id'");
                         }
                     }
@@ -622,11 +704,47 @@ if ($id == 'ho_bank_for_project') {
     }
     echo json_encode($data);
     exit;
+} elseif ($id == 'save_project_ledger_mapping') {
+    $project_id = intval($_POST['project_id'] ?? 0);
+    $ledger_id  = intval($_POST['ledger_id'] ?? 0);
+    if (!$project_id || !$ledger_id) {
+        echo 'error'; exit;
+    }
+    $proj = mysqli_fetch_assoc(execute_query(
+        "SELECT erp_code FROM uprnss_project_temp WHERE sno='$project_id' LIMIT 1"
+    ));
+    $erp_code = trim($proj['erp_code'] ?? '');
+    if (!$erp_code) {
+        echo 'no_erp_code'; exit;
+    }
+    execute_query(
+        "UPDATE billit_customer SET erp_code='' WHERE erp_code='" . mysqli_real_escape_string($db, $erp_code) . "'"
+    );
+    execute_query(
+        "UPDATE billit_customer SET erp_code='" . mysqli_real_escape_string($db, $erp_code) . "' WHERE sno='$ledger_id' LIMIT 1"
+    );
+    echo mysqli_error($db) ? 'error' : 'success';
+    exit;
+} elseif ($id == 'get_project_ledger_mapping') {
+    $project_id = intval($_GET['project_id'] ?? $_POST['project_id'] ?? 0);
+    if (!$project_id) {
+        echo ''; exit;
+    }
+    $proj = mysqli_fetch_assoc(execute_query(
+        "SELECT erp_code FROM uprnss_project_temp WHERE sno='$project_id' LIMIT 1"
+    ));
+    $erp_code = trim($proj['erp_code'] ?? '');
+    if (!$erp_code) {
+        echo ''; exit;
+    }
+    $ledger = mysqli_fetch_assoc(execute_query(
+        "SELECT sno FROM billit_customer WHERE erp_code='" . mysqli_real_escape_string($db, $erp_code) . "' LIMIT 1"
+    ));
+    echo $ledger['sno'] ?? '';
+    exit;
 } elseif ($id == 'get_vendor_ledger') {
 $vendor_id = intval($_POST['vendor_id'] ?? 0);
 if (!$vendor_id) { echo json_encode([]); exit; }
-
-// Vendor ka contractor_code fetch karo
 $v = mysqli_fetch_assoc(execute_query(
     "SELECT contractor_code FROM vendor WHERE sno='$vendor_id' LIMIT 1"
 ));
@@ -639,44 +757,34 @@ if ($contractor_code) {
     ));
     $ledger_sno = $bc['sno'] ?? null;
 }
-
-// Saare ledgers bhi bhejo (dropdown ke liye)
 $unit_id = intval($_POST['unit_id'] ?? 53);
 $ledgers = [];
 $res = execute_query("SELECT sno, cus_name FROM billit_customer WHERE unit_id='$unit_id' ORDER BY cus_name");
 while ($r = mysqli_fetch_assoc($res)) {
     $ledgers[] = ['id' => $r['sno'], 'text' => $r['cus_name']];
 }
-
 echo json_encode([
     'ledger_sno'      => $ledger_sno,
     'contractor_code' => $contractor_code,
     'ledgers'         => $ledgers
 ]);
 exit;
-
 } elseif ($id == 'save_vendor_ledger') {
 $vendor_id  = intval($_POST['vendor_id'] ?? 0);
 $ledger_sno = intval($_POST['ledger_sno'] ?? 0);
 if (!$vendor_id || !$ledger_sno) {
     echo json_encode(['success' => false, 'message' => 'Invalid data']); exit;
 }
-
-// Vendor ka contractor_code fetch karo
 $v = mysqli_fetch_assoc(execute_query(
     "SELECT contractor_code FROM vendor WHERE sno='$vendor_id' LIMIT 1"
 ));
 $contractor_code = mysqli_real_escape_string($db, $v['contractor_code'] ?? '');
-
 if (!$contractor_code) {
     echo json_encode(['success' => false, 'message' => 'Contractor code not found']); exit;
 }
-
-// billit_customer mein contractor_code update karo
 execute_query(
     "UPDATE billit_customer SET contractor_code='$contractor_code' WHERE sno='$ledger_sno' LIMIT 1"
 );
-
 if (mysqli_error($db)) {
     echo json_encode(['success' => false, 'message' => mysqli_error($db)]);
 } else {
@@ -684,7 +792,6 @@ if (mysqli_error($db)) {
 }
 exit;
 }
-
 if (empty($data) != true) {
 	echo json_encode($data);
 }
