@@ -166,6 +166,7 @@ if (isset($_GET['voucher'])) {
 
 					if (!empty($row['by'])) {
 						$particulars = get_ledger($row['by']);
+						$particulars = get_ledger($row['by']);
 						
 						
 						$debit_amt = $row['amount'];

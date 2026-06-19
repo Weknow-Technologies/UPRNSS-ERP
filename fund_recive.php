@@ -10,6 +10,8 @@ $auto_voucher_no = (!isset($_GET['edit_sno']))
     : '';
 
 page_header_start();
+
+// print_r($_POST);
 ?>
 
 <?php
@@ -115,7 +117,8 @@ if (isset($_POST['submit'])) {
     ensure_ifr_ledger_columns($db);
 
     $tds_ledger_id = mysqli_real_escape_string($db, $_POST['tds_ledger_id'] ?? '');
-    $gst_tds_ledger_id = mysqli_real_escape_string($db, $_POST['gst_tds_ledger_id'] ?? '');
+    $cgst_tds_ledger_id = mysqli_real_escape_string($db, $_POST['cgst_tds_ledger_id'] ?? '');
+    $sgst_tds_ledger_id = mysqli_real_escape_string($db, $_POST['sgst_tds_ledger_id'] ?? '');
     $labour_cess_ledger_id = mysqli_real_escape_string($db, $_POST['labour_cess_ledger_id'] ?? '');
     $other_charges_ledger_id = mysqli_real_escape_string($db, $_POST['other_charges_ledger_id'] ?? '');
     $other_charges = nval($_POST['other_charges'] ?? 0);
@@ -215,7 +218,7 @@ if (isset($_POST['submit'])) {
             $sql = 'INSERT INTO invoice_fund_receive 
             (`fund_receive_type`,`fund_receive_to`,`installment`,`order_no`,`order_date`,`receive_date`,
              `tot_receive_amount`, `tds_per`,`tds_deducted`,`gst_tds_per`,`gsttds_deducted`,`labour_sess`,
-             `bank_name`,`remark`,`status`,`created_by`,`creation_time`, `voucher_no`, `tds_ledger_id`, `gst_tds_ledger_id`, `labour_cess_ledger_id`, `other_charges_ledger_id`, `other_charges` ) VALUES (
+             `bank_name`,`remark`,`status`,`created_by`,`creation_time`, `voucher_no`, `tds_ledger_id`, `labour_cess_ledger_id`, `other_charges_ledger_id`, `other_charges` ) VALUES (
             "' . $_POST['fund_receive_type'] . '",
             "' . $_POST['fund_receive_to'] . '",
             "' . $_POST['installment'] . '",
@@ -235,7 +238,6 @@ if (isset($_POST['submit'])) {
             "' . date("Y-m-d H:i:s") . '",
             "' . $_POST['voucher_no'] . '",
             "' . $tds_ledger_id . '",
-            "' . $gst_tds_ledger_id . '",
             "' . $labour_cess_ledger_id . '",
             "' . $other_charges_ledger_id . '",
             "' . number_format($other_charges, 2, '.', '') . '"
@@ -350,19 +352,20 @@ if (isset($_POST['submit'])) {
                     $unit_id_for_settings = $_POST['unit_id'] ?? 53;
 
                     $tds_ledger = $tds_ledger_id;
-                    $gst_tds_ledger = $gst_tds_ledger_id;
                     $labour_cess_ledger = $labour_cess_ledger_id;
                     $other_charges_ledger = $other_charges_ledger_id;
-					$cgst_ledger == '';
-					$sgst_ledger == '';
 
                     if ($tds_ledger == '') {
                         $s = get_general_setting("ITTDS", $unit_id_for_settings);
                         $tds_ledger = $s['rate'] ?? '';
                     }
-                    if ($gst_tds_ledger == '') {
-                        $s = get_general_setting("GSTTDS", $unit_id_for_settings);
-                        $gst_tds_ledger = $s['rate'] ?? '';
+                    if ($cgst_tds_ledger_id == '') {
+                        $s = get_general_setting("CGSTTDS", $unit_id_for_settings);
+                        $cgst_tds_ledger_id = $s['rate'] ?? '';
+                    }
+					if ($sgst_tds_ledger_id == '') {
+                        $s = get_general_setting("SGSTTDS", $unit_id_for_settings);
+                        $sgst_tds_ledger_id = $s['rate'] ?? '';
                     }
                     if ($labour_cess_ledger == '') {
                         $s = get_general_setting("LABORCESS", $unit_id_for_settings);
@@ -393,19 +396,13 @@ if (isset($_POST['submit'])) {
 									 VALUES ("' . $journal_id . '", "' . $tds_ledger . '",  "' . number_format($tds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                     }
                     if (nval($gsttds_total) > 0) {
-                        if ($gst_tds_ledger != '') {
-                            execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $gst_tds_ledger . '",  "' . number_format($gsttds_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
-                        } else {
-                            $cgst_tds_l = get_general_setting("CGSTTDS", $unit_id_for_settings)['rate'] ?? '';
-                            $sgst_tds_l = get_general_setting("SGSTTDS", $unit_id_for_settings)['rate'] ?? '';
+                        
                             $half = $gsttds_total / 2;
                             execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $cgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+									 VALUES ("' . $journal_id . '", "' . $cgst_tds_ledger_id . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
                             execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
-									 VALUES ("' . $journal_id . '", "' . $sgst_tds_l . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
-                        }
-                    }
+									 VALUES ("' . $journal_id . '", "' . $sgst_tds_ledger_id . '",  "' . number_format($half, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
+					}
                     if (nval($labour_total) > 0) {
                         execute_query('INSERT INTO billit_stock_erp_receipt (`journal_id`, `by`, amount, timestamp, unit_id, status)
 									 VALUES ("' . $journal_id . '", "' . $labour_cess_ledger . '", "' . number_format($labour_total, 2, '.', '') . '", "' . $_POST['receive_date'] . '", "", "")');
@@ -1782,12 +1779,20 @@ if (isset($_GET['delid'])) {
                             <div style="display:none;">
                                 <input type="hidden" name="tds_ledger_id" id="tds_ledger_id"
                                     value="<?php echo @$_POST['tds_ledger_id']; ?>">
-                                <input type="hidden" name="gst_tds_ledger_id" id="gst_tds_ledger_id"
-                                    value="<?php echo @$_POST['gst_tds_ledger_id']; ?>">
+
+                                <input type="hidden" name="cgst_tds_ledger_id" id="cgst_tds_ledger_id"
+                                    value="<?php echo @$_POST['cgst_tds_ledger_id']; ?>">
+								<input type="hidden" name="sgst_tds_ledger_id" id="sgst_tds_ledger_id"
+                                    value="<?php echo @$_POST['sgst_tds_ledger_id']; ?>">
+									
                                 <input type="hidden" name="labour_cess_ledger_id" id="labour_cess_ledger_id"
                                     value="<?php echo @$_POST['labour_cess_ledger_id']; ?>">
+									
                                 <input type="hidden" name="other_charges_ledger_id" id="other_charges_ledger_id"
                                     value="<?php echo @$_POST['other_charges_ledger_id']; ?>">
+
+
+
                             </div>
                             <div class="row align-items-end">
                                 <div class="col-md-1 mb-3" style="padding-right: 5px;">

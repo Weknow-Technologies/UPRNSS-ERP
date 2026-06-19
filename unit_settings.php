@@ -208,18 +208,19 @@ page_sidebar();
                     <div id="settings_fields">
                         <div class="row">
                             <?php
-                            $receive_keys = ['ITTDS', 'CGST', 'SGST', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
+                            $receive_keys = [ 'CGST', 'SGST', 'ITTDS', 'CGSTTDS', 'SGSTTDS', 'LABORCESS', 'OTHER_CHARGES'];
                             $transfer_keys = ['ADVCEN', 'CGSTW', 'SGSTW', 'CGSTTDSW', 'SGSTTDSW', 'ITTDSW', 'LABOURCESSW'];
                             $receipt_keys = ['ADVCENRV', 'CGSTRV', 'SGSTRV', 'CGSTTDSRV', 'SGSTTDSRV', 'ITTDSRV', 'LABOURCESSRV'];
                             $bill_keys = ['BILL_OTHER_ADD', 'BILL_IT', 'BILL_CGST_TDS', 'BILL_SGST_TDS', 'BILL_SECURITY', 'BILL_LABOUR_CESS', 'BILL_OTHER_DED', 'BILL_CGST', 'BILL_SGST', 'BILL_DED_CGST', 'BILL_DED_SGST', 'BILL_ROYALTY', 'BILL_HOLD'];
                             $friendly_names = [
-                                'ITTDS' => 'Income Tax',
+                                'ITTDS' => 'TDS',
                                 'CGST' => 'CGST',
                                 'SGST' => 'SGST',
                                 'CGSTTDS' => 'CGST TDS',
                                 'SGSTTDS' => 'SGST TDS',
                                 'LABORCESS' => 'Labour Cess',
                                 'OTHER_CHARGES' => 'Other Charges',
+								
                                 'ADVCEN' => 'Advance Centage',
                                 'CGSTW' => 'CGST',
                                 'SGSTW' => 'SGST',
